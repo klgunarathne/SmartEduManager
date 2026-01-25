@@ -1,0 +1,18 @@
+# .NET Core
+bin/
+obj/
+
+# Entity Framework Core
+*.db
+*.mdf
+*.ldf
+
+# Logs
+logs/
+*.log
+*.txt
+
+# IDEs
+.vs/
+*.suo
+*.user
