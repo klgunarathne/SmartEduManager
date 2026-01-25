@@ -1,0 +1,25 @@
+.admin-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.admin-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-table {
+  width: 100%;
+}
+
+mat-card-header {
+  margin-bottom: 20px;
+}
