@@ -25,7 +25,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent {
-  userFullName = this.authService.userFullName;
+  userFirstName = this.authService.userFirstName;
   userRole = this.authService.userRole;
 
   constructor(private authService: AuthService, private router: Router) {}

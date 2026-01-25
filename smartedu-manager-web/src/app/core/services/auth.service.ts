@@ -23,10 +23,12 @@ export class AuthService {
   private expiresAtKey = 'smartedu-expiresAt';
   private roleKey = 'smartedu-role';
   private fullNameKey = 'smartedu-fullName';
+  private firstNameKey = 'smartedu-firstName';
 
   private _isLoggedIn = signal<boolean>(this.hasToken());
   userRole = signal<string>(localStorage.getItem(this.roleKey) || '');
   userFullName = signal<string>(localStorage.getItem(this.fullNameKey) || '');
+  userFirstName = signal<string>(localStorage.getItem(this.firstNameKey) || '');
 
   constructor(private http: HttpClient) {}
 
@@ -41,10 +43,12 @@ export class AuthService {
         if (decodedToken) {
           const role = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || decodedToken['role'];
           const email = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || decodedToken['email'];
+          const firstName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] || decodedToken['FirstName'];
           this.setRole(role);
           this.setFullName(email); // Use email as fallback if full name not available
           this.userRole.set(role);
           this.userFullName.set(email);
+          this.setFirstName(firstName);
         }
         this._isLoggedIn.set(true);
       })
@@ -68,6 +72,7 @@ export class AuthService {
     localStorage.removeItem(this.expiresAtKey);
     localStorage.removeItem(this.roleKey);
     localStorage.removeItem(this.fullNameKey);
+    localStorage.removeItem(this.firstNameKey);
     this._isLoggedIn.set(false);
     this.userRole.set('');
     this.userFullName.set('');
@@ -99,6 +104,10 @@ export class AuthService {
 
   private setFullName(fullName: string): void {
     localStorage.setItem(this.fullNameKey, fullName);
+  }
+
+  private setFirstName(firstName: string): void {
+    localStorage.setItem(this.firstNameKey, firstName);
   }
 
   getRefreshToken(): string | null {
