@@ -1,29 +1,361 @@
-<mat-toolbar color="primary" class="dashboard-toolbar">
-  <span>SmartEdu Manager</span>
-  <span class="flex-spacer"></span>
-  <span>Welcome, {{ userFirstName() }}</span>
-  <button mat-button [matMenuTriggerFor]="menu">
-    <mat-icon>account_circle</mat-icon>
-  </button>
-  <mat-menu #menu="matMenu">
+<div class="dashboard-container">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <button class="sidebar-toggle" (click)="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="brand-logo">
+        <i class="fas fa-graduation-cap"></i>
+        <span>SmartEdu Manager</span>
+      </div>
+    </div>
+    
+    <div class="navbar-search">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search..." class="search-input">
+    </div>
+    
+    <div class="navbar-actions">
+      <button class="action-btn">
+        <i class="fas fa-bell"></i>
+        <span class="badge">3</span>
+      </button>
+      <button class="action-btn">
+        <i class="fas fa-question-circle"></i>
+      </button>
+      <div class="user-profile">
+        <img src="https://ui-avatars.com/api/?name={{ userFirstName() }}&background=random" alt="User Profile" class="user-avatar">
+        <div class="user-info">
+          <span class="user-name">{{ userFirstName() }}</span>
+          <span class="user-role">{{ userRole() }}</span>
+        </div>
+        <button class="profile-menu-btn" [matMenuTriggerFor]="userMenu">
+          <i class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <mat-menu #userMenu="matMenu" class="user-menu">
+    <div class="menu-header">
+      <span class="menu-title">Account</span>
+    </div>
+    <button mat-menu-item>
+      <i class="fas fa-user"></i>
+      <span>Profile</span>
+    </button>
+    <button mat-menu-item>
+      <i class="fas fa-cog"></i>
+      <span>Settings</span>
+    </button>
+    <button mat-menu-item>
+      <i class="fas fa-question-circle"></i>
+      <span>Help</span>
+    </button>
+    <mat-divider></mat-divider>
     <button mat-menu-item (click)="logout()">
-      <mat-icon>logout</mat-icon>
+      <i class="fas fa-sign-out-alt"></i>
       <span>Logout</span>
     </button>
   </mat-menu>
-</mat-toolbar>
 
-<mat-grid-list cols="1" rowHeight="200px" class="dashboard-grid">
-  <mat-grid-tile>
-    <mat-card class="dashboard-card">
-      <mat-card-header>
-        <mat-card-title>Overview</mat-card-title>
-        <mat-card-subtitle>Welcome to SmartEdu Manager</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p>This is your dashboard overview.</p>
-        <p>Role: {{ userRole() }}</p>
-      </mat-card-content>
-    </mat-card>
-  </mat-grid-tile>
-</mat-grid-list>
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <span class="section-title">Main Menu</span>
+        <div class="nav-items">
+          <a href="#" class="nav-item active">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Students</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-graduation-cap"></i>
+            <span>Instructors</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-book"></i>
+            <span>Courses</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Batches</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>Centers</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <span class="section-title">Administration</span>
+        <div class="nav-items">
+          <a href="#" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-shield-alt"></i>
+            <span>Permissions</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Reports</span>
+          </a>
+          <a href="#" class="nav-item has-submenu" (click)="toggleSubmenu($event, 'system')">
+            <i class="fas fa-tools"></i>
+            <span>System</span>
+            <i class="fas fa-chevron-down submenu-toggle"></i>
+          </a>
+          <div class="submenu" id="system">
+            <a href="#" class="nav-item submenu-item">
+              <span>Logs</span>
+            </a>
+            <a href="#" class="nav-item submenu-item">
+              <span>Maintenance</span>
+            </a>
+            <a href="#" class="nav-item submenu-item">
+              <span>Backups</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <span class="section-title">Help & Support</span>
+        <div class="nav-items">
+          <a href="#" class="nav-item">
+            <i class="fas fa-question-circle"></i>
+            <span>Documentation</span>
+          </a>
+          <a href="#" class="nav-item">
+            <i class="fas fa-headset"></i>
+            <span>Support</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" [class.expanded]="sidebarCollapsed">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-info">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Welcome back! Here's what's happening with your courses today.</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary">
+          <i class="fas fa-download"></i>
+          <span>Export Report</span>
+        </button>
+        <button class="btn-primary">
+          <i class="fas fa-plus"></i>
+          <span>New Course</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">1,234</h3>
+          <p class="stat-label">Total Students</p>
+          <span class="stat-change positive">+12.5% <i class="fas fa-arrow-up"></i></span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">89</h3>
+          <p class="stat-label">Active Instructors</p>
+          <span class="stat-change positive">+3.2% <i class="fas fa-arrow-up"></i></span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <i class="fas fa-book"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">45</h3>
+          <p class="stat-label">Courses Offered</p>
+          <span class="stat-change positive">+5.0% <i class="fas fa-arrow-up"></i></span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">12</h3>
+          <p class="stat-label">Active Batches</p>
+          <span class="stat-change negative">-1.8% <i class="fas fa-arrow-down"></i></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Recent Activity</h2>
+          <button class="btn-text">View All</button>
+        </div>
+        <div class="card-content">
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-icon green">
+                <i class="fas fa-user-plus"></i>
+              </div>
+              <div class="activity-content">
+                <p class="activity-title">New student enrolled</p>
+                <p class="activity-meta">John Doe joined Advanced Python Course</p>
+              </div>
+              <span class="activity-time">2 hours ago</span>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon blue">
+                <i class="fas fa-book"></i>
+              </div>
+              <div class="activity-content">
+                <p class="activity-title">Course updated</p>
+                <p class="activity-meta">Web Development Fundamentals course content refreshed</p>
+              </div>
+              <span class="activity-time">5 hours ago</span>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon purple">
+                <i class="fas fa-graduation-cap"></i>
+              </div>
+              <div class="activity-content">
+                <p class="activity-title">Instructor added</p>
+                <p class="activity-meta">Jane Smith joined as new instructor</p>
+              </div>
+              <span class="activity-time">1 day ago</span>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon orange">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+              <div class="activity-content">
+                <p class="activity-title">Batch completed</p>
+                <p class="activity-meta">Data Science Batch 2024 completed successfully</p>
+              </div>
+              <span class="activity-time">2 days ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Events -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Upcoming Events</h2>
+          <button class="btn-text">Calendar</button>
+        </div>
+        <div class="card-content">
+          <div class="events-list">
+            <div class="event-item">
+              <div class="event-date">
+                <span class="date-day">28</span>
+                <span class="date-month">Jan</span>
+              </div>
+              <div class="event-content">
+                <p class="event-title">Python Workshop</p>
+                <p class="event-meta">
+                  <i class="fas fa-clock"></i> 10:00 AM - 12:00 PM
+                </p>
+                <p class="event-meta">
+                  <i class="fas fa-map-marker-alt"></i> Room A-101
+                </p>
+              </div>
+            </div>
+            <div class="event-item">
+              <div class="event-date">
+                <span class="date-day">30</span>
+                <span class="date-month">Jan</span>
+              </div>
+              <div class="event-content">
+                <p class="event-title">Web Dev Masterclass</p>
+                <p class="event-meta">
+                  <i class="fas fa-clock"></i> 2:00 PM - 4:00 PM
+                </p>
+                <p class="event-meta">
+                  <i class="fas fa-map-marker-alt"></i> Online (Zoom)
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Course Performance Chart -->
+      <div class="card full-width">
+        <div class="card-header">
+          <h2 class="card-title">Course Performance</h2>
+          <div class="chart-actions">
+            <button class="btn-text active">Weekly</button>
+            <button class="btn-text">Monthly</button>
+            <button class="btn-text">Yearly</button>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="chart-container">
+            <div class="chart-placeholder">
+              <i class="fas fa-chart-bar"></i>
+              <p>Performance Chart Placeholder</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4 class="footer-title">SmartEdu Manager</h4>
+        <p class="footer-text">A comprehensive education management system designed to streamline your institution's operations.</p>
+      </div>
+      <div class="footer-section">
+        <h4 class="footer-title">Quick Links</h4>
+        <ul class="footer-links">
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Support</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4 class="footer-title">Legal</h4>
+        <ul class="footer-links">
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+          <li><a href="#">GDPR Compliance</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024 SmartEdu Manager. All rights reserved.</p>
+    </div>
+  </footer>
+</div>
