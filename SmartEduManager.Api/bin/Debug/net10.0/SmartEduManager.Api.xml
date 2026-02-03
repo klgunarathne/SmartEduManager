@@ -40,6 +40,18 @@
         <member name="M:SmartEduManager.Api.Migrations.updateAuthDTO2.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Migrations.updateApplicationUser">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.updateApplicationUser.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.updateApplicationUser.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.updateApplicationUser.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:Program">
             <summary>
             Auto-generated public partial Program class for top-level statement apps.

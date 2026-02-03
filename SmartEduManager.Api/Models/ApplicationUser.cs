@@ -9,4 +9,6 @@ public class ApplicationUser : IdentityUser
     public string? Address { get; set; }
     public DateTime? DateOfBirth { get; set; }
     public string? ImageUrl { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

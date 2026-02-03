@@ -21,6 +21,8 @@ export const routes: Routes = [
     component: AdminComponent,
     canActivate: [authGuard],
     title: 'Admin - SmartEdu Manager',
+    children: [
+    ],
   },
   {
     path: '',
