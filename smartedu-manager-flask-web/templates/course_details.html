@@ -60,7 +60,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <a href="{{ url_for('logout') }}" class="btn-link class="menu-item"" ><i class="fas fa-sign-out-alt"></i>
+        <a href="{{ url_for('logout') }}" class="menu-item"><i class="fas fa-sign-out-alt"></i>
             <span>Logout</span></a>
     </div>
 
@@ -113,9 +113,9 @@
                 <p class="page-subtitle">{{ course['description'] }}</p>
             </div>
             <div class="header-actions">
-                <a href="{{ url_for('courses') }}" class="btn-link class="btn-secondary"" ><i class="fas fa-arrow-left"></i>
+                <a href="{{ url_for('courses') }}" class="btn-secondary"><i class="fas fa-arrow-left"></i>
                     <span>Back to Courses</span></a>
-                <a href="{{ url_for('edit_course', id=course['courseId']) }}" class="btn-link class="btn-primary"" ><i class="fas fa-edit"></i>
+                <a href="{{ url_for('edit_course', id=course['courseId']) }}" class="btn-primary"><i class="fas fa-edit"></i>
                     <span>Edit Course</span></a>
             </div>
         </div>
@@ -211,29 +211,35 @@
                 </div>
                 <div class="card-content">
                     <div class="action-grid">
-                        <a href="{{ url_for('assign_instructors_to_course', id=course['courseId']) }}" class="btn-link class="action-card"" ><div class="action-icon">
+                        <a href="{{ url_for('assign_instructors_to_course', id=course['courseId']) }}" class="action-card">
+                            <div class="action-icon">
                                 <i class="fas fa-user-tie"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Assign Instructors</h4>
                                 <p>Manage course instructors</p>
-                            </div></a>
+                            </div>
+                        </a>
                         
-                        <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-link class="action-card"" ><div class="action-icon">
+                        <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="action-card">
+                            <div class="action-icon">
                                 <i class="fas fa-calendar-check"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Assign Batches</h4>
                                 <p>Manage course batches</p>
-                            </div></a>
+                            </div>
+                        </a>
                         
-                        <a href="{{ url_for('create_batch', id=course['courseId']) }}" class="btn-link class="action-card"" ><div class="action-icon">
+                        <a href="{{ url_for('create_batch', id=course['courseId']) }}" class="action-card">
+                            <div class="action-icon">
                                 <i class="fas fa-plus"></i>
                             </div>
                             <div class="action-content">
                                 <h4>Create Batch</h4>
                                 <p>Add new batch to course</p>
-                            </div></a>
+                            </div>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -247,7 +253,7 @@
                     Assigned Instructors
                 </h2>
                 <div class="card-actions">
-                    <a href="{{ url_for('assign_instructors_to_course', id=course['courseId']) }}" class="btn-link class="btn-secondary"" ><i class="fas fa-edit"></i>
+                    <a href="{{ url_for('assign_instructors_to_course', id=course['courseId']) }}" class="btn-secondary"><i class="fas fa-edit"></i>
                         <span>Manage Instructors</span></a>
                 </div>
             </div>
@@ -274,7 +280,7 @@
                                     </div>
                                 </div>
                                 <div class="instructor-actions">
-                                    <a href="{{ url_for('instructors') }}" class="btn-link class="btn-small btn-primary"" ><i class="fas fa-eye"></i>
+                                    <a href="{{ url_for('instructors') }}" class="btn-small btn-primary"><i class="fas fa-eye"></i>
                                         View Profile</a>
                                     <button class="btn-small btn-secondary">
                                         <i class="fas fa-envelope"></i>
@@ -289,7 +295,7 @@
                         <div class="no-data-content">
                             <i class="fas fa-user-tie"></i>
                             <p>No instructors assigned to this course</p>
-                            <a href="{{ url_for('assign_instructors_to_course', id=course['courseId']) }}" class="btn-link class="btn-primary"" ><i class="fas fa-plus"></i>
+                            <a href="{{ url_for('assign_instructors_to_course', id=course['courseId']) }}" class="btn-primary"><i class="fas fa-plus"></i>
                                 Assign Instructors</a>
                         </div>
                     </div>
@@ -305,7 +311,7 @@
                     Course Batches
                 </h2>
                 <div class="card-actions">
-                    <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-link class="btn-secondary"" ><i class="fas fa-edit"></i>
+                    <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-secondary"><i class="fas fa-edit"></i>
                         <span>Manage Batches</span></a>
                 </div>
             </div>
@@ -347,7 +353,7 @@
                                     </div>
                                 </div>
                                 <div class="batch-actions">
-                                    <a href="{{ url_for('batches') }}" class="btn-link class="btn-small btn-primary"" ><i class="fas fa-eye"></i>
+                                    <a href="{{ url_for('batches') }}" class="btn-small btn-primary"><i class="fas fa-eye"></i>
                                         View Batch</a>
                                     <button class="btn-small btn-secondary">
                                         <i class="fas fa-chart-line"></i>
@@ -362,7 +368,7 @@
                         <div class="no-data-content">
                             <i class="fas fa-calendar-times"></i>
                             <p>No batches assigned to this course</p>
-                            <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-link class="btn-primary"" ><i class="fas fa-plus"></i>
+                            <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-primary"><i class="fas fa-plus"></i>
                                 Assign Batches</a>
                         </div>
                     </div>
