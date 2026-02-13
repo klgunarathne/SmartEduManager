@@ -12,13 +12,14 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     }
 
     // Add your DbSets for other entities here
-    public DbSet<District> Districts { get; set; } = null!;
-    public DbSet<Center> Centers { get; set; } = null!;
-    public DbSet<Course> Courses { get; set; } = null!;
-    public DbSet<Instructor> Instructors { get; set; } = null!;
-    public DbSet<CourseInstructor> CourseInstructors { get; set; } = null!;
-    public DbSet<Batch> Batches { get; set; } = null!;
-    public DbSet<Student> Students { get; set; } = null!;
+     public DbSet<District> Districts { get; set; } = null!;
+     public DbSet<Center> Centers { get; set; } = null!;
+     public DbSet<Course> Courses { get; set; } = null!;
+     public DbSet<Instructor> Instructors { get; set; } = null!;
+     public DbSet<CourseInstructor> CourseInstructors { get; set; } = null!;
+     public DbSet<Batch> Batches { get; set; } = null!;
+     public DbSet<Student> Students { get; set; } = null!;
+     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

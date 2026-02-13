@@ -2,7 +2,9 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using System.IdentityModel.Tokens.Jwt;
@@ -20,19 +22,22 @@ public class AuthController : ControllerBase
     private readonly IMapper _mapper;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthController> _logger;
+    private readonly AppDbContext _context;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
         IMapper mapper,
         IConfiguration configuration,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        AppDbContext context)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _mapper = mapper;
         _configuration = configuration;
         _logger = logger;
+        _context = context;
     }
 
     [HttpPost("register")]
@@ -91,7 +96,7 @@ public class AuthController : ControllerBase
                 new Claim(ClaimTypes.Email, user.Email!),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim("FirstName", user.FirstName),
+                new Claim(ClaimTypes.GivenName, user.FirstName),
             };
 
             foreach (var userRole in userRoles)
@@ -101,12 +106,24 @@ public class AuthController : ControllerBase
 
             var token = GetToken(authClaims);
 
+            // Generate refresh token and store in database
+            var refreshToken = GenerateRefreshToken();
+            var storedRefreshToken = new RefreshToken
+            {
+                Token = refreshToken,
+                UserId = user.Id,
+                Expires = token.ValidTo.AddDays(Convert.ToDouble(_configuration["Jwt:DurationInDays"])),
+                CreatedByIp = GetIpAddress()
+            };
+            _context.RefreshTokens.Add(storedRefreshToken);
+            await _context.SaveChangesAsync();
+
             _logger.LogInformation($"User logged in successfully: {user.Email}");
 
             return Ok(new TokenDto
             {
                 AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-                RefreshToken = GenerateRefreshToken(),
+                RefreshToken = refreshToken,
                 ExpiresAt = token.ValidTo
             });
         }
@@ -140,6 +157,82 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto refreshTokenDto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var principal = GetPrincipalFromExpiredToken(refreshTokenDto.AccessToken);
+            if (principal == null)
+                return BadRequest("Invalid token");
+
+            var userEmail = principal.FindFirst(ClaimTypes.Email)?.Value;
+            var user = await _userManager.FindByEmailAsync(userEmail!);
+            if (user == null)
+                return BadRequest("Invalid token");
+
+            var storedRefreshToken = _context.RefreshTokens.FirstOrDefault(t => 
+                t.Token == refreshTokenDto.RefreshToken && t.UserId == user.Id && t.IsActive);
+
+            if (storedRefreshToken == null)
+                return BadRequest("Invalid refresh token");
+
+            // Revoke old refresh token
+            storedRefreshToken.IsUsed = true;
+            storedRefreshToken.IsRevoked = true;
+            storedRefreshToken.RevokedAt = DateTime.UtcNow;
+            storedRefreshToken.RevokedByIp = GetIpAddress();
+            _context.RefreshTokens.Update(storedRefreshToken);
+
+            // Generate new tokens
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(ClaimTypes.Email, user.Email!),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.GivenName, user.FirstName),
+            };
+
+            foreach (var userRole in userRoles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+            }
+
+            var newAccessToken = GetToken(authClaims);
+            var newRefreshToken = GenerateRefreshToken();
+
+            // Save new refresh token
+            var newStoredRefreshToken = new RefreshToken
+            {
+                Token = newRefreshToken,
+                UserId = user.Id,
+                Expires = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:DurationInDays"])),
+                CreatedByIp = GetIpAddress()
+            };
+            _context.RefreshTokens.Add(newStoredRefreshToken);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Token refreshed successfully for user: {user.Email}");
+
+            return Ok(new TokenDto
+            {
+                AccessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
+                RefreshToken = newRefreshToken,
+                ExpiresAt = newAccessToken.ValidTo
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing token");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     private JwtSecurityToken GetToken(List<Claim> authClaims)
     {
         var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
@@ -158,5 +251,37 @@ public class AuthController : ControllerBase
     private string GenerateRefreshToken()
     {
         return Guid.NewGuid().ToString();
+    }
+
+    private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
+    {
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidAudience = _configuration["Jwt:Audience"],
+            ValidIssuer = _configuration["Jwt:Issuer"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)),
+            ValidateLifetime = false // Ignore token expiration for refresh
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+        
+        if (securityToken is not JwtSecurityToken jwtSecurityToken || 
+            !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+        {
+            return null;
+        }
+
+        return principal;
+    }
+
+    private string GetIpAddress()
+    {
+        if (Request.Headers.ContainsKey("X-Forwarded-For"))
+            return Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim();
+        
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
     }
 }

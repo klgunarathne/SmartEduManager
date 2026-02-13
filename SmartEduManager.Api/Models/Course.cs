@@ -4,7 +4,8 @@ public class Course
 {
     public int CourseId { get; set; }
     public string CourseName { get; set; } = null!;
-    public int Duration { get; set; } // in hours or days?
+    public string Description { get; set; } = null!;
+    public int Duration { get; set; } // in months
     public decimal CourseFee { get; set; }
     public int CenterId { get; set; }
 

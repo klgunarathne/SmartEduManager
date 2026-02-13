@@ -4,6 +4,7 @@ public class CourseDto
 {
     public int CourseId { get; set; }
     public string CourseName { get; set; } = null!;
+    public string Description { get; set; } = null!;
     public int Duration { get; set; }
     public decimal CourseFee { get; set; }
     public int CenterId { get; set; }
@@ -13,6 +14,7 @@ public class CourseDto
 public class CreateCourseDto
 {
     public string CourseName { get; set; } = null!;
+    public string Description { get; set; } = null!;
     public int Duration { get; set; }
     public decimal CourseFee { get; set; }
     public int CenterId { get; set; }
@@ -21,6 +23,7 @@ public class CreateCourseDto
 public class UpdateCourseDto
 {
     public string? CourseName { get; set; }
+    public string? Description { get; set; }
     public int? Duration { get; set; }
     public decimal? CourseFee { get; set; }
     public int? CenterId { get; set; }

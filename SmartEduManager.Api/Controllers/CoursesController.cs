@@ -38,7 +38,7 @@ public class CoursesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving courses");
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 

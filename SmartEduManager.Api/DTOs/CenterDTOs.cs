@@ -6,16 +6,22 @@ public class CenterDto
     public string CenterName { get; set; } = null!;
     public int DistrictId { get; set; }
     public string DistrictName { get; set; } = null!;
+    public string Address { get; set; } = null!;
+    public string ContactNumber { get; set; } = null!;
 }
 
 public class CreateCenterDto
 {
     public string CenterName { get; set; } = null!;
     public int DistrictId { get; set; }
+    public string Address { get; set; } = null!;
+    public string ContactNumber { get; set; } = null!;
 }
 
 public class UpdateCenterDto
 {
     public string? CenterName { get; set; }
     public int? DistrictId { get; set; }
+    public string? Address { get; set; }
+    public string? ContactNumber { get; set; }
 }

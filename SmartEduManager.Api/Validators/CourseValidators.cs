@@ -11,6 +11,10 @@ public class CreateCourseDtoValidator : AbstractValidator<CreateCourseDto>
             .NotEmpty().WithMessage("Course name is required")
             .MaximumLength(100).WithMessage("Course name must be less than 100 characters");
 
+        RuleFor(x => x.Description)
+            .NotEmpty().WithMessage("Description is required")
+            .MaximumLength(500).WithMessage("Description must be less than 500 characters");
+
         RuleFor(x => x.Duration)
             .NotEmpty().WithMessage("Duration is required")
             .GreaterThan(0).WithMessage("Duration must be greater than 0");
@@ -32,6 +36,10 @@ public class UpdateCourseDtoValidator : AbstractValidator<UpdateCourseDto>
         RuleFor(x => x.CourseName)
             .MaximumLength(100).WithMessage("Course name must be less than 100 characters")
             .When(x => !string.IsNullOrEmpty(x.CourseName));
+
+        RuleFor(x => x.Description)
+            .MaximumLength(500).WithMessage("Description must be less than 500 characters")
+            .When(x => !string.IsNullOrEmpty(x.Description));
 
         RuleFor(x => x.Duration)
             .GreaterThan(0).WithMessage("Duration must be greater than 0")

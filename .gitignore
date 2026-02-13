@@ -34,6 +34,10 @@ dist/
 dist-ssr/
 *.local
 
+# Flask
+smartedu-manager-flask-web/venv/
+smartedu-manager-flask-web/__pycache__/
+
 # IDEs and editors
 /.idea
 .project

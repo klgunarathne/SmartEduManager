@@ -13,6 +13,11 @@ export interface LoginResponse {
   expiresAt: string;
 }
 
+export interface RefreshTokenRequest {
+  accessToken: string;
+  refreshToken: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -43,7 +48,7 @@ export class AuthService {
         if (decodedToken) {
           const role = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || decodedToken['role'];
           const email = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || decodedToken['email'];
-          const firstName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] || decodedToken['FirstName'];
+          const firstName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] || decodedToken['given_name'] || decodedToken['FirstName'];
           this.setRole(role);
           this.setFullName(email); // Use email as fallback if full name not available
           this.userRole.set(role);
@@ -51,6 +56,33 @@ export class AuthService {
           this.setFirstName(firstName);
         }
         this._isLoggedIn.set(true);
+      })
+    );
+  }
+
+  refreshToken(): Observable<LoginResponse> {
+    const request: RefreshTokenRequest = {
+      accessToken: this.getToken()!,
+      refreshToken: this.getRefreshToken()!
+    };
+    
+    return this.http.post<LoginResponse>(`${this.baseUrl}/Auth/refresh-token`, request).pipe(
+      tap((response) => {
+        this.setToken(response.accessToken);
+        this.setRefreshToken(response.refreshToken);
+        this.setExpiresAt(response.expiresAt);
+        // Extract role and full name from JWT token
+        const decodedToken = this.decodeToken(response.accessToken);
+        if (decodedToken) {
+          const role = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || decodedToken['role'];
+          const email = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || decodedToken['email'];
+          const firstName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] || decodedToken['given_name'] || decodedToken['FirstName'];
+          this.setRole(role);
+          this.setFullName(email); // Use email as fallback if full name not available
+          this.userRole.set(role);
+          this.userFullName.set(email);
+          this.setFirstName(firstName);
+        }
       })
     );
   }

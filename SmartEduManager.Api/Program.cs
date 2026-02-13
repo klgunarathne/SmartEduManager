@@ -8,6 +8,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using SmartEduManager.Api.Data;
 using SmartEduManager.Api.Helpers;
+using SmartEduManager.Api.Middleware;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Profiles;
 using SmartEduManager.Api.Repositories;
@@ -29,7 +30,10 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.PropertyNamingPolicy = null; // Use default property names (PascalCase)
+});
 
 // Configure EF Core and Identity
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -54,19 +58,22 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
-{
-    options.SaveToken = true;
-    options.RequireHttpsMetadata = false;
-    options.TokenValidationParameters = new TokenValidationParameters()
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-    };
-});
+ .AddJwtBearer(options =>
+ {
+     options.SaveToken = true;
+     options.RequireHttpsMetadata = builder.Environment.IsDevelopment() ? false : true;
+     options.TokenValidationParameters = new TokenValidationParameters()
+     {
+         ValidateIssuer = true,
+         ValidateAudience = true,
+         ValidAudience = builder.Configuration["Jwt:Audience"],
+         ValidIssuer = builder.Configuration["Jwt:Issuer"],
+         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+         ValidateIssuerSigningKey = true,
+         ValidateLifetime = true,
+         ClockSkew = TimeSpan.Zero
+     };
+ });
 
 // Configure Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -122,17 +129,22 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
-// Configure CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
-});
+ // Configure CORS
+ builder.Services.AddCors(options =>
+ {
+     options.AddPolicy("AllowSpecificOrigins",
+         policy =>
+         {
+             policy.WithOrigins(
+                     "https://localhost:4200", // Angular app
+                     "http://localhost:5000", // Flask app
+                     "http://localhost:5001"  // Flask app (HTTPS)
+                 )
+                 .AllowCredentials()
+                 .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                 .WithHeaders("Content-Type", "Authorization");
+         });
+ });
 
 builder.Services.AddScoped<ImageUploadHelper>();
 
@@ -158,7 +170,10 @@ app.UseStaticFiles();
 app.UseSerilogRequestLogging();
 
 // Enable CORS
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigins");
+
+// Custom error handling
+app.UseErrorHandling();
 
 app.UseAuthentication();
 app.UseAuthorization();

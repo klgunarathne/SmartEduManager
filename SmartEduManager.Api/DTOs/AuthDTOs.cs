@@ -24,6 +24,12 @@ public class TokenDto
     public DateTime ExpiresAt { get; set; }
 }
 
+public class RefreshTokenDto
+{
+    public string AccessToken { get; set; } = null!;
+    public string RefreshToken { get; set; } = null!;
+}
+
 public class UserDto
 {
     public string Id { get; set; } = null!;
