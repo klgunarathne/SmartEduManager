@@ -16,8 +16,7 @@ public class CreateBatchDtoValidator : AbstractValidator<CreateBatchDto>
             .GreaterThan(0).WithMessage("Course ID must be greater than 0");
 
         RuleFor(x => x.StartDate)
-            .NotEmpty().WithMessage("Start date is required")
-            .GreaterThan(DateTime.Now.AddDays(-1)).WithMessage("Start date must be in the future");
+            .NotEmpty().WithMessage("Start date is required");
 
         RuleFor(x => x.EndDate)
             .NotEmpty().WithMessage("End date is required")

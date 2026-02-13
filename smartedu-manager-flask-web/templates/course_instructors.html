@@ -60,7 +60,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}';">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </button>
@@ -114,7 +114,7 @@
                 <p class="page-subtitle">Manage instructor assignments to courses</p>
             </div>
             <div class="header-actions">
-                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_course_instructor') }}'">
+                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_course_instructor') }}';">
                     <i class="fas fa-plus"></i>
                     <span>Assign Instructor</span>
                 </button>
@@ -149,13 +149,13 @@
                             {% if course_instructors %}
                                 {% for ci in course_instructors %}
                                     <tr>
-                                        <td>{{ ci['CourseId'] }}</td>
-                                        <td>{{ ci['CourseName'] }}</td>
-                                        <td>{{ ci['InstructorId'] }}</td>
-                                        <td>{{ ci['InstructorName'] }}</td>
+                                        <td>{{ ci['courseId'] }}</td>
+                                        <td>{{ ci['courseName'] }}</td>
+                                        <td>{{ ci['instructorId'] }}</td>
+                                        <td>{{ ci['instructorName'] }}</td>
                                         <td>
                                             <div class="action-buttons">
-                                                <button class="btn-action btn-delete" onclick="deleteCourseInstructor({{ ci['CourseId'] }}, {{ ci['InstructorId'] }})">
+                                                <button class="btn-action btn-delete" onclick="deleteCourseInstructor({{ ci['courseId'] }}, {{ ci['instructorId'] }})">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>

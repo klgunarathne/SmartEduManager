@@ -32,10 +32,11 @@ class CreateCourseForm(FlaskForm):
     submit = SubmitField('Create Course')
 
 class CreateBatchForm(FlaskForm):
-    batchName = StringField('Batch Name', validators=[InputRequired(), Length(max=100)])
+    batchCode = StringField('Batch Code', validators=[InputRequired(), Length(max=100)])
     courseId = SelectField('Course', validators=[InputRequired()], coerce=int)
     startDate = StringField('Start Date', validators=[InputRequired()])
     endDate = StringField('End Date', validators=[InputRequired()])
+    duration = IntegerField('Duration (months)', validators=[InputRequired()])
     submit = SubmitField('Create Batch')
 
 class CreateCenterForm(FlaskForm):
@@ -183,11 +184,25 @@ def dashboard():
     courses_offered = len(courses)
     active_batches = len(batches)
     
+    # Calculate incomplete courses
+    incomplete_courses = []
+    for course in courses:
+        if 'hasInstructors' in course and 'hasBatches' in course:
+            if not course['hasInstructors'] or not course['hasBatches']:
+                incomplete_courses.append(course)
+        else:
+            # Fallback for courses without complete data
+            if 'instructorIds' in course and len(course['instructorIds']) == 0:
+                incomplete_courses.append(course)
+            elif 'batchIds' in course and len(course['batchIds']) == 0:
+                incomplete_courses.append(course)
+    
     return render_template('dashboard.html', 
                          total_students=total_students,
                          active_instructors=active_instructors,
                          courses_offered=courses_offered,
                          active_batches=active_batches,
+                         incomplete_courses=len(incomplete_courses),
                          courses=courses,
                          batches=batches,
                          instructors=instructors,
@@ -204,11 +219,136 @@ def courses():
     
     if response and response.status_code == 200:
         courses = response.json()
+        print("=== Courses Data ===")
+        print(f"Response JSON: {courses}")
+        for course in courses:
+            print(f"Course ID: {course['courseId']}")
+            print(f"Course Name: {course['courseName']}")
+            print(f"Has Instructors: {course.get('hasInstructors', 'N/A')}")
+            print(f"Instructor Names: {course.get('instructorNames', 'N/A')}")
+            print(f"Instructor IDs: {course.get('instructorIds', 'N/A')}")
+            print("-" * 50)
     else:
         courses = []
         flash('Failed to load courses', 'danger')
     
     return render_template('courses.html', courses=courses)
+
+
+@app.route('/courses/<int:id>/assign-instructors', methods=['GET', 'POST'])
+def assign_instructors_to_course(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get course details
+    course_response = api_request('GET', f'courses/{id}')
+    if not course_response or course_response.status_code != 200:
+        flash('Course not found', 'danger')
+        return redirect(url_for('courses'))
+    course = course_response.json()
+    
+    # Get all instructors
+    instructors_response = api_request('GET', 'instructors')
+    instructors = instructors_response.json() if (instructors_response and instructors_response.status_code == 200) else []
+    
+    # Get currently assigned instructors
+    course_instructors_response = api_request('GET', 'courseinstructors')
+    course_instructors = course_instructors_response.json() if (course_instructors_response and course_instructors_response.status_code == 200) else []
+    assigned_instructors = [ci['instructorId'] for ci in course_instructors if ci['courseId'] == id]
+    
+    # Handle form submission
+    if request.method == 'POST':
+        print(f"=== Form Data ===")
+        print(f"Request Form: {request.form}")
+        selected_instructors = request.form.getlist('instructor_ids')
+        print(f"Selected Instructors: {selected_instructors}")
+        print(f"Assigned Instructors: {assigned_instructors}")
+        print(f"Course Instructors: {course_instructors}")
+        
+        # Remove unselected instructors
+        for ci in course_instructors:
+            if ci['courseId'] == id and str(ci['instructorId']) not in selected_instructors:
+                print(f"Removing instructor {ci['instructorId']} from course {id}")
+                api_request('DELETE', f'courseinstructors/{id}/{ci["instructorId"]}')
+        
+        # Add selected instructors
+        for instructor_id in selected_instructors:
+            instructor_id = int(instructor_id)
+            if instructor_id not in assigned_instructors:
+                print(f"Adding instructor {instructor_id} to course {id}")
+                api_request('POST', 'courseinstructors', data={
+                    'courseId': id,
+                    'instructorId': instructor_id
+                })
+        
+        flash('Instructors assigned successfully!', 'success')
+        return redirect(url_for('courses'))
+    
+    from flask_wtf.csrf import generate_csrf
+    token = generate_csrf()
+    print(f"Generated CSRF Token: {token}")
+    
+    return render_template('assign_instructors_to_course.html', 
+                         course=course, 
+                         instructors=instructors, 
+                         assigned_instructors=assigned_instructors,
+                         csrf_token=token)
+
+
+@app.route('/courses/<int:id>/assign-batches', methods=['GET', 'POST'])
+def assign_batches_to_course(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get course details
+    course_response = api_request('GET', f'courses/{id}')
+    if not course_response or course_response.status_code != 200:
+        flash('Course not found', 'danger')
+        return redirect(url_for('courses'))
+    course = course_response.json()
+    
+    # Get all batches
+    batches_response = api_request('GET', 'batches')
+    batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+    
+    # Get currently assigned batches
+    assigned_batches = [batch['batchId'] for batch in batches if batch['courseId'] == id]
+    
+    # Handle form submission
+    if request.method == 'POST':
+        selected_batches = request.form.getlist('batch_ids')
+        
+        # Update batches
+        for batch in batches:
+            if str(batch['batchId']) in selected_batches:
+                if batch['courseId'] != id:
+                    # Assign to this course
+                    api_request('PUT', f'batch/{batch["batchId"]}', data={
+                        'courseId': id,
+                        'batchCode': batch['batchCode'],
+                        'startDate': batch['startDate'],
+                        'endDate': batch['endDate'],
+                        'duration': batch['duration']
+                    })
+            else:
+                if batch['courseId'] == id:
+                    # Unassign from this course (assign to no course or another course)
+                    # For now, we'll just set to 0 or leave as is - depends on business logic
+                    # Here, we'll just leave it as is since we don't have a "no course" option
+                    pass
+        
+        flash('Batches assigned successfully!', 'success')
+        return redirect(url_for('courses'))
+    
+    from flask_wtf.csrf import generate_csrf
+    token = generate_csrf()
+    print(f"Generated CSRF Token: {token}")
+    
+    return render_template('assign_batches_to_course.html', 
+                         course=course, 
+                         batches=batches, 
+                         assigned_batches=assigned_batches,
+                         csrf_token=token)
 
 @app.route('/courses/create', methods=['GET', 'POST'])
 def create_course():
@@ -299,6 +439,48 @@ def edit_course(id):
     
     return render_template('edit_course.html', form=form, course=course, centers=centers)
 
+@app.route('/courses/<int:id>/details')
+def course_details(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get course details
+    course_response = api_request('GET', f'courses/{id}')
+    if not course_response or course_response.status_code != 200:
+        flash('Course not found', 'danger')
+        return redirect(url_for('courses'))
+    course = course_response.json()
+    
+    # Get all instructors
+    instructors_response = api_request('GET', 'instructors')
+    instructors = instructors_response.json() if (instructors_response and instructors_response.status_code == 200) else []
+    
+    # Get all batches
+    batches_response = api_request('GET', 'batches')
+    batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+    
+    # Filter instructors and batches associated with this course
+    course_instructors = []
+    if course.get('instructorIds'):
+        course_instructors = [instructor for instructor in instructors if instructor['instructorId'] in course['instructorIds']]
+    
+    course_batches = []
+    if course.get('batchIds'):
+        course_batches = [batch for batch in batches if batch['batchId'] in course['batchIds']]
+    
+    # Calculate enrollment statistics for each batch
+    students_response = api_request('GET', 'students')
+    students = students_response.json() if (students_response and students_response.status_code == 200) else []
+    
+    for batch in course_batches:
+        batch['enrollment_count'] = len([student for student in students if student['batchId'] == batch['batchId']])
+    
+    return render_template('course_details.html', 
+                         course=course, 
+                         instructors=course_instructors,
+                         batches=course_batches)
+
+
 @app.route('/courses/<int:id>/delete', methods=['POST'])
 def delete_course(id):
     if 'access_token' not in session:
@@ -350,10 +532,11 @@ def create_batch():
     
     if form.validate_on_submit():
         data = {
-            'batchName': form.batchName.data,
+            'batchCode': form.batchCode.data,
             'courseId': form.courseId.data,
             'startDate': form.startDate.data,
-            'endDate': form.endDate.data
+            'endDate': form.endDate.data,
+            'duration': form.duration.data
         }
         
         response = api_request('POST', 'batches', data=data)
@@ -370,7 +553,9 @@ def create_batch():
                     pass
             flash(error_msg, 'danger')
     
-    return render_template('create_batch.html', form=form, courses=courses)
+    import datetime
+    today_str = datetime.date.today().strftime('%Y-%m-%d')
+    return render_template('create_batch.html', form=form, courses=courses, today_str=today_str)
 
 @app.route('/batches/<int:id>/edit', methods=['GET', 'POST'])
 def edit_batch(id):
@@ -390,20 +575,26 @@ def edit_batch(id):
     courses_response = api_request('GET', 'courses')
     courses = courses_response.json() if (courses_response and courses_response.status_code == 200) else []
     
+    # Format dates to YYYY-MM-DD for HTML date input
+    start_date_str = batch['startDate'].split('T')[0] if 'T' in batch['startDate'] else batch['startDate']
+    end_date_str = batch['endDate'].split('T')[0] if 'T' in batch['endDate'] else batch['endDate']
+    
     form = CreateBatchForm(data={
-        'batchName': batch['batchName'],
+        'batchCode': batch['batchCode'],
         'courseId': batch['courseId'],
-        'startDate': batch['startDate'],
-        'endDate': batch['endDate']
+        'startDate': start_date_str,
+        'endDate': end_date_str,
+        'duration': batch['duration']
     })
     form.courseId.choices = [(course['courseId'], course['courseName']) for course in courses]
     
     if form.validate_on_submit():
         data = {
-            'batchName': form.batchName.data,
+            'batchCode': form.batchCode.data,
             'courseId': form.courseId.data,
             'startDate': form.startDate.data,
-            'endDate': form.endDate.data
+            'endDate': form.endDate.data,
+            'duration': form.duration.data
         }
         
         response = api_request('PUT', f'batches/{id}', data=data)
@@ -420,7 +611,9 @@ def edit_batch(id):
                     pass
             flash(error_msg, 'danger')
     
-    return render_template('edit_batch.html', form=form, batch=batch, courses=courses)
+    import datetime
+    today_str = datetime.date.today().strftime('%Y-%m-%d')
+    return render_template('edit_batch.html', form=form, batch=batch, courses=courses, today_str=today_str)
 
 @app.route('/batches/<int:id>/delete', methods=['POST'])
 def delete_batch(id):
@@ -591,11 +784,11 @@ def create_instructor():
     
     if form.validate_on_submit():
         data = {
-            'EPFNo': form.EPFNo.data,
-            'FullName': form.FullName.data,
-            'NIC': form.NIC.data,
-            'Email': form.Email.data,
-            'Phone': form.Phone.data
+            'epfNo': form.EPFNo.data,
+            'fullName': form.FullName.data,
+            'nic': form.NIC.data,
+            'email': form.Email.data,
+            'phone': form.Phone.data
         }
         
         response = api_request('POST', 'instructors', data=data)
@@ -638,11 +831,11 @@ def edit_instructor(id):
     
     if form.validate_on_submit():
         data = {
-            'EPFNo': form.EPFNo.data,
-            'FullName': form.FullName.data,
-            'NIC': form.NIC.data,
-            'Email': form.Email.data,
-            'Phone': form.Phone.data
+            'epfNo': form.EPFNo.data,
+            'fullName': form.FullName.data,
+            'nic': form.NIC.data,
+            'email': form.Email.data,
+            'phone': form.Phone.data
         }
         
         response = api_request('PUT', f'instructors/{id}', data=data)
@@ -711,13 +904,13 @@ def create_course_instructor():
     instructors = instructors_response.json() if (instructors_response and instructors_response.status_code == 200) else []
     
     form = CreateCourseInstructorForm()
-    form.CourseId.choices = [(course['CourseId'], course['CourseName']) for course in courses]
-    form.InstructorId.choices = [(instructor['InstructorId'], instructor['FullName']) for instructor in instructors]
+    form.CourseId.choices = [(course['courseId'], course['courseName']) for course in courses]
+    form.InstructorId.choices = [(instructor['instructorId'], instructor['fullName']) for instructor in instructors]
     
     if form.validate_on_submit():
         data = {
-            'CourseId': form.CourseId.data,
-            'InstructorId': form.InstructorId.data
+            'courseId': form.CourseId.data,
+            'instructorId': form.InstructorId.data
         }
         
         response = api_request('POST', 'courseinstructors', data=data)

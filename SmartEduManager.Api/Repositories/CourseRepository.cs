@@ -15,4 +15,24 @@ public class CourseRepository : Repository<Course>, ICourseRepository
     {
         return await _context.Courses.Include(c => c.Center).ToListAsync();
     }
+
+    public async Task<IEnumerable<Course>> GetCoursesWithAllDetailsAsync()
+    {
+        return await _context.Courses
+            .Include(c => c.Center)
+            .Include(c => c.CourseInstructors)
+            .ThenInclude(ci => ci.Instructor)
+            .Include(c => c.Batches)
+            .ToListAsync();
+    }
+
+    public async Task<Course?> GetCourseWithAllDetailsAsync(int id)
+    {
+        return await _context.Courses
+            .Include(c => c.Center)
+            .Include(c => c.CourseInstructors)
+            .ThenInclude(ci => ci.Instructor)
+            .Include(c => c.Batches)
+            .FirstOrDefaultAsync(c => c.CourseId == id);
+    }
 }

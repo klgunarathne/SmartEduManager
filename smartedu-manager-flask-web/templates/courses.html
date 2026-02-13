@@ -60,7 +60,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}';">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </button>
@@ -110,7 +110,7 @@
                 <p class="page-subtitle">Manage your courses and curriculum</p>
             </div>
             <div class="header-actions">
-                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_course') }}'">
+                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_course') }}';">
                     <i class="fas fa-plus"></i>
                     <span>Add Course</span>
                 </button>
@@ -134,14 +134,17 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Course ID</th>
-                                <th>Course Name</th>
-                                <th>Description</th>
-                                <th>Duration (months)</th>
-                                <th>Course Fee</th>
-                                <th>Center</th>
-                                <th>Actions</th>
-                            </tr>
+                                        <th>Course ID</th>
+                                        <th>Course Name</th>
+                                        <th>Description</th>
+                                        <th>Duration (months)</th>
+                                        <th>Course Fee</th>
+                                        <th>Center</th>
+                                        <th>Instructors</th>
+                                        <th>Batches</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
                         </thead>
                         <tbody>
                             {% if courses %}
@@ -154,9 +157,39 @@
                                         <td>{{ course['courseFee'] }}</td>
                                         <td>{{ course['centerName'] if 'centerName' in course else 'N/A' }}</td>
                                         <td>
+                                            {% if course['hasInstructors'] %}
+                                                <span class="badge badge-success">{{ course['instructorNames']|length }} instructor(s)</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">No instructors</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if course['hasBatches'] %}
+                                                <span class="badge badge-success">{{ course['batchCodes']|length }} batch(es)</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">No batches</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if course['hasInstructors'] and course['hasBatches'] %}
+                                                <span class="badge badge-success">Complete</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">Incomplete</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
                                             <div class="action-buttons">
+                                                <a href="{{ url_for('course_details', id=course['courseId']) }}" class="btn-action btn-view" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
                                                 <a href="{{ url_for('edit_course', id=course['courseId']) }}" class="btn-action btn-edit">
                                                     <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{{ url_for('assign_instructors_to_course', id=course['courseId']) }}" class="btn-action btn-assign-instructors" title="Assign Instructors">
+                                                    <i class="fas fa-user-tie"></i>
+                                                </a>
+                                                <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-action btn-assign-batches" title="Assign Batches">
+                                                    <i class="fas fa-calendar-check"></i>
                                                 </a>
                                                 <button class="btn-action btn-delete" onclick="deleteCourse({{ course['courseId'] }})">
                                                     <i class="fas fa-trash"></i>
@@ -246,6 +279,16 @@
     font-size: 14px;
 }
 
+.btn-view {
+    background: #667eea;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-view:hover {
+    background: #5a67d8;
+}
+
 .btn-edit {
     background: #4299e1;
     color: white;
@@ -254,6 +297,26 @@
 
 .btn-edit:hover {
     background: #2b6cb0;
+}
+
+.btn-assign-instructors {
+    background: #48bb78;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-assign-instructors:hover {
+    background: #38a169;
+}
+
+.btn-assign-batches {
+    background: #ed8936;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-assign-batches:hover {
+    background: #dd6b20;
 }
 
 .btn-delete {
@@ -293,25 +356,50 @@
     gap: 12px;
 }
 
-.table-actions .search-input {
-    width: 250px;
-    padding: 8px 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-@media (max-width: 768px) {
-    .table-actions {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-    }
-    
     .table-actions .search-input {
-        width: 100%;
+        width: 250px;
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 14px;
     }
-}
+
+    .badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .badge-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .badge-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .badge-warning {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+    }
+
+    @media (max-width: 768px) {
+        .table-actions {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+        }
+        
+        .table-actions .search-input {
+            width: 100%;
+        }
+    }
 </style>
 {% endblock %}
 

@@ -9,6 +9,12 @@ public class CourseDto
     public decimal CourseFee { get; set; }
     public int CenterId { get; set; }
     public string CenterName { get; set; } = null!;
+    public List<int> InstructorIds { get; set; } = new List<int>();
+    public List<string> InstructorNames { get; set; } = new List<string>();
+    public List<int> BatchIds { get; set; } = new List<int>();
+    public List<string> BatchCodes { get; set; } = new List<string>();
+    public bool HasInstructors { get; set; }
+    public bool HasBatches { get; set; }
 }
 
 public class CreateCourseDto

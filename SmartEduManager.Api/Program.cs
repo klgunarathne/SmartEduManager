@@ -32,7 +32,7 @@ builder.Host.UseSerilog();
 // Add services to the container.
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.JsonSerializerOptions.PropertyNamingPolicy = null; // Use default property names (PascalCase)
+    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase; // Use camelCase for JSON serialization
 });
 
 // Configure EF Core and Identity

@@ -48,7 +48,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}';">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </button>
@@ -102,7 +102,7 @@
                 <p class="page-subtitle">Create a new course-instructor relationship</p>
             </div>
             <div class="header-actions">
-                <button class="btn-secondary" onclick="window.location.href='{{ url_for('course_instructors') }}'">
+                <button class="btn-secondary" onclick="window.location.href='{{ url_for('course_instructors') }}';">
                     <i class="fas fa-arrow-left"></i>
                     <span>Back</span>
                 </button>
@@ -145,7 +145,7 @@
                     </div>
                     
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="window.location.href='{{ url_for('course_instructors') }}'">
+                        <button type="button" class="btn-secondary" onclick="window.location.href='{{ url_for('course_instructors') }}';">
                             Cancel
                         </button>
                         {{ form.submit(class="btn-primary") }}

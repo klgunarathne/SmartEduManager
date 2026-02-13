@@ -29,7 +29,7 @@ public class CoursesController : ControllerBase
     {
         try
         {
-            var courses = await _repository.GetCoursesWithCenterAsync();
+            var courses = await _repository.GetCoursesWithAllDetailsAsync();
             var coursesDto = _mapper.Map<IEnumerable<CourseDto>>(courses);
 
             _logger.LogInformation($"Retrieved {courses.Count()} courses");
@@ -48,7 +48,7 @@ public class CoursesController : ControllerBase
     {
         try
         {
-            var course = await _repository.GetByIdAsync(id);
+            var course = await _repository.GetCourseWithAllDetailsAsync(id);
 
             if (course == null)
             {

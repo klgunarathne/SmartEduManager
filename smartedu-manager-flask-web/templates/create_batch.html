@@ -48,7 +48,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'">
+        <button class="menu-item" id="logoutBtn">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </button>
@@ -98,7 +98,7 @@
                 <p class="page-subtitle">Add a new batch to your course</p>
             </div>
             <div class="header-actions">
-                <button class="btn-secondary" onclick="window.location.href='{{ url_for('batches') }}'">
+                <button class="btn-secondary" id="backBtn">
                     <i class="fas fa-arrow-left"></i>
                     <span>Back</span>
                 </button>
@@ -116,11 +116,11 @@
                     
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="batchName">Batch Name</label>
-                            {{ form.batchName(class="form-control", placeholder="Enter batch name") }}
-                            {% if form.batchName.errors %}
+                            <label for="batchCode">Batch Code</label>
+                            {{ form.batchCode(class="form-control", placeholder="Enter batch code") }}
+                            {% if form.batchCode.errors %}
                                 <div class="form-error">
-                                    {% for error in form.batchName.errors %}
+                                    {% for error in form.batchCode.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
@@ -162,10 +162,22 @@
                                 </div>
                             {% endif %}
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="duration">Duration (months)</label>
+                            {{ form.duration(class="form-control", placeholder="Enter duration in months") }}
+                            {% if form.duration.errors %}
+                                <div class="form-error">
+                                    {% for error in form.duration.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                     
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="window.location.href='{{ url_for('batches') }}'">
+                        <button type="button" class="btn-secondary" id="cancelBtn">
                             Cancel
                         </button>
                         {{ form.submit(class="btn-primary") }}
@@ -256,6 +268,21 @@
 
 {% block extra_js %}
 <script>
+// Form validation
+function validateForm() {
+    const startDateInput = document.getElementById('startDate');
+    const startDate = new Date(startDateInput.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (startDate < today) {
+        alert('Start date must be in the future');
+        return false;
+    }
+
+    return true;
+}
+
 // Sidebar functionality
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -302,6 +329,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }, 5000);
     });
+
+    // Add event listeners for navigation buttons
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.onclick = function() {
+            window.location.href = '{{ url_for("logout") }}';
+        };
+    }
+
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) {
+        backBtn.onclick = function() {
+            window.location.href = '{{ url_for("batches") }}';
+        };
+    }
+
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) {
+        cancelBtn.onclick = function() {
+            window.location.href = '{{ url_for("batches") }}';
+        };
+    }
+
+    // Add form submit handler
+    const batchForm = document.querySelector('.batch-form');
+    if (batchForm) {
+        batchForm.addEventListener('submit', function(event) {
+            if (!validateForm()) {
+                event.preventDefault();
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

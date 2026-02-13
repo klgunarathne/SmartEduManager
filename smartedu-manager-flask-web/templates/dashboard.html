@@ -60,7 +60,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}';">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </button>
@@ -172,6 +172,23 @@
                 </button>
             </div>
         </div>
+
+        <!-- Incomplete Courses Warning -->
+        {% if incomplete_courses > 0 %}
+        <div class="warning-card">
+            <div class="warning-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="warning-content">
+                <h3 class="warning-title">Incomplete Courses</h3>
+                <p class="warning-text">You have {{ incomplete_courses }} course(s) without complete information. Please assign instructors and batches.</p>
+                <a href="{{ url_for('courses') }}" class="btn-warning">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>View Courses</span>
+                </a>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Statistics Cards -->
         <div class="stats-grid">
@@ -373,6 +390,70 @@
 
 {% block extra_css %}
 <style>
+/* Warning Card */
+.warning-card {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    gap: 20px;
+    margin-bottom: 32px;
+    align-items: center;
+}
+
+.warning-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: #ffc107;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.warning-content {
+    flex: 1;
+}
+
+.warning-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #856404;
+    margin-bottom: 8px;
+}
+
+.warning-text {
+    font-size: 14px;
+    color: #856404;
+    margin-bottom: 16px;
+}
+
+.btn-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #ffc107;
+    color: #856404;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-warning:hover {
+    background: #ffca2c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
 /* Stats Grid */
 .stats-grid {
     display: grid;

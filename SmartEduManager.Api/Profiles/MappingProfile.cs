@@ -27,7 +27,13 @@ public class MappingProfile : Profile
 
         // Course mapping
         CreateMap<Course, CourseDto>()
-            .ForMember(dest => dest.CenterName, opt => opt.MapFrom(src => src.Center.CenterName));
+            .ForMember(dest => dest.CenterName, opt => opt.MapFrom(src => src.Center.CenterName))
+            .ForMember(dest => dest.InstructorIds, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.InstructorId).ToList()))
+            .ForMember(dest => dest.InstructorNames, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.Instructor.FullName).ToList()))
+            .ForMember(dest => dest.BatchIds, opt => opt.MapFrom(src => src.Batches.Select(b => b.BatchId).ToList()))
+            .ForMember(dest => dest.BatchCodes, opt => opt.MapFrom(src => src.Batches.Select(b => b.BatchCode).ToList()))
+            .ForMember(dest => dest.HasInstructors, opt => opt.MapFrom(src => src.CourseInstructors.Any()))
+            .ForMember(dest => dest.HasBatches, opt => opt.MapFrom(src => src.Batches.Any()));
         CreateMap<CreateCourseDto, Course>();
         CreateMap<UpdateCourseDto, Course>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
