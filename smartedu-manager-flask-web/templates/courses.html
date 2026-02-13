@@ -179,6 +179,9 @@
                                         </td>
                                         <td>
                                             <div class="action-buttons">
+                                                <a href="{{ url_for('dashboard', course_id=course['courseId']) }}" class="btn-action btn-view" title="Course Dashboard">
+                                                    <i class="fas fa-chart-line"></i>
+                                                </a>
                                                 <a href="{{ url_for('course_details', id=course['courseId']) }}" class="btn-action btn-view" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </a>

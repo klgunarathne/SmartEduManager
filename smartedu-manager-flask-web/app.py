@@ -163,50 +163,97 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/dashboard')
-def dashboard():
+@app.route('/dashboard/<int:course_id>')
+def dashboard(course_id=None):
     if 'access_token' not in session:
         return redirect(url_for('login'))
     
-    # Get data for dashboard
-    courses_response = api_request('GET', 'courses')
-    batches_response = api_request('GET', 'batches')
-    instructors_response = api_request('GET', 'instructors')
-    students_response = api_request('GET', 'students')
-    
-    courses = courses_response.json() if (courses_response and courses_response.status_code == 200) else []
-    batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
-    instructors = instructors_response.json() if (instructors_response and instructors_response.status_code == 200) else []
-    students = students_response.json() if (students_response and students_response.status_code == 200) else []
-    
-    # Calculate stats
-    total_students = len(students)
-    active_instructors = len(instructors)
-    courses_offered = len(courses)
-    active_batches = len(batches)
-    
-    # Calculate incomplete courses
-    incomplete_courses = []
-    for course in courses:
-        if 'hasInstructors' in course and 'hasBatches' in course:
-            if not course['hasInstructors'] or not course['hasBatches']:
-                incomplete_courses.append(course)
-        else:
-            # Fallback for courses without complete data
-            if 'instructorIds' in course and len(course['instructorIds']) == 0:
-                incomplete_courses.append(course)
-            elif 'batchIds' in course and len(course['batchIds']) == 0:
-                incomplete_courses.append(course)
-    
-    return render_template('dashboard.html', 
-                         total_students=total_students,
-                         active_instructors=active_instructors,
-                         courses_offered=courses_offered,
-                         active_batches=active_batches,
-                         incomplete_courses=len(incomplete_courses),
-                         courses=courses,
-                         batches=batches,
-                         instructors=instructors,
-                         students=students)
+    if course_id:
+        # Single course view
+        course_response = api_request('GET', f'courses/{course_id}')
+        
+        if not course_response or course_response.status_code != 200:
+            flash('Course not found', 'danger')
+            return redirect(url_for('courses'))
+        
+        course = course_response.json()
+        
+        # Get instructors for this course
+        instructors_response = api_request('GET', 'instructors')
+        instructors = instructors_response.json() if (instructors_response and instructors_response.status_code == 200) else []
+        
+        course_instructors_response = api_request('GET', 'courseinstructors')
+        course_instructors = course_instructors_response.json() if (course_instructors_response and course_instructors_response.status_code == 200) else []
+        assigned_instructor_ids = [ci['instructorId'] for ci in course_instructors if ci['courseId'] == course_id]
+        course_instructors_list = [instructor for instructor in instructors if instructor['instructorId'] in assigned_instructor_ids]
+        
+        # Get batches for this course
+        batches_response = api_request('GET', 'batches')
+        batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+        course_batches = [batch for batch in batches if batch['courseId'] == course_id]
+        
+        # Calculate enrollment statistics for each batch
+        students_response = api_request('GET', 'students')
+        students = students_response.json() if (students_response and students_response.status_code == 200) else []
+        
+        for batch in course_batches:
+            batch['enrollment_count'] = len([student for student in students if student['batchId'] == batch['batchId']])
+        
+        total_students = sum(batch['enrollment_count'] for batch in course_batches)
+        active_instructors = len(course_instructors_list)
+        active_batches = len(course_batches)
+        
+        return render_template('dashboard.html', 
+                             single_course=True,
+                             course=course,
+                             instructors=course_instructors_list,
+                             batches=course_batches,
+                             students=students,
+                             total_students=total_students,
+                             active_instructors=active_instructors,
+                             active_batches=active_batches)
+    else:
+        # Overall dashboard view
+        courses_response = api_request('GET', 'courses')
+        batches_response = api_request('GET', 'batches')
+        instructors_response = api_request('GET', 'instructors')
+        students_response = api_request('GET', 'students')
+        
+        courses = courses_response.json() if (courses_response and courses_response.status_code == 200) else []
+        batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+        instructors = instructors_response.json() if (instructors_response and instructors_response.status_code == 200) else []
+        students = students_response.json() if (students_response and students_response.status_code == 200) else []
+        
+        # Calculate stats
+        total_students = len(students)
+        active_instructors = len(instructors)
+        courses_offered = len(courses)
+        active_batches = len(batches)
+        
+        # Calculate incomplete courses
+        incomplete_courses = []
+        for course in courses:
+            if 'hasInstructors' in course and 'hasBatches' in course:
+                if not course['hasInstructors'] or not course['hasBatches']:
+                    incomplete_courses.append(course)
+            else:
+                # Fallback for courses without complete data
+                if 'instructorIds' in course and len(course['instructorIds']) == 0:
+                    incomplete_courses.append(course)
+                elif 'batchIds' in course and len(course['batchIds']) == 0:
+                    incomplete_courses.append(course)
+        
+        return render_template('dashboard.html', 
+                             single_course=False,
+                             total_students=total_students,
+                             active_instructors=active_instructors,
+                             courses_offered=courses_offered,
+                             active_batches=active_batches,
+                             incomplete_courses=len(incomplete_courses),
+                             courses=courses,
+                             batches=batches,
+                             instructors=instructors,
+                             students=students)
 
 # ==================== Courses Routes ====================
 
