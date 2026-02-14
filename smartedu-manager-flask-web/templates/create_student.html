@@ -116,11 +116,11 @@
                     
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="fullName">Full Name</label>
-                            {{ form.fullName(class="form-control", placeholder="Enter full name") }}
-                            {% if form.fullName.errors %}
+                            <label for="MISNo">MIS No</label>
+                            {{ form.MISNo(class="form-control", placeholder="Enter MIS number") }}
+                            {% if form.MISNo.errors %}
                                 <div class="form-error">
-                                    {% for error in form.fullName.errors %}
+                                    {% for error in form.MISNo.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
@@ -128,11 +128,11 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="email">Email</label>
-                            {{ form.email(class="form-control", placeholder="Enter email address") }}
-                            {% if form.email.errors %}
+                            <label for="NameWithInitials">Name with Initials</label>
+                            {{ form.NameWithInitials(class="form-control", placeholder="Enter name with initials") }}
+                            {% if form.NameWithInitials.errors %}
                                 <div class="form-error">
-                                    {% for error in form.email.errors %}
+                                    {% for error in form.NameWithInitials.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
@@ -140,11 +140,11 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="contactNumber">Contact Number</label>
-                            {{ form.contactNumber(class="form-control", placeholder="Enter contact number") }}
-                            {% if form.contactNumber.errors %}
+                            <label for="FullName">Full Name</label>
+                            {{ form.FullName(class="form-control", placeholder="Enter full name") }}
+                            {% if form.FullName.errors %}
                                 <div class="form-error">
-                                    {% for error in form.contactNumber.errors %}
+                                    {% for error in form.FullName.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
@@ -152,11 +152,95 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="batchId">Batch ID</label>
-                            {{ form.batchId(class="form-control", placeholder="Enter batch ID") }}
-                            {% if form.batchId.errors %}
+                            <label for="NICNo">NIC No</label>
+                            {{ form.NICNo(class="form-control", placeholder="Enter NIC number") }}
+                            {% if form.NICNo.errors %}
                                 <div class="form-error">
-                                    {% for error in form.batchId.errors %}
+                                    {% for error in form.NICNo.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="Gender">Gender</label>
+                            {{ form.Gender(class="form-control") }}
+                            {% if form.Gender.errors %}
+                                <div class="form-error">
+                                    {% for error in form.Gender.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="Address">Address</label>
+                            {{ form.Address(class="form-control", placeholder="Enter address") }}
+                            {% if form.Address.errors %}
+                                <div class="form-error">
+                                    {% for error in form.Address.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="Telephone">Telephone</label>
+                            {{ form.Telephone(class="form-control", placeholder="Enter telephone number") }}
+                            {% if form.Telephone.errors %}
+                                <div class="form-error">
+                                    {% for error in form.Telephone.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="Email">Email</label>
+                            {{ form.Email(class="form-control", placeholder="Enter email address") }}
+                            {% if form.Email.errors %}
+                                <div class="form-error">
+                                    {% for error in form.Email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="BatchId">Batch</label>
+                            {{ form.BatchId(class="form-control") }}
+                            {% if form.BatchId.errors %}
+                                <div class="form-error">
+                                    {% for error in form.BatchId.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="GSDivision">GS Division</label>
+                            {{ form.GSDivision(class="form-control", placeholder="Enter GS Division") }}
+                            {% if form.GSDivision.errors %}
+                                <div class="form-error">
+                                    {% for error in form.GSDivision.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="AGDivision">AG Division</label>
+                            {{ form.AGDivision(class="form-control", placeholder="Enter AG Division") }}
+                            {% if form.AGDivision.errors %}
+                                <div class="form-error">
+                                    {% for error in form.AGDivision.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>

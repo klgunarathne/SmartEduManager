@@ -61,10 +61,17 @@ class CreateInstructorForm(FlaskForm):
     submit = SubmitField('Create Instructor')
 
 class CreateStudentForm(FlaskForm):
-    fullName = StringField('Full Name', validators=[InputRequired(), Length(max=100)])
-    email = StringField('Email', validators=[InputRequired(), Email(), Length(max=120)])
-    contactNumber = StringField('Contact Number', validators=[InputRequired(), Length(max=20)])
-    batchId = IntegerField('Batch ID', validators=[InputRequired()])
+    MISNo = StringField('MIS No', validators=[InputRequired(), Length(max=50)])
+    NameWithInitials = StringField('Name with Initials', validators=[InputRequired(), Length(max=100)])
+    FullName = StringField('Full Name', validators=[InputRequired(), Length(max=100)])
+    NICNo = StringField('NIC No', validators=[InputRequired(), Length(max=20)])
+    Gender = SelectField('Gender', validators=[InputRequired()], choices=[('Male', 'Male'), ('Female', 'Female')])
+    Address = StringField('Address', validators=[InputRequired()])
+    Telephone = StringField('Telephone', validators=[InputRequired(), Length(max=20)])
+    Email = StringField('Email', validators=[InputRequired(), Email(), Length(max=120)])
+    BatchId = SelectField('Batch', validators=[InputRequired()], coerce=int)
+    GSDivision = StringField('GS Division', validators=[InputRequired(), Length(max=100)])
+    AGDivision = StringField('AG Division', validators=[InputRequired(), Length(max=100)])
     submit = SubmitField('Create Student')
 
 class CreateCourseInstructorForm(FlaskForm):
@@ -1024,14 +1031,26 @@ def create_student():
     if 'access_token' not in session:
         return redirect(url_for('login'))
     
+    # Fetch batches from API to populate dropdown
+    batches_response = api_request('GET', 'batches')
+    batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+    
     form = CreateStudentForm()
+    form.BatchId.choices = [(batch['batchId'], batch['batchCode']) for batch in batches]
     
     if form.validate_on_submit():
         data = {
-            'fullName': form.fullName.data,
-            'email': form.email.data,
-            'contactNumber': form.contactNumber.data,
-            'batchId': form.batchId.data
+            'MISNo': form.MISNo.data,
+            'NameWithInitials': form.NameWithInitials.data,
+            'FullName': form.FullName.data,
+            'NICNo': form.NICNo.data,
+            'Gender': form.Gender.data,
+            'Address': form.Address.data,
+            'Telephone': form.Telephone.data,
+            'Email': form.Email.data,
+            'BatchId': form.BatchId.data,
+            'GSDivision': form.GSDivision.data,
+            'AGDivision': form.AGDivision.data
         }
         
         response = api_request('POST', 'students', data=data)
@@ -1048,7 +1067,7 @@ def create_student():
                     pass
             flash(error_msg, 'danger')
     
-    return render_template('create_student.html', form=form)
+    return render_template('create_student.html', form=form, batches=batches)
 
 @app.route('/students/<int:id>/edit', methods=['GET', 'POST'])
 def edit_student(id):
@@ -1064,19 +1083,38 @@ def edit_student(id):
     
     student = student_response.json()
     
+    # Fetch batches from API to populate dropdown
+    batches_response = api_request('GET', 'batches')
+    batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+    
     form = CreateStudentForm(data={
-        'fullName': student['fullName'],
-        'email': student['email'],
-        'contactNumber': student['contactNumber'],
-        'batchId': student['batchId']
+        'MISNo': student.get('MISNo', ''),
+        'NameWithInitials': student.get('NameWithInitials', ''),
+        'FullName': student.get('FullName', student.get('fullName', '')),
+        'NICNo': student.get('NICNo', student.get('nic', '')),
+        'Gender': student.get('Gender', ''),
+        'Address': student.get('Address', ''),
+        'Telephone': student.get('Telephone', student.get('contactNumber', '')),
+        'Email': student.get('Email', student.get('email', '')),
+        'BatchId': student.get('BatchId', student.get('batchId', 0)),
+        'GSDivision': student.get('GSDivision', ''),
+        'AGDivision': student.get('AGDivision', '')
     })
+    form.BatchId.choices = [(batch['batchId'], batch['batchCode']) for batch in batches]
     
     if form.validate_on_submit():
         data = {
-            'fullName': form.fullName.data,
-            'email': form.email.data,
-            'contactNumber': form.contactNumber.data,
-            'batchId': form.batchId.data
+            'MISNo': form.MISNo.data,
+            'NameWithInitials': form.NameWithInitials.data,
+            'FullName': form.FullName.data,
+            'NICNo': form.NICNo.data,
+            'Gender': form.Gender.data,
+            'Address': form.Address.data,
+            'Telephone': form.Telephone.data,
+            'Email': form.Email.data,
+            'BatchId': form.BatchId.data,
+            'GSDivision': form.GSDivision.data,
+            'AGDivision': form.AGDivision.data
         }
         
         response = api_request('PUT', f'students/{id}', data=data)
