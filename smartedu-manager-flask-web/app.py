@@ -9,11 +9,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Initialize Flask application
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['API_BASE_URL'] = os.getenv('API_BASE_URL', 'https://localhost:7160/api')
+
+# Configure Flask application
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # Secret key for session management and CSRF protection
+app.config['API_BASE_URL'] = os.getenv('API_BASE_URL', 'https://localhost:7160/api')  # Base URL for the SmartEdu Manager API
+
+# Initialize CSRF protection
 CSRFProtect(app)
 
+# Create a convenient reference to the API base URL
 API_BASE_URL = app.config['API_BASE_URL']
 
 # ==================== Forms ====================

@@ -558,6 +558,50 @@
                 </div>
             </div>
 
+            <!-- Instructor Profiles -->
+            <div class="card modern">
+                <div class="card-header modern">
+                    <h2 class="card-title">Instructors</h2>
+                    <button class="btn-text modern">View All</button>
+                </div>
+                <div class="card-content modern">
+                    <div class="instructors-grid modern">
+                        {% for instructor in instructors[:4] %}
+                        <div class="instructor-card modern">
+                            <div class="instructor-avatar">
+                                <img src="https://ui-avatars.com/api/?name={{ instructor['fullName'] if 'fullName' in instructor else instructor['FullName'] }}&background=random" 
+                                     alt="{{ instructor['fullName'] if 'fullName' in instructor else instructor['FullName'] }}">
+                            </div>
+                            <div class="instructor-info">
+                                <h3 class="instructor-name">{{ instructor['fullName'] if 'fullName' in instructor else instructor['FullName'] }}</h3>
+                                {% if 'EPFNo' in instructor %}
+                                <p class="instructor-epf">EPF: {{ instructor['EPFNo'] }}</p>
+                                {% endif %}
+                                {% if 'email' in instructor %}
+                                <p class="instructor-email">{{ instructor['email'] }}</p>
+                                {% elif 'Email' in instructor %}
+                                <p class="instructor-email">{{ instructor['Email'] }}</p>
+                                {% endif %}
+                                {% if 'phone' in instructor %}
+                                <p class="instructor-phone">{{ instructor['phone'] }}</p>
+                                {% elif 'Phone' in instructor %}
+                                <p class="instructor-phone">{{ instructor['Phone'] }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="instructor-actions">
+                                <button class="btn-small btn-primary modern">View Profile</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if instructors|length == 0 %}
+                        <div class="no-data modern">
+                            <p>No instructors available</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             <!-- Course Performance Chart -->
             <div class="card modern full-width">
                 <div class="card-header modern">
@@ -580,37 +624,6 @@
         </div>
         {% endif %}
     </main>
-
-    <!-- Footer -->
-    <footer class="footer modern">
-        <div class="footer-content">
-            <div class="footer-section">
-                <h4 class="footer-title">SmartEdu Manager</h4>
-                <p class="footer-text">A comprehensive education management system designed to streamline your institution's operations.</p>
-            </div>
-            <div class="footer-section">
-                <h4 class="footer-title">Quick Links</h4>
-                <ul class="footer-links">
-                    <li><a href="#">About Us</a></li>
-                    <li><a href="#">Contact</a></li>
-                    <li><a href="#">Documentation</a></li>
-                    <li><a href="#">Support</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h4 class="footer-title">Legal</h4>
-                <ul class="footer-links">
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Service</a></li>
-                    <li><a href="#">Cookie Policy</a></li>
-                    <li><a href="#">GDPR Compliance</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024 SmartEdu Manager. All rights reserved.</p>
-        </div>
-    </footer>
 </div>
 {% endblock %}
 
