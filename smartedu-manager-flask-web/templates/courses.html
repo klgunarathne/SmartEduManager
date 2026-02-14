@@ -60,7 +60,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}';">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'; ">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </button>
@@ -110,7 +110,7 @@
                 <p class="page-subtitle">Manage your courses and curriculum</p>
             </div>
             <div class="header-actions">
-                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_course') }}';">
+                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_course') }}'; ">
                     <i class="fas fa-plus"></i>
                     <span>Add Course</span>
                 </button>
@@ -194,7 +194,7 @@
                                                 <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-action btn-assign-batches" title="Assign Batches">
                                                     <i class="fas fa-calendar-check"></i>
                                                 </a>
-                                                <button class="btn-action btn-delete" onclick="deleteCourse({{ course['courseId'] }})">
+                                                <button class="btn-action btn-delete" onclick="deleteCourse({{ course['courseId'] }});">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
