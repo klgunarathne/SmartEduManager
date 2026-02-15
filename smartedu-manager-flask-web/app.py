@@ -1313,19 +1313,48 @@ def delete_course_instructor(course_id, instructor_id):
 # ==================== Students Routes ====================
 
 @app.route('/students')
-def students():
+@app.route('/students/<int:batch_id>')
+def students(batch_id=None):
     if 'access_token' not in session:
         return redirect(url_for('login'))
     
-    response = api_request('GET', 'students')
+    # Get all students
+    students_response = api_request('GET', 'students')
+    students = students_response.json() if (students_response and students_response.status_code == 200) else []
     
-    if response and response.status_code == 200:
-        students = response.json()
+    # Get all batches
+    batches_response = api_request('GET', 'batches')
+    batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+    
+    # Get courses to display course names with batches
+    courses_response = api_request('GET', 'courses')
+    courses = courses_response.json() if (courses_response and courses_response.status_code == 200) else []
+    
+    # Create course dictionary for quick lookup
+    course_dict = {course['courseId']: course['courseName'] for course in courses}
+    
+    # Add course name to each batch
+    for batch in batches:
+        batch['courseName'] = course_dict.get(batch['courseId'], 'Unknown Course')
+    
+    # Filter students by batch if batch_id is provided
+    filtered_students = []
+    selected_batch = None
+    
+    if batch_id:
+        filtered_students = [student for student in students if student['batchId'] == batch_id]
+        selected_batch = next((batch for batch in batches if batch['batchId'] == batch_id), None)
     else:
-        students = []
-        flash('Failed to load students', 'danger')
+        # If no batch selected, show students from first batch (if available)
+        if batches:
+            batch_id = batches[0]['batchId']
+            filtered_students = [student for student in students if student['batchId'] == batch_id]
+            selected_batch = batches[0]
     
-    return render_template('students.html', students=students)
+    return render_template('students.html', 
+                         students=filtered_students,
+                         batches=batches,
+                         selected_batch=selected_batch)
 
 @app.route('/students/create', methods=['GET', 'POST'])
 def create_student():
