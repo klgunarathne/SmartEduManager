@@ -1,10 +1,13 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
-from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, DecimalField
+from flask_wtf.file import FileField, FileRequired, FileAllowed
+from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, DecimalField, HiddenField
 from wtforms.validators import InputRequired, Email, Length
 import requests
 import os
+import csv
+import io
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -74,6 +77,16 @@ class CreateStudentForm(FlaskForm):
     AGDivision = StringField('AG Division', validators=[InputRequired(), Length(max=100)])
     submit = SubmitField('Create Student')
 
+class UploadStudentsCsvForm(FlaskForm):
+    batchId = SelectField('Batch', validators=[InputRequired()], coerce=int)
+    file = FileField('CSV File', validators=[FileRequired(), FileAllowed(['csv'], 'CSV files only!')])
+    submit = SubmitField('Upload and Preview')
+
+class MapCsvFieldsForm(FlaskForm):
+    file_name = HiddenField()
+    batch_id = HiddenField()
+    submit = SubmitField('Import Students')
+
 class CreateCourseInstructorForm(FlaskForm):
     CourseId = SelectField('Course', validators=[InputRequired()], coerce=int)
     InstructorId = SelectField('Instructor', validators=[InputRequired()], coerce=int)
@@ -85,6 +98,107 @@ def get_auth_headers():
     if 'access_token' in session:
         return {'Authorization': f'Bearer {session["access_token"]}'}
     return {}
+
+from werkzeug.utils import secure_filename
+
+def parse_csv(file_path, preview_rows=5):
+    """Parse CSV file and return headers and first N rows of data."""
+    headers = []
+    data = []
+    
+    # Try different encodings to handle various CSV file formats
+    encodings = ['utf-8', 'iso-8859-1', 'cp1252']
+    
+    for encoding in encodings:
+        try:
+            with open(file_path, 'r', newline='', encoding=encoding) as csvfile:
+                reader = csv.reader(csvfile)
+                try:
+                    headers = next(reader)
+                    # Clean up BOM if present
+                    if headers and headers[0].startswith('\ufeff'):
+                        headers[0] = headers[0][1:]
+                    
+                    for i, row in enumerate(reader):
+                        if i >= preview_rows:
+                            break
+                        data.append(row)
+                    return headers, data
+                except StopIteration:
+                    continue
+        except Exception as e:
+            continue
+    
+    raise Exception(f"Failed to parse CSV file with any supported encoding. Please check the file format.")
+
+def process_csv_for_import(file_path, batch_id, mapping):
+    """Process CSV file with field mapping and prepare student data for API."""
+    students = []
+    
+    with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
+        
+        for row in reader:
+            student_data = {'BatchId': batch_id}
+            
+            for csv_header, field_name in mapping.items():
+                if csv_header in row:
+                    value = row[csv_header].strip() if row[csv_header] else ''
+                    student_data[field_name] = value
+            
+            # Set default values for required fields that might not be mapped
+            # This is important to ensure the API accepts the request
+            if 'MISNo' not in student_data or not student_data['MISNo']:
+                import uuid
+                student_data['MISNo'] = f"ST-{uuid.uuid4().hex[:8]}"
+            
+            if 'NameWithInitials' not in student_data or not student_data['NameWithInitials']:
+                # Use full name as fallback if name with initials not provided
+                if 'FullName' in student_data and student_data['FullName']:
+                    # Take first part of full name as initials fallback
+                    student_data['NameWithInitials'] = student_data['FullName'].split()[0] if ' ' in student_data['FullName'] else student_data['FullName']
+                else:
+                    student_data['NameWithInitials'] = ''
+            
+            if 'FullName' not in student_data or not student_data['FullName']:
+                if 'NameWithInitials' in student_data and student_data['NameWithInitials']:
+                    student_data['FullName'] = student_data['NameWithInitials']
+                else:
+                    student_data['FullName'] = ''
+            
+            if 'NICNo' not in student_data or not student_data['NICNo']:
+                student_data['NICNo'] = ''
+            
+            if 'Gender' not in student_data or not student_data['Gender']:
+                student_data['Gender'] = 'Male'
+            
+            if 'Address' not in student_data or not student_data['Address']:
+                student_data['Address'] = ''
+            
+            if 'Telephone' not in student_data or not student_data['Telephone']:
+                student_data['Telephone'] = ''
+            
+            if 'Email' not in student_data or not student_data['Email']:
+                if 'MISNo' in student_data:
+                    student_data['Email'] = f"{student_data['MISNo']}@example.com"
+                else:
+                    student_data['Email'] = ''
+            
+            if 'GSDivision' not in student_data or not student_data['GSDivision']:
+                student_data['GSDivision'] = 'Unknown'
+            
+            if 'AGDivision' not in student_data or not student_data['AGDivision']:
+                student_data['AGDivision'] = 'Unknown'
+            
+            # Cleanup and normalize data
+            if 'Gender' in student_data:
+                student_data['Gender'] = student_data['Gender'].capitalize()
+            if 'Email' in student_data and student_data['Email'] and '@' not in student_data['Email']:
+                student_data['Email'] = f"{student_data['Email']}@example.com"
+            
+            students.append(student_data)
+    
+    return students
 
 def api_request(method, endpoint, data=None, params=None):
     url = f"{API_BASE_URL}/{endpoint}"
@@ -446,6 +560,193 @@ def create_course():
             flash(error_msg, 'danger')
     
     return render_template('create_course.html', form=form, centers=centers)
+
+@app.route('/students/upload-csv', methods=['GET', 'POST'])
+def upload_students_csv():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Student fields for mapping with friendly names (must match API's PascalCase field names)
+    student_fields = [
+        {'name': 'MISNo', 'label': 'MIS Number'},
+        {'name': 'NameWithInitials', 'label': 'Name with Initials'},
+        {'name': 'FullName', 'label': 'Full Name'},
+        {'name': 'NICNo', 'label': 'NIC Number'},
+        {'name': 'Gender', 'label': 'Gender'},
+        {'name': 'Address', 'label': 'Address'},
+        {'name': 'Telephone', 'label': 'Telephone'},
+        {'name': 'Email', 'label': 'Email'},
+        {'name': 'GSDivision', 'label': 'GS Division'},
+        {'name': 'AGDivision', 'label': 'AG Division'}
+    ]
+    
+    # Get batches for dropdown
+    batches_response = api_request('GET', 'batches')
+    batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+    batch_choices = [(batch['batchId'], batch['batchCode']) for batch in batches]
+    
+    if request.method == 'GET':
+        form = UploadStudentsCsvForm()
+        form.batchId.choices = batch_choices
+        return render_template('upload_students_csv.html', 
+                           form=form, 
+                           csv_data=None, 
+                           csv_headers=None, 
+                           student_fields=student_fields,
+                           step=1)
+    
+    # Handle first step: upload CSV and extract data
+    elif request.method == 'POST' and not request.form.get('file_name'):
+        print(f"Request form: {request.form}")
+        print(f"Request files: {request.files}")
+        
+        form = UploadStudentsCsvForm()
+        form.batchId.choices = batch_choices
+        
+        if form.validate_on_submit():
+            print(f"Form validated successfully: {form.data}")
+            try:
+                # Save CSV file to temp directory
+                file = form.file.data
+                filename = secure_filename(file.filename)
+                temp_dir = 'temp_csv'
+                if not os.path.exists(temp_dir):
+                    os.makedirs(temp_dir)
+                file_path = os.path.join(temp_dir, filename)
+                file.save(file_path)
+                
+                # Parse CSV file
+                csv_headers, csv_data = parse_csv(file_path)
+                
+                # Store file info in session for second step
+                session['csv_file_path'] = file_path
+                session['csv_headers'] = csv_headers
+                session['batch_id'] = form.batchId.data
+                
+                # Render mapping interface
+                mapping_form = MapCsvFieldsForm()
+                
+                # Auto-detect possible mappings based on header similarity
+                auto_mapping = {}
+                for csv_header in csv_headers:
+                    csv_header_lower = csv_header.lower().strip()
+                    for field in student_fields:
+                        field_name_lower = field['name'].lower()
+                        field_label_lower = field['label'].lower()
+                        
+                        if csv_header_lower in field_name_lower or csv_header_lower in field_label_lower or \
+                           field_name_lower in csv_header_lower or field_label_lower in csv_header_lower:
+                            auto_mapping[csv_header] = field['name']
+                            break
+                
+                session['auto_mapping'] = auto_mapping
+                
+                return render_template('upload_students_csv.html', 
+                                     form=mapping_form, 
+                                     csv_data=csv_data, 
+                                     csv_headers=csv_headers, 
+                                     student_fields=student_fields,
+                                     file_name=filename,
+                                     batch_id=form.batchId.data,
+                                     auto_mapping=auto_mapping,
+                                     step=2)
+            except Exception as e:
+                flash(f'Error parsing CSV file: {str(e)}', 'danger')
+                print(f"Error details: {str(e)}")
+                return redirect(url_for('upload_students_csv'))
+        else:
+            print(f"Form errors: {form.errors}")
+            print(f"Form data: {form.data}")
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{field}: {error}', 'danger')
+            return render_template('upload_students_csv.html', 
+                               form=form, 
+                               csv_data=None, 
+                               csv_headers=None, 
+                               student_fields=student_fields,
+                               step=1)
+    
+    # Handle second step: map fields and import
+    else:
+        form = MapCsvFieldsForm()
+        if form.validate_on_submit():
+            try:
+                file_path = session.get('csv_file_path')
+                batch_id = int(session.get('batch_id'))
+                csv_headers = session.get('csv_headers')
+                
+                if not file_path or not os.path.exists(file_path):
+                    flash('CSV file not found. Please reupload.', 'danger')
+                    return redirect(url_for('upload_students_csv'))
+                
+                # Parse mapping from form
+                mapping = {}
+                for i, csv_header in enumerate(csv_headers):
+                    field_name = request.form.get(f'mapping_{i}')
+                    if field_name:
+                        mapping[csv_header] = field_name
+                
+                if not mapping:
+                    flash('Please map at least one CSV column to a student field.', 'danger')
+                    return redirect(url_for('upload_students_csv'))
+                
+                # Process CSV and create students
+                students = process_csv_for_import(file_path, batch_id, mapping)
+                
+                if students:
+                    # Send to API using CreateStudent endpoint (loop through each student)
+                    success_count = 0
+                    failed_count = 0
+                    errors = []
+                    
+                    for student in students:
+                        # Fields that must be mapped (at least one required field should be present)
+                        # But we'll proceed with whatever fields are mapped
+                        
+                        response = api_request('POST', 'students', data=student)
+                        if response and response.status_code == 201:
+                            success_count += 1
+                        else:
+                            failed_count += 1
+                            error_msg = 'Unknown error'
+                            if response:
+                                try:
+                                    error_msg = response.json().get('message', error_msg)
+                                except:
+                                    error_msg = f"HTTP {response.status_code}"
+                            errors.append(f"{student.get('MISNo', 'Unknown')}: {error_msg}")
+                
+                    # Show detailed results
+                    flash(f'Successfully imported {success_count} out of {len(students)} students', 'success')
+                    if failed_count > 0:
+                        flash(f'Failed to import {failed_count} students. Check logs for details.', 'danger')
+                        # Log errors
+                        for error in errors:
+                            print(f"Import Error: {error}")
+                else:
+                    flash('No valid student data found in CSV', 'warning')
+                
+                # Cleanup temp file and session
+                os.remove(file_path)
+                session.pop('csv_file_path', None)
+                session.pop('csv_headers', None)
+                session.pop('batch_id', None)
+                session.pop('auto_mapping', None)
+                
+                return redirect(url_for('students'))
+            except Exception as e:
+                flash(f'Error importing students: {str(e)}', 'danger')
+                print(f"Import Error Details: {str(e)}")
+                # Cleanup session
+                session.pop('csv_file_path', None)
+                session.pop('csv_headers', None)
+                session.pop('batch_id', None)
+                session.pop('auto_mapping', None)
+                return redirect(url_for('upload_students_csv'))
+        else:
+            return redirect(url_for('upload_students_csv'))
+
 
 @app.route('/courses/<int:id>/edit', methods=['GET', 'POST'])
 def edit_course(id):

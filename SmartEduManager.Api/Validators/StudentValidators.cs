@@ -4,55 +4,55 @@ using SmartEduManager.Api.DTOs;
 namespace SmartEduManager.Api.Validators;
 
 public class CreateStudentDtoValidator : AbstractValidator<CreateStudentDto>
-{
-    public CreateStudentDtoValidator()
     {
-        RuleFor(x => x.MISNo)
-            .NotEmpty().WithMessage("MIS number is required")
-            .MaximumLength(50).WithMessage("MIS number must be less than 50 characters");
+        public CreateStudentDtoValidator()
+        {
+            RuleFor(x => x.MISNo)
+                .NotEmpty().WithMessage("MIS number is required")
+                .MaximumLength(50).WithMessage("MIS number must be less than 50 characters");
 
-        RuleFor(x => x.NameWithInitials)
-            .NotEmpty().WithMessage("Name with initials is required")
-            .MaximumLength(100).WithMessage("Name with initials must be less than 100 characters");
+            RuleFor(x => x.NameWithInitials)
+                .NotEmpty().WithMessage("Name with initials is required")
+                .MaximumLength(100).WithMessage("Name with initials must be less than 100 characters");
 
-        RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage("Full name is required")
-            .MaximumLength(100).WithMessage("Full name must be less than 100 characters");
+            RuleFor(x => x.FullName)
+                .NotEmpty().WithMessage("Full name is required")
+                .MaximumLength(100).WithMessage("Full name must be less than 100 characters");
 
-        RuleFor(x => x.NICNo)
-            .NotEmpty().WithMessage("NIC is required")
-            .MaximumLength(20).WithMessage("NIC must be less than 20 characters");
+            RuleFor(x => x.NICNo)
+                .NotEmpty().WithMessage("NIC is required")
+                .MaximumLength(20).WithMessage("NIC must be less than 20 characters");
 
-        RuleFor(x => x.Gender)
-            .NotEmpty().WithMessage("Gender is required")
-            .MaximumLength(10).WithMessage("Gender must be less than 10 characters");
+            RuleFor(x => x.Gender)
+                .NotEmpty().WithMessage("Gender is required")
+                .MaximumLength(10).WithMessage("Gender must be less than 10 characters");
 
-        RuleFor(x => x.Address)
-            .NotEmpty().WithMessage("Address is required")
-            .MaximumLength(200).WithMessage("Address must be less than 200 characters");
+            RuleFor(x => x.Address)
+                .NotEmpty().WithMessage("Address is required")
+                .MaximumLength(200).WithMessage("Address must be less than 200 characters");
 
-        RuleFor(x => x.Telephone)
-            .NotEmpty().WithMessage("Telephone number is required")
-            .MaximumLength(20).WithMessage("Telephone number must be less than 20 characters");
+            RuleFor(x => x.Telephone)
+                .NotEmpty().WithMessage("Telephone number is required")
+                .MaximumLength(20).WithMessage("Telephone number must be less than 20 characters");
 
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required")
-            .EmailAddress().WithMessage("Email is not valid")
-            .MaximumLength(100).WithMessage("Email must be less than 100 characters");
+            RuleFor(x => x.Email)
+                .EmailAddress().WithMessage("Email is not valid")
+                .MaximumLength(100).WithMessage("Email must be less than 100 characters")
+                .When(x => !string.IsNullOrEmpty(x.Email));
 
-        RuleFor(x => x.BatchId)
-            .NotEmpty().WithMessage("Batch is required")
-            .GreaterThan(0).WithMessage("Batch ID must be greater than 0");
+            RuleFor(x => x.BatchId)
+                .NotEmpty().WithMessage("Batch is required")
+                .GreaterThan(0).WithMessage("Batch ID must be greater than 0");
 
-        RuleFor(x => x.GSDivision)
-            .NotEmpty().WithMessage("GS Division is required")
-            .MaximumLength(100).WithMessage("GS Division must be less than 100 characters");
+            RuleFor(x => x.GSDivision)
+                .MaximumLength(100).WithMessage("GS Division must be less than 100 characters")
+                .When(x => !string.IsNullOrEmpty(x.GSDivision));
 
-        RuleFor(x => x.AGDivision)
-            .NotEmpty().WithMessage("AG Division is required")
-            .MaximumLength(100).WithMessage("AG Division must be less than 100 characters");
+            RuleFor(x => x.AGDivision)
+                .MaximumLength(100).WithMessage("AG Division must be less than 100 characters")
+                .When(x => !string.IsNullOrEmpty(x.AGDivision));
+        }
     }
-}
 
 public class UpdateStudentDtoValidator : AbstractValidator<UpdateStudentDto>
 {

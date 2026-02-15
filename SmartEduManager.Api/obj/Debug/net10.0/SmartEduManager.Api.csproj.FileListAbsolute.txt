@@ -187,3 +187,4 @@ D:\New folder (2)\SmartEduManager\SmartEduManager.Api\obj\Debug\net10.0\ref\Smar
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\obj\Debug\net10.0\SmartEduManager.Api.xml
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\SmartEduManager.Api.xml
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\SmartEduManager.Api.staticwebassets.runtime.json
+d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\CsvHelper.dll
