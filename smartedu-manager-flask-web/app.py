@@ -1326,17 +1326,6 @@ def students(batch_id=None):
     batches_response = api_request('GET', 'batches')
     batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
     
-    # Get courses to display course names with batches
-    courses_response = api_request('GET', 'courses')
-    courses = courses_response.json() if (courses_response and courses_response.status_code == 200) else []
-    
-    # Create course dictionary for quick lookup
-    course_dict = {course['courseId']: course['courseName'] for course in courses}
-    
-    # Add course name to each batch
-    for batch in batches:
-        batch['courseName'] = course_dict.get(batch['courseId'], 'Unknown Course')
-    
     # Filter students by batch if batch_id is provided
     filtered_students = []
     selected_batch = None

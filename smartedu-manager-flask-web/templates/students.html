@@ -109,7 +109,7 @@
                 <h1 class="page-title">Students</h1>
                 <p class="page-subtitle">
                     {% if selected_batch %}
-                        Manage students in {{ selected_batch['batchCode'] }} - {{ selected_batch['courseName'] }}
+                        Manage students in {{ selected_batch['batchCode'] }}
                     {% else %}
                         Manage your students and enrollments
                     {% endif %}
@@ -147,7 +147,6 @@
                                          onclick="window.location.href='{{ url_for('students', batch_id=batch['batchId']) }}'">
                                         <div class="batch-info">
                                             <div class="batch-code">{{ batch['batchCode'] }}</div>
-                                            <div class="course-name">{{ batch['courseName'] }}</div>
                                         </div>
                                         <div class="batch-students">
                                             <i class="fas fa-users"></i>
@@ -191,11 +190,10 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Student ID</th>
-                                        <th>Full Name</th>
-                                        <th>Email</th>
-                                        <th>Contact Number</th>
-                                        <th>Batch</th>
+                                        <th>MIS No</th>
+                                        <th>Name with Initials</th>
+                                        <th>NIC No</th>
+                                        <th>Tel. No</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -203,11 +201,10 @@
                                     {% if students %}
                                         {% for student in students %}
                                             <tr>
-                                                <td>{{ student['studentId'] }}</td>
-                                                <td>{{ student['fullName'] }}</td>
-                                                <td>{{ student['email'] }}</td>
-                                                <td>{{ student['contactNumber'] }}</td>
-                                                <td>{{ selected_batch['batchCode'] if selected_batch else 'N/A' }}</td>
+                                                <td>{{ student['misNo'] or 'N/A' }}</td>
+                                                <td>{{ student['nameWithInitials'] or 'N/A' }}</td>
+                                                <td>{{ student['nicNo'] or 'N/A' }}</td>
+                                                <td>{{ student['contactNumber'] or student['telephone'] or 'N/A' }}</td>
                                                 <td>
                                                     <div class="action-buttons">
                                                         <a href="{{ url_for('edit_student', id=student['studentId']) }}" class="btn-action btn-edit">
@@ -222,7 +219,7 @@
                                         {% endfor %}
                                     {% else %}
                                         <tr>
-                                            <td colspan="6" class="no-data">
+                                            <td colspan="5" class="no-data">
                                                 <div class="no-data-content">
                                                     <i class="fas fa-users"></i>
                                                     <p>No students found in this batch</p>
