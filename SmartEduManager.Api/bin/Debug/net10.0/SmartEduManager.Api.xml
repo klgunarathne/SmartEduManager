@@ -88,6 +88,18 @@
         <member name="M:SmartEduManager.Api.Migrations.AddRefreshTokensTable.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Migrations.AddPrecisionToCourseFee">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddPrecisionToCourseFee.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddPrecisionToCourseFee.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddPrecisionToCourseFee.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:Program">
             <summary>
             Auto-generated public partial Program class for top-level statement apps.

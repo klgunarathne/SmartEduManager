@@ -270,16 +270,7 @@
 <script>
 // Form validation
 function validateForm() {
-    const startDateInput = document.getElementById('startDate');
-    const startDate = new Date(startDateInput.value);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (startDate < today) {
-        alert('Start date must be in the future');
-        return false;
-    }
-
+    // Allow any valid date (including past dates)
     return true;
 }
 

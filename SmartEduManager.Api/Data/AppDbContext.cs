@@ -36,6 +36,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(ce => ce.Courses)
             .HasForeignKey(c => c.CenterId);
 
+        // Configure decimal property precision and scale
+        builder.Entity<Course>()
+            .Property(c => c.CourseFee)
+            .HasPrecision(18, 2);
+
         builder.Entity<CourseInstructor>()
             .HasKey(ci => new { ci.CourseId, ci.InstructorId });
 

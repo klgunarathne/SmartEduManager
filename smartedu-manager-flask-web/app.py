@@ -847,6 +847,15 @@ def delete_course(id):
     if 'access_token' not in session:
         return redirect(url_for('login'))
     
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('courses'))
+    
     response = api_request('DELETE', f'courses/{id}')
     
     if response and response.status_code == 200:
@@ -981,6 +990,15 @@ def delete_batch(id):
     if 'access_token' not in session:
         return redirect(url_for('login'))
     
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('batches'))
+    
     response = api_request('DELETE', f'batches/{id}')
     
     if response and response.status_code == 200:
@@ -1104,6 +1122,15 @@ def delete_center(id):
     if 'access_token' not in session:
         return redirect(url_for('login'))
     
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('centers'))
+    
     response = api_request('DELETE', f'centers/{id}')
     
     if response and response.status_code == 200:
@@ -1220,6 +1247,15 @@ def delete_instructor(id):
     if 'access_token' not in session:
         return redirect(url_for('login'))
     
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('instructors'))
+    
     response = api_request('DELETE', f'instructors/{id}')
     
     if response and response.status_code == 200:
@@ -1294,6 +1330,15 @@ def create_course_instructor():
 def delete_course_instructor(course_id, instructor_id):
     if 'access_token' not in session:
         return redirect(url_for('login'))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('course_instructors'))
     
     response = api_request('DELETE', f'courseinstructors/{course_id}/{instructor_id}')
     
@@ -1456,6 +1501,15 @@ def edit_student(id):
 def delete_student(id):
     if 'access_token' not in session:
         return redirect(url_for('login'))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('students'))
     
     response = api_request('DELETE', f'students/{id}')
     

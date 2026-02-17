@@ -40,9 +40,7 @@ public class UpdateBatchDtoValidator : AbstractValidator<UpdateBatchDto>
             .GreaterThan(0).WithMessage("Course ID must be greater than 0")
             .When(x => x.CourseId.HasValue);
 
-        RuleFor(x => x.StartDate)
-            .GreaterThan(DateTime.Now.AddDays(-1)).WithMessage("Start date must be in the future")
-            .When(x => x.StartDate.HasValue);
+
 
         RuleFor(x => x.EndDate)
             .GreaterThan(x => x.StartDate).WithMessage("End date must be after start date")

@@ -194,7 +194,7 @@
                                                 <a href="{{ url_for('assign_batches_to_course', id=course['courseId']) }}" class="btn-action btn-assign-batches" title="Assign Batches">
                                                     <i class="fas fa-calendar-check"></i>
                                                 </a>
-                                                <button class="btn-action btn-delete" onclick="deleteCourse({{ course['courseId'] }});">
+                                                <button class="btn-action btn-delete" onclick="deleteCourse({{ course['courseId'] }}, '{{ csrf_token() }}');">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -438,20 +438,18 @@ document.addEventListener('click', function(event) {
 });
 
 // Delete course functionality
-function deleteCourse(courseId) {
+function deleteCourse(courseId, csrfToken) {
     if (confirm('Are you sure you want to delete this course?')) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/courses/${courseId}/delete`;
         
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrf_token';
-            csrfInput.value = csrfToken;
-            form.appendChild(csrfInput);
-        }
+        // Add CSRF token to form
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
         
         document.body.appendChild(form);
         form.submit();

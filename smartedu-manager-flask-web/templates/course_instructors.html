@@ -155,7 +155,7 @@
                                         <td>{{ ci['instructorName'] }}</td>
                                         <td>
                                             <div class="action-buttons">
-                                                <button class="btn-action btn-delete" onclick="deleteCourseInstructor({{ ci['courseId'] }}, {{ ci['instructorId'] }})">
+                                                <button class="btn-action btn-delete" onclick="deleteCourseInstructor({{ ci['courseId'] }}, {{ ci['instructorId'] }}, '{{ csrf_token() }}')">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -344,20 +344,18 @@ document.addEventListener('click', function(event) {
 });
 
 // Delete course-instructor relationship functionality
-function deleteCourseInstructor(courseId, instructorId) {
+function deleteCourseInstructor(courseId, instructorId, csrfToken) {
     if (confirm('Are you sure you want to delete this course-instructor relationship?')) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/course-instructors/${courseId}/${instructorId}/delete`;
         
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrf_token';
-            csrfInput.value = csrfToken;
-            form.appendChild(csrfInput);
-        }
+        // Add CSRF token to form
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
         
         document.body.appendChild(form);
         form.submit();
