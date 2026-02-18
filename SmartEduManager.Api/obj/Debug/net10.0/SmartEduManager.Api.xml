@@ -100,6 +100,30 @@
         <member name="M:SmartEduManager.Api.Migrations.AddPrecisionToCourseFee.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Migrations.AddNCSModulesTasks">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddNCSModulesTasks.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddNCSModulesTasks.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddNCSModulesTasks.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:SmartEduManager.Api.Migrations.AddCourseNavigationToNCS">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCourseNavigationToNCS.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCourseNavigationToNCS.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCourseNavigationToNCS.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:Program">
             <summary>
             Auto-generated public partial Program class for top-level statement apps.

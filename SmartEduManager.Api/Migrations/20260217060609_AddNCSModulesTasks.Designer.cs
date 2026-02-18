@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartEduManager.Api.Data;
 
@@ -11,9 +12,11 @@ using SmartEduManager.Api.Data;
 namespace SmartEduManager.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260217060609_AddNCSModulesTasks")]
+    partial class AddNCSModulesTasks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -715,7 +718,7 @@ namespace SmartEduManager.Api.Migrations
             modelBuilder.Entity("SmartEduManager.Api.Models.NCS", b =>
                 {
                     b.HasOne("SmartEduManager.Api.Models.Course", "Course")
-                        .WithMany("NCS")
+                        .WithMany()
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -749,8 +752,6 @@ namespace SmartEduManager.Api.Migrations
                     b.Navigation("Batches");
 
                     b.Navigation("CourseInstructors");
-
-                    b.Navigation("NCS");
                 });
 
             modelBuilder.Entity("SmartEduManager.Api.Models.District", b =>

@@ -13,6 +13,8 @@ namespace SmartEduManager.Api.Models
         public int TheoryHours { get; set; } = 0;
         public int PracticalHours { get; set; } = 0;
 
+        public int NCSId { get; set; }
+        public NCS NCS { get; set; } = null!;
 
         public ICollection<ModuleTask> Tasks { get; set; } = new List<ModuleTask>();
     }

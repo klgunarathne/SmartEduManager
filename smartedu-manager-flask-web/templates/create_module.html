@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Create Module - SmartEdu Manager{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="brand-logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>SmartEdu Manager</span>
+            </div>
+        </div>
+        
+        <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search..." class="search-input">
+        </div>
+        
+        <div class="navbar-actions">
+            <button class="action-btn">
+                <i class="fas fa-bell"></i>
+                <span class="badge">3</span>
+            </button>
+            <button class="action-btn">
+                <i class="fas fa-question-circle"></i>
+            </button>
+            <div class="user-profile">
+                <img src="https://ui-avatars.com/api/?name={{ session['first_name'] }}&background=random" alt="User Profile" class="user-avatar">
+                <div class="user-info">
+                    <span class="user-name">{{ session['first_name'] }}</span>
+                    <span class="user-role">{{ session['roles'][0] if session['roles'] else 'User' }}</span>
+                </div>
+                <button class="profile-menu-btn" onclick="toggleProfileMenu()">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Menu -->
+    <div class="profile-menu" id="profileMenu">
+        <div class="menu-header">
+            <span class="menu-title">Account</span>
+        </div>
+        <button class="menu-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </button>
+        <button class="menu-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </button>
+        <button class="menu-item">
+            <i class="fas fa-question-circle"></i>
+            <span>Help</span>
+        </button>
+        <hr class="menu-divider">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'; ">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <span class="section-title">Main Menu</span>
+                <div class="nav-items">
+                    <a href="{{ url_for('dashboard') }}" class="nav-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('students') }}" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Students</span>
+                    </a>
+                    <a href="{{ url_for('instructors') }}" class="nav-item">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Instructors</span>
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="nav-item">
+                        <i class="fas fa-book"></i>
+                        <span>Courses</span>
+                    </a>
+                    <a href="{{ url_for('batches') }}" class="nav-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Batches</span>
+                    </a>
+                    <a href="{{ url_for('centers') }}" class="nav-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Centers</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="nav-section">
+                <span class="section-title">NCS Management</span>
+                <div class="nav-items">
+                    <a href="{{ url_for('ncs') }}" class="nav-item">
+                        <i class="fas fa-sitemap"></i>
+                        <span>NCS</span>
+                    </a>
+                    <a href="{{ url_for('modules') }}" class="nav-item active">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Modules</span>
+                    </a>
+                    <a href="{{ url_for('module_tasks') }}" class="nav-item">
+                        <i class="fas fa-tasks"></i>
+                        <span>Module Tasks</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-info">
+                <h1 class="page-title">Create Module</h1>
+                <p class="page-subtitle">Add a new module to NCS</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-secondary" onclick="window.location.href='{{ url_for('modules') }}'; ">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Create Module Form -->
+        <div class="card full-width">
+            <div class="card-header">
+                <h2 class="card-title">Module Details</h2>
+            </div>
+            <div class="card-content">
+                <form method="POST" class="module-form">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ModuleNo">Module No</label>
+                            {{ form.ModuleNo(class="form-control", placeholder="e.g., M1") }}
+                            {% if form.ModuleNo.errors %}
+                                <div class="form-error">
+                                    {% for error in form.ModuleNo.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ModuleName">Module Name</label>
+                            {{ form.ModuleName(class="form-control", placeholder="Module name") }}
+                            {% if form.ModuleName.errors %}
+                                <div class="form-error">
+                                    {% for error in form.ModuleName.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="TheoryHours">Theory Hours</label>
+                            {{ form.TheoryHours(class="form-control", placeholder="Number of theory hours") }}
+                            {% if form.TheoryHours.errors %}
+                                <div class="form-error">
+                                    {% for error in form.TheoryHours.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="PracticalHours">Practical Hours</label>
+                            {{ form.PracticalHours(class="form-control", placeholder="Number of practical hours") }}
+                            {% if form.PracticalHours.errors %}
+                                <div class="form-error">
+                                    {% for error in form.PracticalHours.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="NCSId">NCS</label>
+                            {{ form.NCSId(class="form-control") }}
+                            {% if form.NCSId.errors %}
+                                <div class="form-error">
+                                    {% for error in form.NCSId.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="window.location.href='{{ url_for('modules') }}'; ">
+                            Cancel
+                        </button>
+                        {{ form.submit(class="btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.form-control {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+    background: #f7fafc;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control.textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-error {
+    color: #e53e3e;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 24px;
+    border-top: 1px solid #e2e8f0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sidebar functionality
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const footer = document.querySelector('.footer');
+    
+    sidebar.classList.toggle('collapsed');
+    mainContent.classList.toggle('expanded');
+    if (footer) {
+        footer.classList.toggle('expanded');
+    }
+}
+
+// Profile menu functionality
+function toggleProfileMenu() {
+    const profileMenu = document.getElementById('profileMenu');
+    profileMenu.classList.toggle('active');
+}
+
+// Close profile menu when clicking outside
+document.addEventListener('click', function(event) {
+    const profileMenu = document.getElementById('profileMenu');
+    const userProfile = document.querySelector('.user-profile');
+    
+    if (!userProfile.contains(event.target) && !profileMenu.contains(event.target)) {
+        profileMenu.classList.remove('active');
+    }
+});
+</script>
+{% endblock %}

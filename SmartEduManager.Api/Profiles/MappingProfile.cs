@@ -65,5 +65,25 @@ public class MappingProfile : Profile
         CreateMap<CreateStudentDto, Student>();
         CreateMap<UpdateStudentDto, Student>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+        // NCS mapping
+        CreateMap<NCS, NCSDto>()
+            .ForMember(dest => dest.CourseName, opt => opt.MapFrom(src => src.Course.CourseName));
+        CreateMap<CreateNCSDto, NCS>();
+        CreateMap<UpdateNCSDto, NCS>()
+            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+        // Modules mapping
+        CreateMap<Models.Modules, ModulesDto>();
+        CreateMap<CreateModulesDto, Models.Modules>();
+        CreateMap<UpdateModulesDto, Models.Modules>()
+            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+        // ModuleTask mapping
+        CreateMap<ModuleTask, ModuleTaskDto>()
+            .ForMember(dest => dest.ModuleNo, opt => opt.MapFrom(src => src.Module.ModuleNo));
+        CreateMap<CreateModuleTaskDto, ModuleTask>();
+        CreateMap<UpdateModuleTaskDto, ModuleTask>()
+            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
     }
 }

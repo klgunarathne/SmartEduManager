@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Batches - SmartEdu Manager{% endblock %}
+{% block title %}Modules - SmartEdu Manager{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
@@ -60,7 +60,7 @@
             <span>Help</span>
         </button>
         <hr class="menu-divider">
-        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}';">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}'; ">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </button>
@@ -88,7 +88,7 @@
                         <i class="fas fa-book"></i>
                         <span>Courses</span>
                     </a>
-                    <a href="{{ url_for('batches') }}" class="nav-item active">
+                    <a href="{{ url_for('batches') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
                         <span>Batches</span>
                     </a>
@@ -106,7 +106,7 @@
                         <i class="fas fa-sitemap"></i>
                         <span>NCS</span>
                     </a>
-                    <a href="{{ url_for('modules') }}" class="nav-item">
+                    <a href="{{ url_for('modules') }}" class="nav-item active">
                         <i class="fas fa-layer-group"></i>
                         <span>Modules</span>
                     </a>
@@ -124,23 +124,23 @@
         <!-- Page Header -->
         <div class="page-header">
             <div class="header-info">
-                <h1 class="page-title">Batches</h1>
-                <p class="page-subtitle">Manage your course batches and schedules</p>
+                <h1 class="page-title">Modules</h1>
+                <p class="page-subtitle">Manage modules within NCS</p>
             </div>
             <div class="header-actions">
-                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_batch') }}';">
+                <button class="btn-primary" onclick="window.location.href='{{ url_for('create_module') }}'; ">
                     <i class="fas fa-plus"></i>
-                    <span>Add Batch</span>
+                    <span>Add Module</span>
                 </button>
             </div>
         </div>
 
-        <!-- Batches Table -->
+        <!-- Modules Table -->
         <div class="card full-width">
             <div class="card-header">
-                <h2 class="card-title">All Batches</h2>
+                <h2 class="card-title">Modules</h2>
                 <div class="table-actions">
-                    <input type="text" placeholder="Search batches..." class="search-input">
+                    <input type="text" placeholder="Search modules..." class="search-input">
                     <button class="btn-secondary">
                         <i class="fas fa-filter"></i>
                         <span>Filter</span>
@@ -148,52 +148,62 @@
                 </div>
             </div>
             <div class="card-content">
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Batch ID</th>
-                                <th>Batch Name</th>
-                                <th>Course</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if batches %}
-                                {% for batch in batches %}
+                {% if modules_list %}
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Module No</th>
+                                    <th>Module Name</th>
+                                    <th>Theory Hours</th>
+                                    <th>Practical Hours</th>
+                                    <th>Tasks</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for module in modules_list %}
                                     <tr>
-                                        <td>{{ batch['batchId'] }}</td>
-                                        <td>{{ batch['batchCode'] }}</td>
-                                        <td>{{ batch['courseName'] if 'courseName' in batch else 'N/A' }}</td>
-                                        <td>{{ batch['startDate'] }}</td>
-                                        <td>{{ batch['endDate'] }}</td>
+                                        <td>{{ module['id'] }}</td>
+                                        <td>{{ module['moduleNo'] }}</td>
+                                        <td>{{ module['moduleName'] }}</td>
+                                        <td>{{ module['theoryHours'] }}</td>
+                                        <td>{{ module['practicalHours'] }}</td>
+                                        <td>{{ module['tasks']|length }}</td>
                                         <td>
                                             <div class="action-buttons">
-                                                <a href="{{ url_for('edit_batch', id=batch['batchId']) }}" class="btn-action btn-edit">
+                                                <a href="{{ url_for('module_tasks', module_id=module['id']) }}" class="btn-action btn-view" title="View Tasks">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('create_module_task', module_id=module['id']) }}" class="btn-action btn-add" title="Add Tasks">
+                                                    <i class="fas fa-plus"></i>
+                                                </a>
+                                                <a href="{{ url_for('edit_module', id=module['id']) }}" class="btn-action btn-edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <button class="btn-action btn-delete" onclick="deleteBatch({{ batch['batchId'] }}, '{{ csrf_token() }}')">
+                                                <button class="btn-action btn-delete" onclick="deleteModule({{ module['id'] }}, '{{ csrf_token() }}');">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
                                 {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="6" class="no-data">
-                                        <div class="no-data-content">
-                                            <i class="fas fa-calendar-alt"></i>
-                                            <p>No batches found</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="no-data">
+                        <div class="no-data-content">
+                            <i class="fas fa-layer-group"></i>
+                            <p>No modules found</p>
+                            <a href="{{ url_for('create_module') }}" class="btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Create First Module
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </main>
@@ -260,6 +270,26 @@
     align-items: center;
     justify-content: center;
     font-size: 14px;
+}
+
+.btn-view {
+    background: #48bb78;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-view:hover {
+    background: #38a169;
+}
+
+.btn-add {
+    background: #48bb78;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-add:hover {
+    background: #38a169;
 }
 
 .btn-edit {
@@ -362,14 +392,13 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Delete batch functionality
-function deleteBatch(batchId, csrfToken) {
-    if (confirm('Are you sure you want to delete this batch?')) {
+// Delete Module functionality
+function deleteModule(moduleId, csrfToken) {
+    if (confirm('Are you sure you want to delete this module? This will also delete all associated tasks.')) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/batches/${batchId}/delete`;
+        form.action = `/modules/${moduleId}/delete`;
         
-        // Add CSRF token to form
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
         csrfInput.name = 'csrf_token';

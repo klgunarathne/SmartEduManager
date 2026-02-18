@@ -20,6 +20,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
      public DbSet<Batch> Batches { get; set; } = null!;
      public DbSet<Student> Students { get; set; } = null!;
      public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+     public DbSet<NCS> NCS { get; set; } = null!;
+     public DbSet<Modules> Modules { get; set; } = null!;
+     public DbSet<ModuleTask> ModuleTasks { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -63,5 +66,22 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(s => s.Batch)
             .WithMany(b => b.Students)
             .HasForeignKey(s => s.BatchId);
+
+        // NCS relationships
+        builder.Entity<NCS>()
+            .HasOne(n => n.Course)
+            .WithMany(c => c.NCS)
+            .HasForeignKey(n => n.CourseId);
+
+        builder.Entity<NCS>()
+            .HasMany(n => n.Modules)
+            .WithOne(m => m.NCS)
+            .HasForeignKey(m => m.NCSId);
+
+        // Modules relationships
+        builder.Entity<Modules>()
+            .HasMany(m => m.Tasks)
+            .WithOne(t => t.Module)
+            .HasForeignKey(t => t.ModuleId);
     }
 }

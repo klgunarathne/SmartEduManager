@@ -111,6 +111,20 @@ public static class Seeder
                     await context.Instructors.AddRangeAsync(instructors);
                     await context.SaveChangesAsync();
                 }
+
+                // Seed NCS
+                if (!context.NCS.Any())
+                {
+                    var courses = await context.Courses.ToListAsync();
+                    var ncsList = new[]
+                    {
+                        new NCS { Version = "1.0", Name = "Web Development Curriculum", UpdatedDate = new DateTime(2024, 1, 1), CourseId = courses[0].CourseId },
+                        new NCS { Version = "1.1", Name = "Mobile App Development Curriculum", UpdatedDate = new DateTime(2024, 2, 15), CourseId = courses[1].CourseId },
+                        new NCS { Version = "2.0", Name = "Data Science Curriculum", UpdatedDate = new DateTime(2024, 3, 10), CourseId = courses[2].CourseId }
+                    };
+                    await context.NCS.AddRangeAsync(ncsList);
+                    await context.SaveChangesAsync();
+                }
             }
             catch (Exception ex)
             {

@@ -82,8 +82,11 @@ builder.Services.AddScoped<ICenterRepository, CenterRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<IInstructorRepository, InstructorRepository>();
 builder.Services.AddScoped<ICourseInstructorRepository, CourseInstructorRepository>();
-builder.Services.AddScoped<IBatchRepository, BatchRepository>();
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+    builder.Services.AddScoped<IBatchRepository, BatchRepository>();
+    builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+    builder.Services.AddScoped<INCSRepository, NCSRepository>();
+    builder.Services.AddScoped<IModulesRepository, ModulesRepository>();
+    builder.Services.AddScoped<IModuleTaskRepository, ModuleTaskRepository>();
 
 // Configure AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));

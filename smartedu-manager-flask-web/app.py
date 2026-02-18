@@ -92,6 +92,48 @@ class CreateCourseInstructorForm(FlaskForm):
     InstructorId = SelectField('Instructor', validators=[InputRequired()], coerce=int)
     submit = SubmitField('Assign Instructor')
 
+class CreateNCSForm(FlaskForm):
+    Version = StringField('Version', validators=[InputRequired(), Length(max=50)])
+    Name = StringField('Name', validators=[InputRequired(), Length(max=200)])
+    UpdatedDate = StringField('Updated Date', validators=[InputRequired()])
+    CourseId = SelectField('Course', validators=[InputRequired()], coerce=int)
+    submit = SubmitField('Create NCS')
+
+class UpdateNCSForm(FlaskForm):
+    Version = StringField('Version', validators=[Length(max=50)])
+    Name = StringField('Name', validators=[Length(max=200)])
+    UpdatedDate = StringField('Updated Date')
+    CourseId = SelectField('Course', coerce=int)
+    submit = SubmitField('Update NCS')
+
+class CreateModuleForm(FlaskForm):
+    ModuleNo = StringField('Module No', validators=[InputRequired(), Length(max=50)])
+    ModuleName = StringField('Module Name', validators=[InputRequired(), Length(max=200)])
+    TheoryHours = IntegerField('Theory Hours', validators=[InputRequired()])
+    PracticalHours = IntegerField('Practical Hours', validators=[InputRequired()])
+    NCSId = SelectField('NCS', validators=[InputRequired()], coerce=int)
+    submit = SubmitField('Create Module')
+
+class UpdateModuleForm(FlaskForm):
+    ModuleNo = StringField('Module No', validators=[Length(max=50)])
+    ModuleName = StringField('Module Name', validators=[Length(max=200)])
+    TheoryHours = IntegerField('Theory Hours')
+    PracticalHours = IntegerField('Practical Hours')
+    NCSId = SelectField('NCS', coerce=int)
+    submit = SubmitField('Update Module')
+
+class CreateModuleTaskForm(FlaskForm):
+    TaskNo = StringField('Task No', validators=[InputRequired(), Length(max=50)])
+    TaskName = StringField('Task Name', validators=[InputRequired(), Length(max=200)])
+    ModuleId = SelectField('Module', validators=[InputRequired()], coerce=int)
+    submit = SubmitField('Create Module Task')
+
+class UpdateModuleTaskForm(FlaskForm):
+    TaskNo = StringField('Task No', validators=[Length(max=50)])
+    TaskName = StringField('Task Name', validators=[Length(max=200)])
+    ModuleId = SelectField('Module', coerce=int)
+    submit = SubmitField('Update Module Task')
+
 # ==================== Helper Functions ====================
 
 def get_auth_headers():
@@ -101,8 +143,8 @@ def get_auth_headers():
 
 from werkzeug.utils import secure_filename
 
-def parse_csv(file_path, preview_rows=5):
-    """Parse CSV file and return headers and first N rows of data."""
+def parse_csv(file_or_content, preview_rows=5, is_file_path=True):
+    """Parse CSV file or content and return headers and first N rows of data."""
     headers = []
     data = []
     
@@ -111,21 +153,34 @@ def parse_csv(file_path, preview_rows=5):
     
     for encoding in encodings:
         try:
-            with open(file_path, 'r', newline='', encoding=encoding) as csvfile:
-                reader = csv.reader(csvfile)
-                try:
+            if is_file_path:
+                # Read from file path
+                with open(file_or_content, 'r', newline='', encoding=encoding) as csvfile:
+                    reader = csv.reader(csvfile)
                     headers = next(reader)
                     # Clean up BOM if present
                     if headers and headers[0].startswith('\ufeff'):
                         headers[0] = headers[0][1:]
-                    
+                
                     for i, row in enumerate(reader):
                         if i >= preview_rows:
                             break
                         data.append(row)
-                    return headers, data
-                except StopIteration:
-                    continue
+            else:
+                # Read from content string
+                csv_content = file_or_content.decode(encoding)
+                reader = csv.reader(io.StringIO(csv_content))
+                headers = next(reader)
+                # Clean up BOM if present
+                if headers and headers[0].startswith('\ufeff'):
+                    headers[0] = headers[0][1:]
+                
+                for i, row in enumerate(reader):
+                    if i >= preview_rows:
+                        break
+                    data.append(row)
+            
+            return headers, data
         except Exception as e:
             continue
     
@@ -139,62 +194,69 @@ def process_csv_for_import(file_path, batch_id, mapping):
         reader = csv.DictReader(csvfile)
         
         for row in reader:
-            student_data = {'BatchId': batch_id}
+            student_data = {'batchId': batch_id}
             
             for csv_header, field_name in mapping.items():
                 if csv_header in row:
                     value = row[csv_header].strip() if row[csv_header] else ''
-                    student_data[field_name] = value
+                    # Convert PascalCase field names to camelCase
+                    camel_case_field = field_name[0].lower() + field_name[1:] if len(field_name) > 0 else field_name
+                    # Ensure specific fields are properly mapped
+                    if camel_case_field == 'nICNo':
+                        camel_case_field = 'nicNo'
+                    elif camel_case_field == 'mISNo':
+                        camel_case_field = 'misNo'
+                    student_data[camel_case_field] = value
             
             # Set default values for required fields that might not be mapped
             # This is important to ensure the API accepts the request
-            if 'MISNo' not in student_data or not student_data['MISNo']:
+            if 'misNo' not in student_data or not student_data['misNo']:
                 import uuid
-                student_data['MISNo'] = f"ST-{uuid.uuid4().hex[:8]}"
+                student_data['misNo'] = f"ST-{uuid.uuid4().hex[:8]}"
             
-            if 'NameWithInitials' not in student_data or not student_data['NameWithInitials']:
+            if 'nameWithInitials' not in student_data or not student_data['nameWithInitials']:
                 # Use full name as fallback if name with initials not provided
-                if 'FullName' in student_data and student_data['FullName']:
+                if 'fullName' in student_data and student_data['fullName']:
                     # Take first part of full name as initials fallback
-                    student_data['NameWithInitials'] = student_data['FullName'].split()[0] if ' ' in student_data['FullName'] else student_data['FullName']
+                    student_data['nameWithInitials'] = student_data['fullName'].split()[0] if ' ' in student_data['fullName'] else student_data['fullName']
                 else:
-                    student_data['NameWithInitials'] = ''
+                    student_data['nameWithInitials'] = ''
             
-            if 'FullName' not in student_data or not student_data['FullName']:
-                if 'NameWithInitials' in student_data and student_data['NameWithInitials']:
-                    student_data['FullName'] = student_data['NameWithInitials']
+            if 'fullName' not in student_data or not student_data['fullName']:
+                if 'nameWithInitials' in student_data and student_data['nameWithInitials']:
+                    student_data['fullName'] = student_data['nameWithInitials']
                 else:
-                    student_data['FullName'] = ''
+                    student_data['fullName'] = ''
             
-            if 'NICNo' not in student_data or not student_data['NICNo']:
-                student_data['NICNo'] = ''
+            if 'nicNo' not in student_data or not student_data['nicNo']:
+                student_data['nicNo'] = ''
             
-            if 'Gender' not in student_data or not student_data['Gender']:
-                student_data['Gender'] = 'Male'
+            if 'gender' not in student_data or not student_data['gender']:
+                student_data['gender'] = 'Male'
             
-            if 'Address' not in student_data or not student_data['Address']:
-                student_data['Address'] = ''
+            if 'address' not in student_data or not student_data['address']:
+                student_data['address'] = ''
             
-            if 'Telephone' not in student_data or not student_data['Telephone']:
-                student_data['Telephone'] = ''
+            if 'telephone' not in student_data or not student_data['telephone']:
+                student_data['telephone'] = ''
             
-            if 'Email' not in student_data or not student_data['Email']:
-                if 'MISNo' in student_data:
-                    student_data['Email'] = f"{student_data['MISNo']}@example.com"
+            if 'email' not in student_data or not student_data['email']:
+                if 'misNo' in student_data:
+                    student_data['email'] = f"{student_data['misNo']}@example.com"
                 else:
-                    student_data['Email'] = ''
+                    student_data['email'] = ''
             
-            if 'GSDivision' not in student_data or not student_data['GSDivision']:
-                student_data['GSDivision'] = 'Unknown'
+            if 'gsDivision' not in student_data or not student_data['gsDivision']:
+                student_data['gsDivision'] = 'Unknown'
             
-            if 'AGDivision' not in student_data or not student_data['AGDivision']:
-                student_data['AGDivision'] = 'Unknown'
+            if 'agDivision' not in student_data or not student_data['agDivision']:
+                student_data['agDivision'] = 'Unknown'
             
             # Cleanup and normalize data
-            if 'Gender' in student_data:
-                student_data['Gender'] = student_data['Gender'].capitalize()
-            if 'Email' in student_data and student_data['Email'] and '@' not in student_data['Email']:
-                student_data['Email'] = f"{student_data['Email']}@example.com"
+            if 'gender' in student_data:
+                student_data['gender'] = student_data['gender'].capitalize()
+            if 'email' in student_data and student_data['email'] and '@' not in student_data['email']:
+                student_data['email'] = f"{student_data['email']}@example.com"
             
             students.append(student_data)
     
@@ -469,6 +531,510 @@ def assign_instructors_to_course(id):
                          csrf_token=token)
 
 
+# ==================== NCS Routes ====================
+
+@app.route('/ncs')
+def ncs():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get NCS records
+    ncs_response = api_request('GET', 'ncs')
+    if ncs_response and ncs_response.status_code == 200:
+        ncs_list = ncs_response.json()
+        print("NCS List:", ncs_list)  # Debug print
+    else:
+        ncs_list = []
+        flash('Failed to load NCS records', 'danger')
+    
+    # Get modules count
+    modules_response = api_request('GET', 'modules')
+    if modules_response and modules_response.status_code == 200:
+        modules_count = len(modules_response.json())
+    else:
+        modules_count = 0
+    
+    # Get module tasks count
+    tasks_response = api_request('GET', 'moduletasks')
+    if tasks_response and tasks_response.status_code == 200:
+        tasks_count = len(tasks_response.json())
+    else:
+        tasks_count = 0
+    
+    return render_template('ncs.html', 
+                         ncs_list=ncs_list, 
+                         ncs_count=len(ncs_list), 
+                         modules_count=modules_count, 
+                         tasks_count=tasks_count)
+
+@app.route('/ncs/create', methods=['GET', 'POST'])
+@app.route('/courses/<int:course_id>/ncs/create', methods=['GET', 'POST'])
+def create_ncs(course_id=None):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    form = CreateNCSForm()
+    
+    # Get courses for dropdown
+    courses_response = api_request('GET', 'courses')
+    if courses_response and courses_response.status_code == 200:
+        courses = courses_response.json()
+        form.CourseId.choices = [(course['courseId'], course['courseName']) for course in courses]
+    
+    # If course_id is provided, pre-select that course
+    if course_id:
+        form.CourseId.data = course_id
+    
+    if form.validate_on_submit():
+        data = {
+            'Version': form.Version.data,
+            'Name': form.Name.data,
+            'UpdatedDate': form.UpdatedDate.data,
+            'CourseId': form.CourseId.data
+        }
+        
+        response = api_request('POST', 'ncs', data=data)
+        
+        if response and response.status_code == 201:
+            flash('NCS record created successfully!', 'success')
+            if course_id:
+                return redirect(url_for('manage_course_ncs', course_id=course_id))
+            else:
+                return redirect(url_for('ncs'))
+        else:
+            error_msg = 'Failed to create NCS record'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    # Get course details if creating from course page
+    course = None
+    if course_id:
+        course_response = api_request('GET', f'courses/{course_id}')
+        if course_response and course_response.status_code == 200:
+            course = course_response.json()
+    
+    return render_template('create_ncs.html', form=form, course=course)
+
+@app.route('/ncs/<int:id>/edit', methods=['GET', 'POST'])
+def edit_ncs(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get NCS record
+    ncs_response = api_request('GET', f'ncs/{id}')
+    if not ncs_response or ncs_response.status_code != 200:
+        flash('NCS record not found', 'danger')
+        return redirect(url_for('ncs'))
+    ncs_record = ncs_response.json()
+    
+    form = UpdateNCSForm()
+    
+    # Get courses for dropdown
+    courses_response = api_request('GET', 'courses')
+    if courses_response and courses_response.status_code == 200:
+        courses = courses_response.json()
+        form.CourseId.choices = [(course['courseId'], course['courseName']) for course in courses]
+    
+    if request.method == 'GET':
+        form.Version.data = ncs_record['Version']
+        form.Name.data = ncs_record['Name']
+        form.UpdatedDate.data = ncs_record['UpdatedDate'].split('T')[0]
+        form.CourseId.data = ncs_record['CourseId']
+    
+    if form.validate_on_submit():
+        data = {}
+        if form.Version.data:
+            data['Version'] = form.Version.data
+        if form.Name.data:
+            data['Name'] = form.Name.data
+        if form.UpdatedDate.data:
+            data['UpdatedDate'] = form.UpdatedDate.data
+        if form.CourseId.data:
+            data['CourseId'] = form.CourseId.data
+        
+        response = api_request('PUT', f'ncs/{id}', data=data)
+        
+        if response and response.status_code == 200:
+            flash('NCS record updated successfully!', 'success')
+            return redirect(url_for('ncs'))
+        else:
+            error_msg = 'Failed to update NCS record'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('edit_ncs.html', form=form, ncs_record=ncs_record)
+
+@app.route('/ncs/<int:id>/delete', methods=['POST'])
+def delete_ncs(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('ncs'))
+    
+    response = api_request('DELETE', f'ncs/{id}')
+    
+    if response and response.status_code == 200:
+        flash('NCS deleted successfully!', 'success')
+    else:
+        flash('Failed to delete NCS', 'danger')
+    
+    return redirect(url_for('ncs'))
+
+@app.route('/courses/<int:course_id>/ncs')
+def manage_course_ncs(course_id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get course details
+    course_response = api_request('GET', f'courses/{course_id}')
+    if not course_response or course_response.status_code != 200:
+        flash('Course not found', 'danger')
+        return redirect(url_for('courses'))
+    course = course_response.json()
+    
+    # Get NCS records for this course
+    ncs_response = api_request('GET', f'ncs/course/{course_id}')
+    if ncs_response and ncs_response.status_code == 200:
+        ncs_list = ncs_response.json()
+    else:
+        ncs_list = []
+        flash('Failed to load NCS records', 'danger')
+    
+    # Get modules count for each NCS
+    modules_count = 0
+    tasks_count = 0
+    for ncs in ncs_list:
+        modules_count += len(ncs.get('Modules', []))
+        for module in ncs.get('Modules', []):
+            tasks_count += len(module.get('Tasks', []))
+    
+    return render_template('ncs_management.html',
+                         ncs_list=ncs_list,
+                         ncs_count=len(ncs_list),
+                         modules_count=modules_count,
+                         tasks_count=tasks_count,
+                         course=course)
+
+    response = api_request('DELETE', f'ncs/{id}')
+    
+    if response and response.status_code == 200:
+        flash('NCS record deleted successfully!', 'success')
+    else:
+        error_msg = 'Failed to delete NCS record'
+        if response:
+            try:
+                error_msg = response.json().get('message', error_msg)
+            except:
+                pass
+        flash(error_msg, 'danger')
+    
+    return redirect(url_for('ncs'))
+
+# ==================== Modules Routes ====================
+
+@app.route('/modules')
+@app.route('/modules/<int:ncs_id>')
+def modules(ncs_id=None):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    if ncs_id:
+        response = api_request('GET', f'modules/ncs/{ncs_id}')
+    else:
+        response = api_request('GET', 'modules')
+    
+    if response and response.status_code == 200:
+        modules_list = response.json()
+    else:
+        modules_list = []
+        flash('Failed to load modules', 'danger')
+    
+    return render_template('modules.html', modules_list=modules_list, ncs_id=ncs_id)
+
+@app.route('/modules/create', methods=['GET', 'POST'])
+@app.route('/ncs/<int:ncs_id>/modules/create', methods=['GET', 'POST'])
+def create_module(ncs_id=None):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    form = CreateModuleForm()
+    
+    # Get NCS records for dropdown
+    ncs_response = api_request('GET', 'ncs')
+    if ncs_response and ncs_response.status_code == 200:
+        ncs_list = ncs_response.json()
+        form.NCSId.choices = [(ncs['id'], ncs['name']) for ncs in ncs_list]
+    
+    # Preselect NCS if provided
+    if ncs_id:
+        form.NCSId.data = ncs_id
+    
+    if form.validate_on_submit():
+        data = {
+            'ModuleNo': form.ModuleNo.data,
+            'ModuleName': form.ModuleName.data,
+            'TheoryHours': form.TheoryHours.data,
+            'PracticalHours': form.PracticalHours.data,
+            'NCSId': form.NCSId.data
+        }
+        
+        response = api_request('POST', 'modules', data=data)
+        
+        if response and response.status_code == 201:
+            flash('Module created successfully!', 'success')
+            return redirect(url_for('modules'))
+        else:
+            error_msg = 'Failed to create module'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('create_module.html', form=form)
+
+@app.route('/modules/<int:id>/edit', methods=['GET', 'POST'])
+def edit_module(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get module
+    module_response = api_request('GET', f'modules/{id}')
+    if not module_response or module_response.status_code != 200:
+        flash('Module not found', 'danger')
+        return redirect(url_for('modules'))
+    module = module_response.json()
+    
+    form = UpdateModuleForm()
+    
+    # Get NCS records for dropdown
+    ncs_response = api_request('GET', 'ncs')
+    if ncs_response and ncs_response.status_code == 200:
+        ncs_list = ncs_response.json()
+        form.NCSId.choices = [(ncs['id'], ncs['name']) for ncs in ncs_list]
+    
+    if request.method == 'GET':
+        form.ModuleNo.data = module['moduleNo']
+        form.ModuleName.data = module['moduleName']
+        form.TheoryHours.data = module['theoryHours']
+        form.PracticalHours.data = module['practicalHours']
+        form.NCSId.data = module['ncsId']
+    
+    if form.validate_on_submit():
+        data = {}
+        if form.ModuleNo.data:
+            data['moduleNo'] = form.ModuleNo.data
+        if form.ModuleName.data:
+            data['moduleName'] = form.ModuleName.data
+        if form.TheoryHours.data:
+            data['theoryHours'] = form.TheoryHours.data
+        if form.PracticalHours.data:
+            data['practicalHours'] = form.PracticalHours.data
+        if form.NCSId.data:
+            data['ncsId'] = form.NCSId.data
+        
+        response = api_request('PUT', f'modules/{id}', data=data)
+        
+        if response and response.status_code == 200:
+            flash('Module updated successfully!', 'success')
+            return redirect(url_for('modules'))
+        else:
+            error_msg = 'Failed to update module'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('edit_module.html', form=form, module=module)
+
+@app.route('/modules/<int:id>/delete', methods=['POST'])
+def delete_module(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('modules'))
+    
+    response = api_request('DELETE', f'modules/{id}')
+    
+    if response and response.status_code == 200:
+        flash('Module deleted successfully!', 'success')
+    else:
+        error_msg = 'Failed to delete module'
+        if response:
+            try:
+                error_msg = response.json().get('message', error_msg)
+            except:
+                pass
+        flash(error_msg, 'danger')
+    
+    return redirect(url_for('modules'))
+
+# ==================== Module Tasks Routes ====================
+
+@app.route('/module-tasks')
+@app.route('/module-tasks/<int:module_id>')
+def module_tasks(module_id=None):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    if module_id:
+        response = api_request('GET', f'moduletasks/module/{module_id}')
+    else:
+        response = api_request('GET', 'moduletasks')
+    
+    if response and response.status_code == 200:
+        tasks_list = response.json()
+    else:
+        tasks_list = []
+        flash('Failed to load module tasks', 'danger')
+    
+    return render_template('module_tasks.html', tasks_list=tasks_list, module_id=module_id)
+
+@app.route('/module-tasks/create', methods=['GET', 'POST'])
+@app.route('/modules/<int:module_id>/tasks/create', methods=['GET', 'POST'])
+def create_module_task(module_id=None):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    form = CreateModuleTaskForm()
+    
+    # Get modules for dropdown
+    modules_response = api_request('GET', 'modules')
+    if modules_response and modules_response.status_code == 200:
+        modules_list = modules_response.json()
+        form.ModuleId.choices = [(module['id'], module['moduleName']) for module in modules_list]
+    
+    # Preselect module if provided
+    if module_id:
+        form.ModuleId.data = module_id
+    
+    if form.validate_on_submit():
+        data = {
+            'taskNo': form.TaskNo.data,
+            'taskName': form.TaskName.data,
+            'moduleId': form.ModuleId.data
+        }
+        
+        response = api_request('POST', 'moduletasks', data=data)
+        
+        if response and response.status_code == 201:
+            flash('Module task created successfully!', 'success')
+            return redirect(url_for('module_tasks'))
+        else:
+            error_msg = 'Failed to create module task'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('create_module_task.html', form=form)
+
+@app.route('/module-tasks/<int:id>/edit', methods=['GET', 'POST'])
+def edit_module_task(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get module task
+    task_response = api_request('GET', f'moduletasks/{id}')
+    if not task_response or task_response.status_code != 200:
+        flash('Module task not found', 'danger')
+        return redirect(url_for('module_tasks'))
+    task = task_response.json()
+    
+    form = UpdateModuleTaskForm()
+    
+    # Get modules for dropdown
+    modules_response = api_request('GET', 'modules')
+    if modules_response and modules_response.status_code == 200:
+        modules_list = modules_response.json()
+        form.ModuleId.choices = [(module['id'], module['moduleName']) for module in modules_list]
+    
+    if request.method == 'GET':
+        form.TaskNo.data = task['taskNo']
+        form.TaskName.data = task['taskName']
+        form.ModuleId.data = task['moduleId']
+    
+    if form.validate_on_submit():
+        data = {}
+        if form.TaskNo.data:
+            data['taskNo'] = form.TaskNo.data
+        if form.TaskName.data:
+            data['taskName'] = form.TaskName.data
+        if form.ModuleId.data:
+            data['moduleId'] = form.ModuleId.data
+        
+        response = api_request('PUT', f'moduletasks/{id}', data=data)
+        
+        if response and response.status_code == 200:
+            flash('Module task updated successfully!', 'success')
+            return redirect(url_for('module_tasks'))
+        else:
+            error_msg = 'Failed to update module task'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('edit_module_task.html', form=form, task=task)
+
+@app.route('/module-tasks/<int:id>/delete', methods=['POST'])
+def delete_module_task(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('module_tasks'))
+    
+    response = api_request('DELETE', f'moduletasks/{id}')
+    
+    if response and response.status_code == 200:
+        flash('Module task deleted successfully!', 'success')
+    else:
+        error_msg = 'Failed to delete module task'
+        if response:
+            try:
+                error_msg = response.json().get('message', error_msg)
+            except:
+                pass
+        flash(error_msg, 'danger')
+    
+    return redirect(url_for('module_tasks'))
+
 @app.route('/courses/<int:id>/assign-batches', methods=['GET', 'POST'])
 def assign_batches_to_course(id):
     if 'access_token' not in session:
@@ -585,9 +1151,94 @@ def upload_students_csv():
     batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
     batch_choices = [(batch['batchId'], batch['batchCode']) for batch in batches]
     
-    if request.method == 'GET':
+    # Step 1: Upload CSV and select batch
+    if request.method == 'GET' or (request.method == 'POST' and not request.form.get('step') == '2'):
         form = UploadStudentsCsvForm()
         form.batchId.choices = batch_choices
+        
+        if request.method == 'POST':
+            if form.validate_on_submit():
+                try:
+                    # Parse CSV file directly without saving to disk
+                    file = form.file.data
+                    filename = secure_filename(file.filename)
+                    
+                    # Try to parse CSV with different encodings
+                    csv_headers = None
+                    complete_csv_data = None
+                    csv_data = []
+                    
+                    # Try different encodings to handle various CSV file formats
+                    encodings = ['utf-8', 'iso-8859-1', 'cp1252']
+                    for encoding in encodings:
+                        try:
+                            # Read and decode file content
+                            file_content = file.read()
+                            decoded_content = file_content.decode(encoding)
+                            
+                            # Parse CSV data
+                            csv_reader = csv.DictReader(io.StringIO(decoded_content))
+                            csv_headers = csv_reader.fieldnames
+                            complete_csv_data = list(csv_reader)
+                            
+                            # Preview data (first 5 rows)
+                            for i, row in enumerate(complete_csv_data):
+                                if i >= 5:
+                                    break
+                                csv_data.append(list(row.values()))
+                            
+                            break  # Success, move to next step
+                        except Exception as e:
+                            print(f"Failed to parse CSV with encoding {encoding}: {e}")
+                            continue
+                    
+                    if not csv_headers or not complete_csv_data:
+                        flash('Failed to parse CSV file with any supported encoding. Please check the file format.', 'danger')
+                        return redirect(url_for('upload_students_csv'))
+                    
+                    # Store parsed data in session for second step
+                    session['complete_csv_data'] = complete_csv_data
+                    session['csv_headers'] = csv_headers
+                    session['batch_id'] = form.batchId.data
+                    
+                    # Render mapping interface
+                    mapping_form = MapCsvFieldsForm()
+                    
+                    # Auto-detect possible mappings based on header similarity
+                    auto_mapping = {}
+                    for csv_header in csv_headers:
+                        csv_header_lower = csv_header.lower().strip()
+                        for field in student_fields:
+                            field_name_lower = field['name'].lower()
+                            field_label_lower = field['label'].lower()
+                            
+                            if csv_header_lower in field_name_lower or csv_header_lower in field_label_lower or \
+                               field_name_lower in csv_header_lower or field_label_lower in csv_header_lower:
+                                auto_mapping[csv_header] = field['name']
+                                break
+                    
+                    session['auto_mapping'] = auto_mapping
+                    
+                    return render_template('upload_students_csv.html', 
+                                         form=mapping_form, 
+                                         csv_data=csv_data, 
+                                         csv_headers=csv_headers, 
+                                         student_fields=student_fields,
+                                         file_name=filename,
+                                         batch_id=form.batchId.data,
+                                         auto_mapping=auto_mapping,
+                                         step=2)
+                except Exception as e:
+                    flash(f'Error parsing CSV file: {str(e)}', 'danger')
+                    print(f"Error details: {str(e)}")
+                    return redirect(url_for('upload_students_csv'))
+            else:
+                print(f"Form errors: {form.errors}")
+                print(f"Form data: {form.data}")
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        flash(f'{field}: {error}', 'danger')
+        
         return render_template('upload_students_csv.html', 
                            form=form, 
                            csv_data=None, 
@@ -595,156 +1246,144 @@ def upload_students_csv():
                            student_fields=student_fields,
                            step=1)
     
-    # Handle first step: upload CSV and extract data
-    elif request.method == 'POST' and not request.form.get('file_name'):
-        print(f"Request form: {request.form}")
-        print(f"Request files: {request.files}")
-        
-        form = UploadStudentsCsvForm()
-        form.batchId.choices = batch_choices
-        
-        if form.validate_on_submit():
-            print(f"Form validated successfully: {form.data}")
-            try:
-                # Save CSV file to temp directory
-                file = form.file.data
-                filename = secure_filename(file.filename)
-                temp_dir = 'temp_csv'
-                if not os.path.exists(temp_dir):
-                    os.makedirs(temp_dir)
-                file_path = os.path.join(temp_dir, filename)
-                file.save(file_path)
-                
-                # Parse CSV file
-                csv_headers, csv_data = parse_csv(file_path)
-                
-                # Store file info in session for second step
-                session['csv_file_path'] = file_path
-                session['csv_headers'] = csv_headers
-                session['batch_id'] = form.batchId.data
-                
-                # Render mapping interface
-                mapping_form = MapCsvFieldsForm()
-                
-                # Auto-detect possible mappings based on header similarity
-                auto_mapping = {}
-                for csv_header in csv_headers:
-                    csv_header_lower = csv_header.lower().strip()
-                    for field in student_fields:
-                        field_name_lower = field['name'].lower()
-                        field_label_lower = field['label'].lower()
-                        
-                        if csv_header_lower in field_name_lower or csv_header_lower in field_label_lower or \
-                           field_name_lower in csv_header_lower or field_label_lower in csv_header_lower:
-                            auto_mapping[csv_header] = field['name']
-                            break
-                
-                session['auto_mapping'] = auto_mapping
-                
-                return render_template('upload_students_csv.html', 
-                                     form=mapping_form, 
-                                     csv_data=csv_data, 
-                                     csv_headers=csv_headers, 
-                                     student_fields=student_fields,
-                                     file_name=filename,
-                                     batch_id=form.batchId.data,
-                                     auto_mapping=auto_mapping,
-                                     step=2)
-            except Exception as e:
-                flash(f'Error parsing CSV file: {str(e)}', 'danger')
-                print(f"Error details: {str(e)}")
-                return redirect(url_for('upload_students_csv'))
-        else:
-            print(f"Form errors: {form.errors}")
-            print(f"Form data: {form.data}")
-            for field, errors in form.errors.items():
-                for error in errors:
-                    flash(f'{field}: {error}', 'danger')
-            return render_template('upload_students_csv.html', 
-                               form=form, 
-                               csv_data=None, 
-                               csv_headers=None, 
-                               student_fields=student_fields,
-                               step=1)
-    
-    # Handle second step: map fields and import
-    else:
+    # Step 2: Map fields with CSV headers and student model
+    elif request.method == 'POST' and request.form.get('step') == '2':
+        # Initialize the correct form class for step 2
         form = MapCsvFieldsForm()
-        if form.validate_on_submit():
-            try:
-                file_path = session.get('csv_file_path')
-                batch_id = int(session.get('batch_id'))
-                csv_headers = session.get('csv_headers')
+        
+        try:
+            # Get parsed data from session
+            complete_csv_data = session.get('complete_csv_data')
+            batch_id = int(session.get('batch_id'))
+            csv_headers = session.get('csv_headers')
+            
+            if not complete_csv_data:
+                flash('CSV data not found. Please reupload.', 'danger')
+                return redirect(url_for('upload_students_csv'))
+            
+            # Parse mapping from form
+            mapping = {}
+            for i, csv_header in enumerate(csv_headers):
+                field_name = request.form.get(f'mapping_{i}')
+                if field_name:
+                    mapping[csv_header] = field_name
+            
+            if not mapping:
+                flash('Please map at least one CSV column to a student field.', 'danger')
+                return redirect(url_for('upload_students_csv'))
+            
+            # Process CSV data and create students directly from session data
+            students = []
+            for row in complete_csv_data:
+                student_data = {'batchId': batch_id}
                 
-                if not file_path or not os.path.exists(file_path):
-                    flash('CSV file not found. Please reupload.', 'danger')
-                    return redirect(url_for('upload_students_csv'))
-                
-                # Parse mapping from form
-                mapping = {}
-                for i, csv_header in enumerate(csv_headers):
-                    field_name = request.form.get(f'mapping_{i}')
-                    if field_name:
-                        mapping[csv_header] = field_name
-                
-                if not mapping:
-                    flash('Please map at least one CSV column to a student field.', 'danger')
-                    return redirect(url_for('upload_students_csv'))
-                
-                # Process CSV and create students
-                students = process_csv_for_import(file_path, batch_id, mapping)
-                
-                if students:
-                    # Send to API using CreateStudent endpoint (loop through each student)
-                    success_count = 0
-                    failed_count = 0
-                    errors = []
-                    
-                    for student in students:
-                        # Fields that must be mapped (at least one required field should be present)
-                        # But we'll proceed with whatever fields are mapped
-                        
-                        response = api_request('POST', 'students', data=student)
-                        if response and response.status_code == 201:
-                            success_count += 1
-                        else:
-                            failed_count += 1
-                            error_msg = 'Unknown error'
-                            if response:
-                                try:
-                                    error_msg = response.json().get('message', error_msg)
-                                except:
-                                    error_msg = f"HTTP {response.status_code}"
-                            errors.append(f"{student.get('MISNo', 'Unknown')}: {error_msg}")
-                
-                    # Show detailed results
-                    flash(f'Successfully imported {success_count} out of {len(students)} students', 'success')
-                    if failed_count > 0:
-                        flash(f'Failed to import {failed_count} students. Check logs for details.', 'danger')
-                        # Log errors
-                        for error in errors:
-                            print(f"Import Error: {error}")
+                for csv_header, field_name in mapping.items():
+                    if csv_header in row:
+                        value = row[csv_header].strip() if row[csv_header] else ''
+                        # Convert PascalCase field names to camelCase
+                        camel_case_field = field_name[0].lower() + field_name[1:] if len(field_name) > 0 else field_name
+                        # Ensure specific fields are properly mapped
+                        if camel_case_field == 'nICNo':
+                            camel_case_field = 'nicNo'
+                        elif camel_case_field == 'mISNo':
+                            camel_case_field = 'misNo'
+                        student_data[camel_case_field] = value
+            
+                # Set default values for required fields that might not be mapped
+                if 'misNo' not in student_data or not student_data['misNo']:
+                    import uuid
+                    student_data['misNo'] = f"ST-{uuid.uuid4().hex[:8]}"
+            
+                if 'nameWithInitials' not in student_data or not student_data['nameWithInitials']:
+                    if 'fullName' in student_data and student_data['fullName']:
+                        student_data['nameWithInitials'] = student_data['fullName'].split()[0] if ' ' in student_data['fullName'] else student_data['fullName']
+                    else:
+                        student_data['nameWithInitials'] = ''
+            
+                if 'fullName' not in student_data or not student_data['fullName']:
+                    if 'nameWithInitials' in student_data and student_data['nameWithInitials']:
+                        student_data['fullName'] = student_data['nameWithInitials']
+                    else:
+                        student_data['fullName'] = ''
+            
+                if 'nicNo' not in student_data or not student_data['nicNo']:
+                    student_data['nicNo'] = ''
+            
+                if 'gender' not in student_data or not student_data['gender']:
+                    student_data['gender'] = 'Male'
+            
+                if 'address' not in student_data or not student_data['address']:
+                    student_data['address'] = ''
+            
+                if 'telephone' not in student_data or not student_data['telephone']:
+                    student_data['telephone'] = ''
+            
+                if 'email' not in student_data or not student_data['email']:
+                    if 'misNo' in student_data:
+                        student_data['email'] = f"{student_data['misNo']}@example.com"
+                    else:
+                        student_data['email'] = ''
+            
+                if 'gsDivision' not in student_data or not student_data['gsDivision']:
+                    student_data['gsDivision'] = 'Unknown'
+            
+                if 'agDivision' not in student_data or not student_data['agDivision']:
+                    student_data['agDivision'] = 'Unknown'
+            
+                # Cleanup and normalize data
+                if 'gender' in student_data:
+                    student_data['gender'] = student_data['gender'].capitalize()
+                if 'email' in student_data and student_data['email'] and '@' not in student_data['email']:
+                    student_data['email'] = f"{student_data['email']}@example.com"
+            
+                students.append(student_data)
+            
+            if students:
+                # Send to API using CreateStudent endpoint (loop through each student)
+                success_count = 0
+                failed_count = 0
+                errors = []
+            
+                for student in students:
+                    response = api_request('POST', 'students', data=student)
+                    if response and response.status_code == 201:
+                        success_count += 1
+                    else:
+                        failed_count += 1
+                        error_msg = 'Unknown error'
+                        if response:
+                            try:
+                                error_msg = response.json().get('message', error_msg)
+                            except:
+                                error_msg = f"HTTP {response.status_code}"
+                        errors.append(f"{student.get('misNo', 'Unknown')}: {error_msg}")
+            
+                # Show detailed results
+                flash(f'Successfully imported {success_count} out of {len(students)} students', 'success')
+                if failed_count > 0:
+                    flash(f'Failed to import {failed_count} students. Check logs for details.', 'danger')
+                    # Log errors
+                    for error in errors:
+                        print(f"Import Error: {error}")
                 else:
                     flash('No valid student data found in CSV', 'warning')
-                
-                # Cleanup temp file and session
-                os.remove(file_path)
-                session.pop('csv_file_path', None)
-                session.pop('csv_headers', None)
-                session.pop('batch_id', None)
-                session.pop('auto_mapping', None)
-                
-                return redirect(url_for('students'))
-            except Exception as e:
-                flash(f'Error importing students: {str(e)}', 'danger')
-                print(f"Import Error Details: {str(e)}")
+            
                 # Cleanup session
-                session.pop('csv_file_path', None)
+                session.pop('complete_csv_data', None)
                 session.pop('csv_headers', None)
                 session.pop('batch_id', None)
                 session.pop('auto_mapping', None)
-                return redirect(url_for('upload_students_csv'))
-        else:
+            
+                # Redirect to students list
+                return redirect(url_for('students'))
+        except Exception as e:
+            flash(f'Error importing students: {str(e)}', 'danger')
+            print(f"Import Error Details: {str(e)}")
+            # Cleanup session
+            session.pop('complete_csv_data', None)
+            session.pop('csv_headers', None)
+            session.pop('batch_id', None)
+            session.pop('auto_mapping', None)
             return redirect(url_for('upload_students_csv'))
 
 
@@ -1404,17 +2043,17 @@ def create_student():
     
     if form.validate_on_submit():
         data = {
-            'MISNo': form.MISNo.data,
-            'NameWithInitials': form.NameWithInitials.data,
-            'FullName': form.FullName.data,
-            'NICNo': form.NICNo.data,
-            'Gender': form.Gender.data,
-            'Address': form.Address.data,
-            'Telephone': form.Telephone.data,
-            'Email': form.Email.data,
-            'BatchId': form.BatchId.data,
-            'GSDivision': form.GSDivision.data,
-            'AGDivision': form.AGDivision.data
+            'misNo': form.MISNo.data,
+            'nameWithInitials': form.NameWithInitials.data,
+            'fullName': form.FullName.data,
+            'nicNo': form.NICNo.data,
+            'gender': form.Gender.data,
+            'address': form.Address.data,
+            'telephone': form.Telephone.data,
+            'email': form.Email.data,
+            'batchId': form.BatchId.data,
+            'gsDivision': form.GSDivision.data,
+            'agDivision': form.AGDivision.data
         }
         
         response = api_request('POST', 'students', data=data)
@@ -1452,33 +2091,33 @@ def edit_student(id):
     batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
     
     form = CreateStudentForm(data={
-        'MISNo': student.get('MISNo', ''),
-        'NameWithInitials': student.get('NameWithInitials', ''),
-        'FullName': student.get('FullName', student.get('fullName', '')),
-        'NICNo': student.get('NICNo', student.get('nic', '')),
-        'Gender': student.get('Gender', ''),
-        'Address': student.get('Address', ''),
-        'Telephone': student.get('Telephone', student.get('contactNumber', '')),
-        'Email': student.get('Email', student.get('email', '')),
-        'BatchId': student.get('BatchId', student.get('batchId', 0)),
-        'GSDivision': student.get('GSDivision', ''),
-        'AGDivision': student.get('AGDivision', '')
+        'MISNo': student.get('misNo', ''),
+        'NameWithInitials': student.get('nameWithInitials', ''),
+        'FullName': student.get('fullName', ''),
+        'NICNo': student.get('nicNo', ''),
+        'Gender': student.get('gender', ''),
+        'Address': student.get('address', ''),
+        'Telephone': student.get('telephone', ''),
+        'Email': student.get('email', ''),
+        'BatchId': student.get('batchId', 0),
+        'GSDivision': student.get('gsDivision', ''),
+        'AGDivision': student.get('agDivision', '')
     })
     form.BatchId.choices = [(batch['batchId'], batch['batchCode']) for batch in batches]
     
     if form.validate_on_submit():
         data = {
-            'MISNo': form.MISNo.data,
-            'NameWithInitials': form.NameWithInitials.data,
-            'FullName': form.FullName.data,
-            'NICNo': form.NICNo.data,
-            'Gender': form.Gender.data,
-            'Address': form.Address.data,
-            'Telephone': form.Telephone.data,
-            'Email': form.Email.data,
-            'BatchId': form.BatchId.data,
-            'GSDivision': form.GSDivision.data,
-            'AGDivision': form.AGDivision.data
+            'misNo': form.MISNo.data,
+            'nameWithInitials': form.NameWithInitials.data,
+            'fullName': form.FullName.data,
+            'nicNo': form.NICNo.data,
+            'gender': form.Gender.data,
+            'address': form.Address.data,
+            'telephone': form.Telephone.data,
+            'email': form.Email.data,
+            'batchId': form.BatchId.data,
+            'gsDivision': form.GSDivision.data,
+            'agDivision': form.AGDivision.data
         }
         
         response = api_request('PUT', f'students/{id}', data=data)

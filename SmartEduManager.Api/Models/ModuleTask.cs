@@ -10,5 +10,8 @@ namespace SmartEduManager.Api.Models
         public int Id { get; set; }
         public string TaskNo { get; set; } = string.Empty;
         public string TaskName { get; set; } = string.Empty;
+
+        public int ModuleId { get; set; }
+        public Modules Module { get; set; } = null!;
     }
 }
