@@ -87,6 +87,7 @@ builder.Services.AddScoped<ICourseInstructorRepository, CourseInstructorReposito
     builder.Services.AddScoped<INCSRepository, NCSRepository>();
     builder.Services.AddScoped<IModulesRepository, ModulesRepository>();
     builder.Services.AddScoped<IModuleTaskRepository, ModuleTaskRepository>();
+    builder.Services.AddScoped<IContinuousAssessmentRepository, ContinuousAssessmentRepository>();
 
 // Configure AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));

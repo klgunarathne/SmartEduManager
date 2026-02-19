@@ -20,9 +20,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
      public DbSet<Batch> Batches { get; set; } = null!;
      public DbSet<Student> Students { get; set; } = null!;
      public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
-     public DbSet<NCS> NCS { get; set; } = null!;
-     public DbSet<Modules> Modules { get; set; } = null!;
-     public DbSet<ModuleTask> ModuleTasks { get; set; } = null!;
+      public DbSet<NCS> NCS { get; set; } = null!;
+      public DbSet<Modules> Modules { get; set; } = null!;
+      public DbSet<ModuleTask> ModuleTasks { get; set; } = null!;
+      public DbSet<ContinuousAssessment> ContinuousAssessments { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -83,5 +84,23 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasMany(m => m.Tasks)
             .WithOne(t => t.Module)
             .HasForeignKey(t => t.ModuleId);
+
+        // Continuous Assessment relationships
+        builder.Entity<ContinuousAssessment>()
+            .HasOne(ca => ca.Student)
+            .WithMany()
+            .HasForeignKey(ca => ca.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ContinuousAssessment>()
+            .HasOne(ca => ca.ModuleTask)
+            .WithMany()
+            .HasForeignKey(ca => ca.ModuleTaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Composite unique key to prevent duplicate assessments
+        builder.Entity<ContinuousAssessment>()
+            .HasIndex(ca => new { ca.StudentId, ca.ModuleTaskId })
+            .IsUnique();
     }
 }

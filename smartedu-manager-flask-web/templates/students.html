@@ -232,6 +232,10 @@
                                                     class="btn-action btn-edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
+                                                <a href="{{ url_for('student_continuous_assessment', id=student['studentId']) }}"
+                                                    class="btn-action btn-view">
+                                                    <i class="fas fa-clipboard-check"></i>
+                                                </a>
                                                 <button class="btn-action btn-delete"
                                                     onclick="deleteStudent({{ student['studentId'] }}, '{{ csrf_token() }}')">
                                                     <i class="fas fa-trash"></i>

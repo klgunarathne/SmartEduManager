@@ -20,7 +20,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # Secret key for session man
 app.config['API_BASE_URL'] = os.getenv('API_BASE_URL', 'https://localhost:7160/api')  # Base URL for the SmartEdu Manager API
 
 # Initialize CSRF protection
-CSRFProtect(app)
+csrf = CSRFProtect(app)
 
 # Create a convenient reference to the API base URL
 API_BASE_URL = app.config['API_BASE_URL']
@@ -133,6 +133,13 @@ class UpdateModuleTaskForm(FlaskForm):
     TaskName = StringField('Task Name', validators=[Length(max=200)])
     ModuleId = SelectField('Module', coerce=int)
     submit = SubmitField('Update Module Task')
+
+class ContinuousAssessmentForm(FlaskForm):
+    AssessmentMark = SelectField('Assessment Mark', validators=[InputRequired()], 
+                               choices=[('C', 'Competent (C)'), ('NYC', 'Not Yet Competent (NYC)')])
+    AssessmentDate = StringField('Assessment Date')
+    AssessorNotes = StringField('Assessor Notes')
+    submit = SubmitField('Save Assessment')
 
 # ==================== Helper Functions ====================
 
@@ -2135,6 +2142,235 @@ def edit_student(id):
             flash(error_msg, 'danger')
     
     return render_template('edit_student.html', form=form, student=student)
+
+@app.route('/students/<int:id>/continuous-assessment', methods=['GET', 'POST'])
+def student_continuous_assessment(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get student details
+    student_response = api_request('GET', f'students/{id}')
+    if not student_response or student_response.status_code != 200:
+        flash('Student not found', 'danger')
+        return redirect(url_for('students'))
+    student = student_response.json()
+    
+    # Get all module tasks (assuming tasks are associated with course via batch)
+    tasks_response = api_request('GET', 'moduletasks')
+    tasks = []
+    if tasks_response and tasks_response.status_code == 200:
+        tasks = tasks_response.json()
+    else:
+        flash('Failed to load module tasks', 'warning')
+    
+    # Get existing assessments for this student
+    assessments_response = api_request('GET', f'continuousassessments/student/{id}')
+    assessments = []
+    if assessments_response and assessments_response.status_code == 200:
+        assessments = assessments_response.json()
+    else:
+        flash('Failed to load existing assessments', 'warning')
+    
+    # Create a dictionary for quick lookup of existing assessments
+    assessment_dict = {assess['moduleTaskId']: assess for assess in assessments}
+    
+    from flask_wtf import FlaskForm
+    class AssessmentForm(FlaskForm):
+        pass
+    
+    form = AssessmentForm()
+    
+    if request.method == 'POST':
+        # Validate CSRF token
+        from flask_wtf.csrf import validate_csrf
+        from wtforms.validators import ValidationError
+        try:
+            validate_csrf(request.form.get('csrf_token'))
+        except ValidationError:
+            flash('CSRF token is invalid. Please try again.', 'danger')
+            return redirect(url_for('student_continuous_assessment', id=id))
+        # Process form submission
+        for task in tasks:
+            task_id = task['id']
+            assessment_mark = request.form.get(f'assessment_mark_{task_id}')
+            assessment_date = request.form.get(f'assessment_date_{task_id}')
+            assessor_notes = request.form.get(f'assessor_notes_{task_id}')
+            
+            if assessment_mark:
+                # Check if assessment exists
+                existing_assessment = assessment_dict.get(task_id)
+                
+                data = {
+                    'assessmentMark': assessment_mark,
+                    'assessmentDate': assessment_date if assessment_date else None,
+                    'assessorNotes': assessor_notes if assessor_notes else None
+                }
+                
+                if existing_assessment:
+                    # Update existing assessment
+                    response = api_request('PUT', f'continuousassessments/{existing_assessment["id"]}', data=data)
+                else:
+                    # Create new assessment
+                    create_data = {
+                        'studentId': id,
+                        'moduleTaskId': task_id,
+                        'assessmentMark': assessment_mark,
+                        'assessmentDate': assessment_date if assessment_date else None,
+                        'assessorNotes': assessor_notes if assessor_notes else None
+                    }
+                    response = api_request('POST', 'continuousassessments', data=create_data)
+                
+                if response and response.status_code not in [200, 201]:
+                    flash(f'Failed to save assessment for task {task["taskNo"]}', 'danger')
+        
+        flash('Continuous assessment marks saved successfully!', 'success')
+        return redirect(url_for('student_continuous_assessment', id=id))
+    
+    return render_template('student_continuous_assessment.html', 
+                         student=student, 
+                         tasks=tasks, 
+                         assessment_dict=assessment_dict,
+                         assessments=assessments,
+                         form=form)
+
+# AJAX endpoint for loading module tasks
+@app.route('/students/<int:student_id>/continuous-assessment/tasks', methods=['GET'])
+@csrf.exempt
+def get_student_assessment_tasks(student_id):
+    if 'access_token' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Get all module tasks
+    tasks_response = api_request('GET', 'moduletasks')
+    if not tasks_response or tasks_response.status_code != 200:
+        return jsonify({'error': 'Failed to load module tasks'}), 500
+    tasks = tasks_response.json()
+    
+    # Create task lookup for save endpoint
+    task_lookup = {task['id']: task for task in tasks}
+    
+    # Get existing assessments for this student
+    assessments_response = api_request('GET', f'continuousassessments/student/{student_id}')
+    assessments = []
+    if assessments_response and assessments_response.status_code == 200:
+        assessments = assessments_response.json()
+    
+    # Create a task lookup dict for merging with assessments
+    task_lookup = {task['id']: task for task in tasks}
+    
+    # Merge task details into assessments
+    enriched_assessments = []
+    for assess in assessments:
+        task_info = task_lookup.get(assess['moduleTaskId'], {})
+        assess['taskNo'] = task_info.get('taskNo', 'N/A')
+        assess['taskName'] = task_info.get('taskName', 'N/A')
+        assess['moduleNo'] = task_info.get('moduleNo', 'N/A')
+        assess['moduleName'] = task_info.get('moduleName', 'N/A')
+        enriched_assessments.append(assess)
+    
+    # Create assessment lookup dict with enriched data
+    assessment_dict = {assess['moduleTaskId']: assess for assess in enriched_assessments}
+    
+    # Group tasks by module
+    modules = {}
+    for task in tasks:
+        module_no = task.get('moduleNo', 'Unknown')
+        if module_no not in modules:
+            modules[module_no] = {
+                'moduleNo': module_no,
+                'moduleName': task.get('moduleName', 'Unknown Module'),
+                'tasks': []
+            }
+        modules[module_no]['tasks'].append({
+            'id': task['id'],
+            'taskNo': task['taskNo'],
+            'taskName': task['taskName'],
+            'assessment': assessment_dict.get(task['id'])
+        })
+    
+    return jsonify({
+        'tasks': list(modules.values()),
+        'assessment_dict': assessment_dict
+    })
+
+# AJAX endpoint for saving a single assessment
+@app.route('/students/<int:student_id>/continuous-assessment/save', methods=['POST'])
+@csrf.exempt
+def save_student_assessment(student_id):
+    if 'access_token' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        task_id = data.get('taskId')
+        assessment_mark = data.get('assessmentMark')
+        assessment_date = data.get('assessmentDate')
+        assessor_notes = data.get('assessorNotes')
+        
+        if not task_id or not assessment_mark:
+            return jsonify({'error': 'Task ID and assessment mark are required'}), 400
+        
+        # Get task details for later use
+        tasks_response = api_request('GET', 'moduletasks')
+        task_lookup = {}
+        if tasks_response and tasks_response.status_code == 200:
+            tasks = tasks_response.json()
+            task_lookup = {task['id']: task for task in tasks}
+        
+        # Check if assessment already exists
+        assessments_response = api_request('GET', f'continuousassessments/student/{student_id}')
+        existing_assessment = None
+        if assessments_response and assessments_response.status_code == 200:
+            assessments = assessments_response.json()
+            # Convert task_id to int for comparison
+            task_id_int = int(task_id) if isinstance(task_id, str) else task_id
+            for assess in assessments:
+                if assess['moduleTaskId'] == task_id_int:
+                    existing_assessment = assess
+                    break
+        
+        if existing_assessment:
+            # Update existing assessment
+            update_data = {
+                'assessmentMark': assessment_mark,
+                'assessmentDate': assessment_date if assessment_date else None,
+                'assessorNotes': assessor_notes if assessor_notes else None
+            }
+            response = api_request('PUT', f'continuousassessments/{existing_assessment["id"]}', data=update_data)
+            if response and response.status_code == 200:
+                # Add task details to response
+                task_info = task_lookup.get(int(task_id), {})
+                existing_assessment['taskNo'] = task_info.get('taskNo', 'N/A')
+                existing_assessment['taskName'] = task_info.get('taskName', 'N/A')
+                existing_assessment['moduleNo'] = task_info.get('moduleNo', 'N/A')
+                return jsonify({'message': 'Assessment updated successfully', 'assessment': existing_assessment})
+            else:
+                return jsonify({'error': 'Failed to update assessment'}), 500
+        else:
+            # Create new assessment
+            create_data = {
+                'studentId': student_id,
+                'moduleTaskId': int(task_id) if isinstance(task_id, str) else task_id,
+                'assessmentMark': assessment_mark,
+                'assessmentDate': assessment_date if assessment_date else None,
+                'assessorNotes': assessor_notes if assessor_notes else None
+            }
+            response = api_request('POST', 'continuousassessments', data=create_data)
+            if response and response.status_code in [200, 201]:
+                new_assessment = response.json()
+                # Add task details to response
+                task_info = task_lookup.get(int(task_id), {})
+                new_assessment['taskNo'] = task_info.get('taskNo', 'N/A')
+                new_assessment['taskName'] = task_info.get('taskName', 'N/A')
+                new_assessment['moduleNo'] = task_info.get('moduleNo', 'N/A')
+                return jsonify({'message': 'Assessment saved successfully', 'assessment': new_assessment})
+            else:
+                return jsonify({'error': 'Failed to save assessment'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/students/<int:id>/delete', methods=['POST'])
 def delete_student(id):

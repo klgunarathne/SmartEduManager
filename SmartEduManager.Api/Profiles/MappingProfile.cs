@@ -85,5 +85,13 @@ public class MappingProfile : Profile
         CreateMap<CreateModuleTaskDto, ModuleTask>();
         CreateMap<UpdateModuleTaskDto, ModuleTask>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+        // Continuous Assessments
+        CreateMap<ContinuousAssessment, ContinuousAssessmentDto>()
+            .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => $"{src.Student.NameWithInitials}"))
+            .ForMember(dest => dest.ModuleTaskName, opt => opt.MapFrom(src => src.ModuleTask.TaskName))
+            .ForMember(dest => dest.ModuleName, opt => opt.MapFrom(src => src.ModuleTask.Module.ModuleName));
+        CreateMap<CreateContinuousAssessmentDto, ContinuousAssessment>();
+        CreateMap<UpdateContinuousAssessmentDto, ContinuousAssessment>();
     }
 }
