@@ -117,6 +117,20 @@
                     </a>
                 </div>
             </div>
+            
+            <div class="nav-section">
+                <span class="section-title">Assessment Management</span>
+                <div class="nav-items">
+                    <a href="{{ url_for('assignments') }}" class="nav-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Assignments</span>
+                    </a>
+                    <a href="{{ url_for('assignment_marks') }}" class="nav-item">
+                        <i class="fas fa-clipboard-check"></i>
+                        <span>Assignment Marks</span>
+                    </a>
+                </div>
+            </div>
         </nav>
     </aside>
 
@@ -235,6 +249,10 @@
                                                 <a href="{{ url_for('student_continuous_assessment', id=student['studentId']) }}"
                                                     class="btn-action btn-view">
                                                     <i class="fas fa-clipboard-check"></i>
+                                                </a>
+                                                <a href="{{ url_for('student_assignment_marks', student_id=student['studentId']) }}"
+                                                    class="btn-action btn-view">
+                                                    <i class="fas fa-file-alt"></i>
                                                 </a>
                                                 <button class="btn-action btn-delete"
                                                     onclick="deleteStudent({{ student['studentId'] }}, '{{ csrf_token() }}')">

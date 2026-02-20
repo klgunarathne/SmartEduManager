@@ -99,6 +99,25 @@ class CreateNCSForm(FlaskForm):
     CourseId = SelectField('Course', validators=[InputRequired()], coerce=int)
     submit = SubmitField('Create NCS')
 
+class CreateAssignmentForm(FlaskForm):
+    AssignmentName = StringField('Assignment Name', validators=[InputRequired(), Length(max=200)])
+    submit = SubmitField('Create Assignment')
+
+class UpdateAssignmentForm(FlaskForm):
+    AssignmentName = StringField('Assignment Name', validators=[InputRequired(), Length(max=200)])
+    submit = SubmitField('Update Assignment')
+
+class CreateAssignmentMarksForm(FlaskForm):
+    Marks = IntegerField('Marks', validators=[InputRequired()])
+    AssignmentDate = StringField('Assignment Date', validators=[InputRequired()])
+    AssignmentId = SelectField('Assignment', validators=[InputRequired()], coerce=int)
+    submit = SubmitField('Create Assignment Marks')
+
+class UpdateAssignmentMarksForm(FlaskForm):
+    Marks = IntegerField('Marks', validators=[InputRequired()])
+    AssignmentDate = StringField('Assignment Date', validators=[InputRequired()])
+    submit = SubmitField('Update Assignment Marks')
+
 class UpdateNCSForm(FlaskForm):
     Version = StringField('Version', validators=[Length(max=50)])
     Name = StringField('Name', validators=[Length(max=200)])
@@ -1041,6 +1060,317 @@ def delete_module_task(id):
         flash(error_msg, 'danger')
     
     return redirect(url_for('module_tasks'))
+
+# ==================== Assignments Routes ====================
+
+@app.route('/assignments')
+def assignments():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    response = api_request('GET', 'assignments')
+    if response and response.status_code == 200:
+        assignments_list = response.json()
+    else:
+        assignments_list = []
+        flash('Failed to load assignments', 'danger')
+    
+    return render_template('assignments.html', assignments_list=assignments_list)
+
+@app.route('/assignments/create', methods=['GET', 'POST'])
+def create_assignment():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    form = CreateAssignmentForm()
+    
+    if form.validate_on_submit():
+        data = {
+            'AssignmentName': form.AssignmentName.data
+        }
+        
+        response = api_request('POST', 'assignments', data=data)
+        
+        if response and response.status_code == 201:
+            flash('Assignment created successfully!', 'success')
+            return redirect(url_for('assignments'))
+        else:
+            error_msg = 'Failed to create assignment'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('create_assignment.html', form=form)
+
+@app.route('/assignments/<int:id>/edit', methods=['GET', 'POST'])
+def edit_assignment(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get assignment
+    assignment_response = api_request('GET', f'assignments/{id}')
+    if not assignment_response or assignment_response.status_code != 200:
+        flash('Assignment not found', 'danger')
+        return redirect(url_for('assignments'))
+    assignment = assignment_response.json()
+    
+    form = UpdateAssignmentForm()
+    
+    if request.method == 'GET':
+        form.AssignmentName.data = assignment['assignmentName']
+    
+    if form.validate_on_submit():
+        data = {}
+        if form.AssignmentName.data:
+            data['assignmentName'] = form.AssignmentName.data
+        
+        response = api_request('PUT', f'assignments/{id}', data=data)
+        
+        if response and response.status_code == 200:
+            flash('Assignment updated successfully!', 'success')
+            return redirect(url_for('assignments'))
+        else:
+            error_msg = 'Failed to update assignment'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('edit_assignment.html', form=form, assignment=assignment)
+
+@app.route('/assignments/<int:id>/delete', methods=['POST'])
+def delete_assignment(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('assignments'))
+    
+    response = api_request('DELETE', f'assignments/{id}')
+    
+    if response and response.status_code == 200:
+        flash('Assignment deleted successfully!', 'success')
+    else:
+        error_msg = 'Failed to delete assignment'
+        if response:
+            try:
+                error_msg = response.json().get('message', error_msg)
+            except:
+                pass
+        flash(error_msg, 'danger')
+    
+    return redirect(url_for('assignments'))
+
+# ==================== Assignment Marks Routes ====================
+
+@app.route('/assignment-marks')
+def assignment_marks():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    response = api_request('GET', 'assignmentmarks')
+    if response and response.status_code == 200:
+        assignment_marks_list = response.json()
+    else:
+        assignment_marks_list = []
+        flash('Failed to load assignment marks', 'danger')
+    
+    return render_template('assignment_marks.html', assignment_marks_list=assignment_marks_list)
+
+@app.route('/assignment-marks/create', methods=['GET', 'POST'])
+def create_assignment_marks():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    form = CreateAssignmentMarksForm()
+    
+    # Get assignments for dropdown
+    assignments_response = api_request('GET', 'assignments')
+    if assignments_response and assignments_response.status_code == 200:
+        assignments_list = assignments_response.json()
+        form.AssignmentId.choices = [(assignment['id'], assignment['assignmentName']) for assignment in assignments_list]
+    
+    # Get students for dropdown
+    students_response = api_request('GET', 'students')
+    if students_response and students_response.status_code == 200:
+        students_list = students_response.json()
+        form.StudentId.choices = [(student['studentId'], student['nameWithInitials']) for student in students_list]
+    
+    if form.validate_on_submit():
+        data = {
+            'Marks': form.Marks.data,
+            'AssignmentDate': form.AssignmentDate.data,
+            'AssignmentId': form.AssignmentId.data,
+            'StudentId': form.StudentId.data
+        }
+        
+        response = api_request('POST', 'assignmentmarks', data=data)
+        
+        if response and response.status_code == 201:
+            flash('Assignment marks created successfully!', 'success')
+            return redirect(url_for('assignment_marks'))
+        else:
+            error_msg = 'Failed to create assignment marks'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('create_assignment_marks.html', form=form)
+
+@app.route('/assignment-marks/<int:id>/edit', methods=['GET', 'POST'])
+def edit_assignment_marks(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get assignment marks
+    assignment_marks_response = api_request('GET', f'assignmentmarks/{id}')
+    if not assignment_marks_response or assignment_marks_response.status_code != 200:
+        flash('Assignment marks not found', 'danger')
+        return redirect(url_for('assignment_marks'))
+    assignment_marks = assignment_marks_response.json()
+    
+    form = UpdateAssignmentMarksForm()
+    
+    if request.method == 'GET':
+        form.Marks.data = assignment_marks['marks']
+        form.AssignmentDate.data = assignment_marks['assignmentDate']
+    
+    if form.validate_on_submit():
+        data = {}
+        if form.Marks.data is not None:
+            data['marks'] = form.Marks.data
+        if form.AssignmentDate.data:
+            data['assignmentDate'] = form.AssignmentDate.data
+        
+        response = api_request('PUT', f'assignmentmarks/{id}', data=data)
+        
+        if response and response.status_code == 200:
+            flash('Assignment marks updated successfully!', 'success')
+            return redirect(url_for('assignment_marks'))
+        else:
+            error_msg = 'Failed to update assignment marks'
+            if response:
+                try:
+                    error_msg = response.json().get('message', error_msg)
+                except:
+                    pass
+            flash(error_msg, 'danger')
+    
+    return render_template('edit_assignment_marks.html', form=form, assignment_marks=assignment_marks)
+
+@app.route('/assignment-marks/<int:id>/delete', methods=['POST'])
+def delete_assignment_marks(id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Validate CSRF token
+    from flask_wtf.csrf import validate_csrf
+    from wtforms.validators import ValidationError
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('CSRF token is invalid. Please try again.', 'danger')
+        return redirect(url_for('assignment_marks'))
+    
+    response = api_request('DELETE', f'assignmentmarks/{id}')
+    
+    if response and response.status_code == 200:
+        flash('Assignment marks deleted successfully!', 'success')
+    else:
+        error_msg = 'Failed to delete assignment marks'
+        if response:
+            try:
+                error_msg = response.json().get('message', error_msg)
+            except:
+                pass
+        flash(error_msg, 'danger')
+    
+    return redirect(url_for('assignment_marks'))
+
+# ==================== Student Assignment Marks Routes ====================
+
+@app.route('/students/<int:student_id>/assignment-marks', methods=['GET', 'POST'])
+def student_assignment_marks(student_id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get student details
+    student_response = api_request('GET', f'students/{student_id}')
+    if not student_response or student_response.status_code != 200:
+        flash('Student not found', 'danger')
+        return redirect(url_for('students'))
+    student = student_response.json()
+    
+    # Get assignment marks for the student
+    assignment_marks_response = api_request('GET', f'assignmentmarks/student/{student_id}')
+    if assignment_marks_response and assignment_marks_response.status_code == 200:
+        assignment_marks_list = assignment_marks_response.json()
+    else:
+        assignment_marks_list = []
+        flash('Failed to load assignment marks', 'danger')
+    
+    # Get all assignments
+    assignments_response = api_request('GET', 'assignments')
+    if assignments_response and assignments_response.status_code == 200:
+        assignments_list = assignments_response.json()
+    else:
+        assignments_list = []
+    
+    # Create form for adding/editing assignment marks
+    form = CreateAssignmentMarksForm()
+    
+    # Populate assignment dropdown with available assignments
+    # Only include assignments that haven't been marked for this student yet
+    available_assignments = [assignment for assignment in assignments_list if assignment['id'] not in [am['assignmentId'] for am in assignment_marks_list]]
+    form.AssignmentId.choices = [(assignment['id'], assignment['assignmentName']) for assignment in available_assignments]
+    
+    # Process form submission
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            # Create assignment marks
+            data = {
+                'AssignmentId': form.AssignmentId.data,
+                'StudentId': student_id,
+                'Marks': form.Marks.data,
+                'AssignmentDate': form.AssignmentDate.data
+            }
+            
+            response = api_request('POST', 'assignmentmarks', data=data)
+            
+            if response and response.status_code == 201:
+                flash('Assignment marks created successfully!', 'success')
+                return redirect(url_for('student_assignment_marks', student_id=student_id))
+            else:
+                error_msg = 'Failed to create assignment marks'
+                if response:
+                    try:
+                        error_msg = response.json().get('message', error_msg)
+                    except:
+                        pass
+                flash(error_msg, 'danger')
+        else:
+            # Form validation failed
+            flash('Please correct the errors in the form.', 'danger')
+    
+    return render_template('student_assignment_marks.html', 
+                         student=student, 
+                         assignment_marks_list=assignment_marks_list,
+                         assignments_list=assignments_list,
+                         form=form)
 
 @app.route('/courses/<int:id>/assign-batches', methods=['GET', 'POST'])
 def assign_batches_to_course(id):
