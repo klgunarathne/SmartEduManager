@@ -127,7 +127,7 @@
             <div class="header-info">
                 <h1 class="page-title">Continuous Assessment</h1>
                 <p class="page-subtitle">
-                    Add continuous assessment marks for {{ student.nameWithInitials }}
+                    Manage continuous assessment marks for {{ student.nameWithInitials }}
                 </p>
             </div>
             <div class="header-actions">
@@ -149,39 +149,35 @@
             <div class="card-content">
                 <div class="info-grid">
                     <div class="info-item">
-                        <span class="info-label">MIS No</span>
+                        <span class="info-label">MIS No: </span>
                         <span class="info-value">{{ student.misNo }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Full Name</span>
+                        <span class="info-label">Full Name: </span>
                         <span class="info-value">{{ student.fullName }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Batch</span>
-                        <span class="info-value">{{ student.batchCode }}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Email</span>
+                        <span class="info-label">Email: </span>
                         <span class="info-value">{{ student.email or 'N/A' }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Phone</span>
+                        <span class="info-label">Phone: </span>
                         <span class="info-value">{{ student.telephone }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Gender</span>
+                        <span class="info-label">Gender: </span>
                         <span class="info-value">{{ student.gender }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Task Selector and Assessment Form -->
+        <!-- Assessment Form -->
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">
                     <i class="fas fa-clipboard-check"></i>
-                    Add Assessment Mark
+                    Assessment Marks
                 </h2>
             </div>
             <div class="card-content">
@@ -189,52 +185,18 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" id="studentId" value="{{ student.studentId if student.studentId else student.id }}">
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="moduleSelect">Select Module</label>
-                            <select id="moduleSelect" class="form-control" onchange="loadTasksForModule()">
-                                <option value="">-- Select Module --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="taskSelect">Select Task</label>
-                            <select id="taskSelect" class="form-control" onchange="loadTaskAssessment()">
-                                <option value="">-- Select Task --</option>
-                            </select>
+                    <div id="modulesList">
+                        <!-- Modules with tasks will be dynamically loaded here -->
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i> Loading assessment tasks...
                         </div>
                     </div>
-
-                    <div id="taskDetails" style="display: none;">
-                        <div class="task-info">
-                            <h4 id="selectedTaskName"></h4>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="assessmentMark">Assessment Mark</label>
-                                <select id="assessmentMark" name="assessmentMark" class="form-control" required>
-                                    <option value="">-- Select --</option>
-                                    <option value="C">Competent (C)</option>
-                                    <option value="NYC">Not Yet Competent (NYC)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="assessmentDate">Assessment Date</label>
-                                <input type="date" id="assessmentDate" name="assessmentDate" class="form-control">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="assessorNotes">Assessor Notes</label>
-                            <textarea id="assessorNotes" name="assessorNotes" class="form-control" rows="3" placeholder="Enter any notes about this assessment..."></textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">
-                                <i class="fas fa-save"></i>
-                                Save Assessment
-                            </button>
-                        </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i>
+                            Save All Assessments
+                        </button>
                     </div>
                 </form>
             </div>
@@ -262,7 +224,6 @@
                                     <th>Task Name</th>
                                     <th>Mark</th>
                                     <th>Date</th>
-                                    <th>Notes</th>
                                 </tr>
                             </thead>
                             <tbody id="assessmentsTableBody"></tbody>
@@ -359,16 +320,8 @@
             modulesData = data.tasks || [];
             assessmentDict = data.assessment_dict || {};
             
-            // Populate module select
-            const moduleSelect = document.getElementById('moduleSelect');
-            moduleSelect.innerHTML = '<option value="">-- Select Module --</option>';
-            
-            modulesData.forEach(module => {
-                const option = document.createElement('option');
-                option.value = module.moduleNo;
-                option.textContent = 'Module ' + module.moduleNo + ' - ' + module.moduleName;
-                moduleSelect.appendChild(option);
-            });
+            // Display modules with tasks in list format
+            displayModulesWithTasks();
             
             // Load existing assessments
             loadExistingAssessments();
@@ -379,73 +332,67 @@
         });
     }
 
-    function loadTasksForModule() {
-        const moduleNo = document.getElementById('moduleSelect').value;
-        const taskSelect = document.getElementById('taskSelect');
-        const taskDetails = document.getElementById('taskDetails');
+    function displayModulesWithTasks() {
+        const modulesList = document.getElementById('modulesList');
+        modulesList.innerHTML = '';
         
-        taskSelect.innerHTML = '<option value="">-- Select Task --</option>';
-        taskDetails.style.display = 'none';
-        
-        if (!moduleNo) return;
-        
-        const module = modulesData.find(m => m.moduleNo === moduleNo);
-        if (!module) return;
-        
-        module.tasks.forEach(task => {
-            const option = document.createElement('option');
-            option.value = task.id;
-            let text = 'Task ' + task.taskNo + ' - ' + task.taskName;
-            if (task.assessment) {
-                text += ' ✓';
-            }
-            option.textContent = text;
-            taskSelect.appendChild(option);
-        });
-    }
-
-    function loadTaskAssessment() {
-        const taskId = document.getElementById('taskSelect').value;
-        const taskDetails = document.getElementById('taskDetails');
-        
-        if (!taskId) {
-            taskDetails.style.display = 'none';
+        if (modulesData.length === 0) {
+            modulesList.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No module tasks available for this student's course.</p>
+                </div>
+            `;
             return;
         }
         
-        // Find task info
-        let taskInfo = null;
-        let moduleName = '';
-        for (const module of modulesData) {
-            const task = module.tasks.find(t => t.id == taskId);
-            if (task) {
-                taskInfo = task;
-                moduleName = module.moduleName;
-                break;
-            }
-        }
-        
-        if (!taskInfo) return;
-        
-        // Update task details
-        document.getElementById('selectedTaskName').textContent = 
-            'Module ' + taskInfo.taskNo + ' - ' + taskInfo.taskName + ' (' + moduleName + ')';
-        
-        // Clear form
-        document.getElementById('assessmentMark').value = '';
-        document.getElementById('assessmentDate').value = '';
-        document.getElementById('assessorNotes').value = '';
-        
-        // Load existing assessment if available
-        const existingAssessment = assessmentDict[taskId];
-        if (existingAssessment) {
-            document.getElementById('assessmentMark').value = existingAssessment.assessmentMark || '';
-            document.getElementById('assessmentDate').value = existingAssessment.assessmentDate ? 
-                existingAssessment.assessmentDate.split('T')[0] : '';
-            document.getElementById('assessorNotes').value = existingAssessment.assessorNotes || '';
-        }
-        
-        taskDetails.style.display = 'block';
+        modulesData.forEach(module => {
+            const moduleDiv = document.createElement('div');
+            moduleDiv.className = 'module-section';
+            
+            moduleDiv.innerHTML = `
+                <div class="module-header">
+                    <h3>Module ${module.moduleNo} - ${module.moduleName}</h3>
+                </div>
+                <div class="tasks-list">
+                    ${module.tasks.map(task => `
+                        <div class="task-item">
+                            <div class="task-info">
+                                <h4>Task ${task.taskNo} - ${task.taskName}</h4>
+                            </div>
+                            <div class="assessment-options">
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" 
+                                               name="assessment_mark_${task.id}" 
+                                               value="C" 
+                                               ${assessmentDict[task.id]?.assessmentMark === 'C' ? 'checked' : ''}>
+                                        <span class="radio-custom"></span>
+                                        <span class="radio-text">C (Competent)</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" 
+                                               name="assessment_mark_${task.id}" 
+                                               value="NYC" 
+                                               ${assessmentDict[task.id]?.assessmentMark === 'NYC' ? 'checked' : ''}>
+                                        <span class="radio-custom"></span>
+                                        <span class="radio-text">NYC (Not Yet Competent)</span>
+                                    </label>
+                                </div>
+                                <div class="task-date">
+                                    <input type="date" 
+                                           id="date_${task.id}" 
+                                           class="date-input" 
+                                           value="${assessmentDict[task.id]?.assessmentDate ? assessmentDict[task.id].assessmentDate.split('T')[0] : ''}">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            modulesList.appendChild(moduleDiv);
+        });
     }
 
     // Handle form submission
@@ -453,368 +400,332 @@
         e.preventDefault();
         
         const studentId = document.getElementById('studentId').value;
-        const taskId = document.getElementById('taskSelect').value;
-        const assessmentMark = document.getElementById('assessmentMark').value;
-        const assessmentDate = document.getElementById('assessmentDate').value || null;
-        const assessorNotes = document.getElementById('assessorNotes').value || null;
-        
-        if (!taskId || !assessmentMark) {
-            showAlert('Please select a task and assessment mark', 'warning');
-            return;
-        }
-        
         const submitBtn = this.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         
+        // Collect all assessments
+        const assessments = [];
+        
+        modulesData.forEach(module => {
+            module.tasks.forEach(task => {
+                const markInput = document.querySelector(`input[name="assessment_mark_${task.id}"]:checked`);
+                const dateInput = document.getElementById(`date_${task.id}`);
+                
+                if (markInput) {
+                    assessments.push({
+                        taskId: task.id,
+                        assessmentMark: markInput.value,
+                        assessmentDate: dateInput.value || null
+                    });
+                }
+            });
+        });
+        
         // Get CSRF token from meta tag
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
-        fetch('/students/' + studentId + '/continuous-assessment/save', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-                'Authorization': 'Bearer {{ session.get("access_token", "") }}'
-            },
-            body: JSON.stringify({
-                taskId: taskId,
-                assessmentMark: assessmentMark,
-                assessmentDate: assessmentDate,
-                assessorNotes: assessorNotes
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showAlert(data.error, 'danger');
-            } else {
-                showAlert('Assessment saved successfully!', 'success');
-                
-                // Update local data
-                assessmentDict[taskId] = data.assessment;
-                
-                // Refresh task list and assessments
-                loadTasksForModule();
-                loadExistingAssessments();
-                
-                // Reset form
-                document.getElementById('taskSelect').value = '';
-                document.getElementById('taskDetails').style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error saving assessment:', error);
-            showAlert('Failed to save assessment', 'danger');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Assessment';
+        // Save each assessment
+        const savePromises = assessments.map(assessment => {
+            return fetch('/students/' + studentId + '/continuous-assessment/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'Authorization': 'Bearer {{ session.get("access_token", "") }}'
+                },
+                body: JSON.stringify(assessment)
+            });
         });
+        
+        Promise.all(savePromises)
+            .then(responses => Promise.all(responses.map(r => r.json())))
+            .then(results => {
+                const errors = results.filter(r => r.error);
+                
+                if (errors.length > 0) {
+                    showAlert('Failed to save some assessments', 'danger');
+                } else {
+                    showAlert('All assessments saved successfully!', 'success');
+                    
+                    // Update local data
+                    results.forEach(result => {
+                        if (result.assessment) {
+                            assessmentDict[result.assessment.moduleTaskId] = result.assessment;
+                        }
+                    });
+                    
+                    // Refresh existing assessments
+                    loadExistingAssessments();
+                }
+            })
+            .catch(error => {
+                console.error('Error saving assessments:', error);
+                showAlert('Failed to save assessments', 'danger');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Save All Assessments';
+            });
     });
 
     function loadExistingAssessments() {
+        const studentId = document.getElementById('studentId').value;
+        const assessmentsLoading = document.getElementById('assessmentsLoading');
+        const assessmentsContainer = document.getElementById('assessmentsContainer');
+        const noAssessments = document.getElementById('noAssessments');
+        const assessmentsTableBody = document.getElementById('assessmentsTableBody');
+        
+        assessmentsLoading.style.display = 'block';
+        assessmentsContainer.style.display = 'none';
+        noAssessments.style.display = 'none';
+        
+        // Get all assessments from assessmentDict
         const assessments = Object.values(assessmentDict);
         
-        document.getElementById('assessmentsLoading').style.display = 'none';
+        assessmentsLoading.style.display = 'none';
         
         if (assessments.length === 0) {
-            document.getElementById('noAssessments').style.display = 'block';
-            updateStatistics(0, 0, 0);
-            return;
+            noAssessments.style.display = 'block';
+            updateStats(0, 0, 0, 0);
+        } else {
+            assessmentsContainer.style.display = 'block';
+            assessmentsTableBody.innerHTML = '';
+            
+                assessments.forEach(assessment => {
+                const taskInfo = getTaskInfo(assessment.moduleTaskId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${taskInfo.moduleName}</td>
+                    <td>Task ${taskInfo.taskNo}</td>
+                    <td>${taskInfo.taskName}</td>
+                    <td>
+                        <span class="assessment-mark ${assessment.assessmentMark === 'C' ? 'mark-competent' : 'mark-not-competent'}">
+                            ${assessment.assessmentMark}
+                        </span>
+                    </td>
+                    <td>${assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : 'N/A'}</td>
+                `;
+                assessmentsTableBody.appendChild(row);
+            });
+            
+            // Update statistics
+            const total = assessments.length;
+            const competent = assessments.filter(a => a.assessmentMark === 'C').length;
+            const notCompetent = assessments.filter(a => a.assessmentMark === 'NYC').length;
+            const rate = total > 0 ? Math.round((competent / total) * 100) : 0;
+            
+            updateStats(total, competent, notCompetent, rate);
         }
-        
-        document.getElementById('assessmentsContainer').style.display = 'block';
-        
-        const tbody = document.getElementById('assessmentsTableBody');
-        tbody.innerHTML = '';
-        
-        assessments.forEach(assessment => {
-            const row = document.createElement('tr');
-            row.innerHTML = '<td>' + (assessment.moduleNo || 'N/A') + '</td>' +
-                '<td>' + (assessment.taskNo || 'N/A') + '</td>' +
-                '<td>' + (assessment.taskName || 'N/A') + '</td>' +
-                '<td><span class="badge ' + (assessment.assessmentMark === 'C' ? 'badge-success' : 'badge-warning') + '">' + (assessment.assessmentMark || 'N/A') + '</span></td>' +
-                '<td>' + (assessment.assessmentDate ? new Date(assessment.assessmentDate).toLocaleDateString() : 'N/A') + '</td>' +
-                '<td>' + (assessment.assessorNotes || '-') + '</td>';
-            tbody.appendChild(row);
-        });
-        
-        // Update statistics
-        const competent = assessments.filter(a => a.assessmentMark === 'C').length;
-        const notCompetent = assessments.filter(a => a.assessmentMark === 'NYC').length;
-        updateStatistics(assessments.length, competent, notCompetent);
     }
 
-    function updateStatistics(total, competent, notCompetent) {
+    function getTaskInfo(taskId) {
+        for (const module of modulesData) {
+            const task = module.tasks.find(t => t.id == taskId);
+            if (task) {
+                return {
+                    moduleName: module.moduleName,
+                    taskNo: task.taskNo,
+                    taskName: task.taskName
+                };
+            }
+        }
+        return {
+            moduleName: 'Unknown',
+            taskNo: 'N/A',
+            taskName: 'Unknown'
+        };
+    }
+
+    function updateStats(total, competent, notCompetent, rate) {
         document.getElementById('totalAssessments').textContent = total;
         document.getElementById('competentCount').textContent = competent;
         document.getElementById('notCompetentCount').textContent = notCompetent;
-        
-        const rate = total > 0 ? Math.round((competent / total) * 100) : 0;
         document.getElementById('competencyRate').textContent = rate + '%';
     }
 
     function showAlert(message, type) {
+        // Create alert element
         const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-' + type;
-        alertDiv.textContent = message;
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.innerHTML = `
+            <div class="alert-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'times-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
         
+        // Add alert to page
         const mainContent = document.getElementById('mainContent');
-        mainContent.insertBefore(alertDiv, mainContent.firstChild);
+        const pageHeader = mainContent.querySelector('.page-header');
+        mainContent.insertBefore(alertDiv, pageHeader.nextSibling);
         
-        setTimeout(function() {
-            alertDiv.remove();
-        }, 5000);
+        // Remove alert after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 3000);
     }
 </script>
-{% endblock %}
 
-{% block extra_css %}
 <style>
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
+    .module-section {
+        margin-bottom: 2rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
     }
-
-    .info-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+    
+    .module-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
     }
-
-    .info-label {
-        font-size: 12px;
-        color: #718096;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .info-value {
-        font-size: 15px;
-        font-weight: 500;
-        color: #2d3748;
-    }
-
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .form-group label {
-        font-size: 14px;
-        font-weight: 500;
-        color: #2d3748;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        font-size: 14px;
-        color: #2d3748;
-        background: #fff;
-        transition: border-color 0.2s ease;
-    }
-
-    .form-control:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .task-info {
-        padding: 16px;
-        background: #f7fafc;
-        border-radius: 6px;
-        margin-bottom: 20px;
-    }
-
-    .task-info h4 {
+    
+    .module-header h3 {
         margin: 0;
-        color: #2d3748;
+        font-size: 1.25rem;
+        font-weight: 600;
     }
-
-    .form-actions {
+    
+    .tasks-list {
+        padding: 1.5rem;
+    }
+    
+    .task-item {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .task-info h4 {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+        color: #333;
+    }
+    
+    .assessment-options {
         display: flex;
-        gap: 12px;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #e2e8f0;
+        flex-direction: column;
+        gap: 1rem;
     }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
+    
+    .radio-group {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
     }
-
-    .stat-card {
+    
+    .radio-label {
         display: flex;
         align-items: center;
-        gap: 16px;
-        padding: 20px;
-        background: #f7fafc;
-        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        color: #555;
     }
+    
+    .radio-label input[type="radio"] {
+        display: none;
+    }
+    
+    .radio-custom {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ddd;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .radio-label input[type="radio"]:checked + .radio-custom {
+        background: #667eea;
+        border-color: #667eea;
+    }
+    
+    .radio-label input[type="radio"]:checked + .radio-custom::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+    }
+    
 
-    .stat-icon {
-        width: 48px;
-        height: 48px;
+    
+    .task-date input[type="date"] {
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        width: 200px;
+    }
+    
+    .assessment-mark {
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .mark-competent {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .mark-not-competent {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    
+    .loading {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #667eea;
-        color: white;
-        border-radius: 8px;
-        font-size: 20px;
+        padding: 3rem;
+        color: #666;
+        font-size: 1.1rem;
     }
-
-    .stat-success .stat-icon {
-        background: #48bb78;
-    }
-
-    .stat-warning .stat-icon {
-        background: #ed8936;
-    }
-
-    .stat-info .stat-icon {
-        background: #4299e1;
-    }
-
-    .stat-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .stat-value {
-        font-size: 24px;
-        font-weight: 700;
-        color: #2d3748;
-    }
-
-    .stat-label {
-        font-size: 13px;
-        color: #718096;
-    }
-
-    .no-data {
-        padding: 60px 20px;
-        text-align: center;
-    }
-
-    .no-data-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-        color: #a0aec0;
-    }
-
-    .no-data-content i {
-        font-size: 48px;
-    }
-
-    .loading {
-        padding: 40px;
-        text-align: center;
-        color: #718096;
-    }
-
-    .loading i {
-        font-size: 24px;
-    }
-
-    .btn-primary {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
-        background: #667eea;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .btn-primary:hover {
-        background: #5a67d8;
-    }
-
-    .btn-primary:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .btn-secondary {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
-        background: #e2e8f0;
-        color: #4a5568;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .btn-secondary:hover {
-        background: #cbd5e0;
-    }
-
-    .badge {
-        display: inline-block;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .badge-success {
-        background: #c6f6d5;
-        color: #22543d;
-    }
-
-    .badge-warning {
-        background: #feebc8;
-        color: #744210;
-    }
-
+    
     .alert {
-        padding: 12px 20px;
-        border-radius: 6px;
-        margin-bottom: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
     }
-
+    
     .alert-success {
-        background: #c6f6d5;
-        color: #22543d;
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
     }
-
+    
     .alert-danger {
-        background: #fed7d7;
-        color: #742a2a;
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
     }
-
+    
     .alert-warning {
-        background: #feebc8;
-        color: #744210;
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    
+    .alert-content {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 </style>
 {% endblock %}

@@ -306,16 +306,77 @@ def login():
    - Implement CI/CD pipeline
    - Add environment configuration management
 
+## Continuous Assessment Functionality
+
+### API Implementation (SmartEduManager.Api)
+
+**Controller**: `ContinuousAssessmentsController.cs`
+- **Endpoints**:
+  - `GET /api/continuousassessments` - Get all assessments
+  - `GET /api/continuousassessments/student/{studentId}` - Get assessments by student
+  - `GET /api/continuousassessments/moduletask/{moduleTaskId}` - Get assessments by module task
+  - `GET /api/continuousassessments/batch/{batchId}` - Get assessments by batch
+  - `GET /api/continuousassessments/course/{courseId}` - Get assessments by course
+  - `GET /api/continuousassessments/{id}` - Get specific assessment
+  - `POST /api/continuousassessments` - Create new assessment (Admin/Instructor)
+  - `PUT /api/continuousassessments/{id}` - Update assessment (Admin/Instructor)
+  - `PUT /api/continuousassessments/student/{studentId}/task/{moduleTaskId}` - Update assessment by student and task (upsert)
+  - `DELETE /api/continuousassessments/{id}` - Delete assessment (Admin only)
+
+**Model**: `ContinuousAssessment.cs`
+```csharp
+public class ContinuousAssessment
+{
+    public int Id { get; set; }
+    public int StudentId { get; set; }
+    public int ModuleTaskId { get; set; }
+    public string AssessmentMark { get; set; } = string.Empty; // "C" for Competent, "NYC" for Not Yet Competent
+    public DateTime? AssessmentDate { get; set; }
+    public string? AssessorNotes { get; set; }
+
+    public Student Student { get; set; } = null!;
+    public ModuleTask ModuleTask { get; set; } = null!;
+}
+```
+
+**Repository**: `ContinuousAssessmentRepository.cs`
+- Implements `IContinuousAssessmentRepository` interface
+- Supports filtering by student, module task, batch, and course
+- Includes Eager Loading for related entities
+- Prevents duplicate assessments with unique index on (StudentId, ModuleTaskId)
+
+### Flask App Implementation (smartedu-manager-flask-web)
+
+**Routes**:
+- `/students/<int:id>/continuous-assessment` - Main page for managing student assessments
+- `/students/<int:student_id>/continuous-assessment/tasks` - AJAX endpoint to load tasks and existing assessments
+- `/students/<int:student_id>/continuous-assessment/save` - AJAX endpoint to save individual assessments
+
+**Key Features**:
+1. **Student Assessment Page**: Displays all module tasks grouped by module
+2. **Assessment Form**: For each task, allows selecting "C" (Competent) or "NYC" (Not Yet Competent)
+3. **Date and Notes**: Optional assessment date and assessor notes
+4. **Bulk and Individual Saving**: Supports both form submission and AJAX saving
+5. **Existing Assessments**: Loads and displays existing assessment data
+
+**Template**: `student_continuous_assessment.html`
+- Modern responsive design with sidebar and navbar
+- Task grouping by module with collapsible sections
+- Interactive form elements with real-time validation
+- Status indicators for assessments
+
 ## Current Status
 
 The SmartEduManager system is well-architected and functional:
 
 - ✅ Clear separation of concerns
-- ✅ Proper authentication and authorization
-- ✅ Comprehensive CRUD operations
+- ✅ Proper authentication and authorization (JWT-based)
+- ✅ Comprehensive CRUD operations for all entities
 - ✅ CORS configuration for cross-origin requests
-- ✅ Well-structured codebase
-- ✅ Responsive user interface
-- ✅ CSV import functionality
+- ✅ Well-structured codebase with repository pattern
+- ✅ Responsive user interface using Bootstrap
+- ✅ CSV import functionality for students
+- ✅ Continuous assessment management for students
+- ✅ Complete API documentation with Swagger
 
-Both applications are in good working condition and ready for use in a development environment.
+Both applications are in good working condition and ready for use in a development environment. The continuous assessment feature adds significant value for tracking student progress through module tasks.

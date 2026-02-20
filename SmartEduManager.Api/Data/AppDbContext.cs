@@ -24,6 +24,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
       public DbSet<Modules> Modules { get; set; } = null!;
       public DbSet<ModuleTask> ModuleTasks { get; set; } = null!;
       public DbSet<ContinuousAssessment> ContinuousAssessments { get; set; } = null!;
+      public DbSet<Assignment> Assignments { get; set; } = null!;
+      public DbSet<AssignmentMarks> AssignmentMarks { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -101,6 +103,25 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         // Composite unique key to prevent duplicate assessments
         builder.Entity<ContinuousAssessment>()
             .HasIndex(ca => new { ca.StudentId, ca.ModuleTaskId })
+            .IsUnique();
+
+        // Assignment relationships
+        builder.Entity<Assignment>()
+            .HasMany(a => a.AssignmentMarks)
+            .WithOne(am => am.Assignment)
+            .HasForeignKey(am => am.AssignmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // AssignmentMarks relationships
+        builder.Entity<AssignmentMarks>()
+            .HasOne(am => am.Student)
+            .WithMany()
+            .HasForeignKey(am => am.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Composite unique key to prevent duplicate assignment marks
+        builder.Entity<AssignmentMarks>()
+            .HasIndex(am => new { am.AssignmentId, am.StudentId })
             .IsUnique();
     }
 }
