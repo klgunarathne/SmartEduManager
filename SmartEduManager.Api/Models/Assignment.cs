@@ -9,6 +9,7 @@ namespace SmartEduManager.Api.Models
     {
         public int Id { get; set; }
         public string AssignmentName { get; set; } = string.Empty;
+        public string CoveringModule { get; set; } = string.Empty;
 
         public ICollection<AssignmentMarks> AssignmentMarks { get; set; } = [];
     }

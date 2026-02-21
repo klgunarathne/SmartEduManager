@@ -169,6 +169,7 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Assignment Name</th>
+                                    <th>Covering Module</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -177,6 +178,7 @@
                                     <tr>
                                         <td>{{ assignment['id'] }}</td>
                                         <td>{{ assignment['assignmentName'] }}</td>
+                                        <td>{{ assignment['coveringModule'] }}</td>
                                         <td>
                                             <div class="action-buttons">
                                                 <a href="{{ url_for('edit_assignment', id=assignment['id']) }}" class="btn-action btn-edit">

@@ -103,7 +103,8 @@ public class MappingProfile : Profile
         // AssignmentMarks mapping
         CreateMap<AssignmentMarks, AssignmentMarksDto>()
             .ForMember(dest => dest.AssignmentName, opt => opt.MapFrom(src => src.Assignment.AssignmentName))
-            .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => $"{src.Student.NameWithInitials}"));
+            .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => $"{src.Student.NameWithInitials}"))
+            .ForMember(dest => dest.CoveringModule, opt => opt.MapFrom(src => src.Assignment.CoveringModule));
         CreateMap<CreateAssignmentMarksDto, AssignmentMarks>();
         CreateMap<UpdateAssignmentMarksDto, AssignmentMarks>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));

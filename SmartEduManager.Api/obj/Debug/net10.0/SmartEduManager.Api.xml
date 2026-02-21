@@ -148,6 +148,18 @@
         <member name="M:SmartEduManager.Api.Migrations.AddAssignmentsAndAssignmentMarks.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Migrations.AddCoveringModuleToAssignment">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCoveringModuleToAssignment.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCoveringModuleToAssignment.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCoveringModuleToAssignment.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:Program">
             <summary>
             Auto-generated public partial Program class for top-level statement apps.

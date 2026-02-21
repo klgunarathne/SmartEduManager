@@ -10,6 +10,10 @@ public class CreateAssignmentDtoValidator : AbstractValidator<CreateAssignmentDt
         RuleFor(x => x.AssignmentName)
             .NotEmpty().WithMessage("Assignment name is required")
             .MaximumLength(200).WithMessage("Assignment name must be less than 200 characters");
+        
+        RuleFor(x => x.CoveringModule)
+            .NotEmpty().WithMessage("Covering module is required")
+            .MaximumLength(200).WithMessage("Covering module must be less than 200 characters");
     }
 }
 
@@ -21,5 +25,10 @@ public class UpdateAssignmentDtoValidator : AbstractValidator<UpdateAssignmentDt
             .NotEmpty().WithMessage("Assignment name is required")
             .MaximumLength(200).WithMessage("Assignment name must be less than 200 characters")
             .When(x => x.AssignmentName != null);
+        
+        RuleFor(x => x.CoveringModule)
+            .NotEmpty().WithMessage("Covering module is required")
+            .MaximumLength(200).WithMessage("Covering module must be less than 200 characters")
+            .When(x => x.CoveringModule != null);
     }
 }

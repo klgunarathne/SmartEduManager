@@ -101,10 +101,12 @@ class CreateNCSForm(FlaskForm):
 
 class CreateAssignmentForm(FlaskForm):
     AssignmentName = StringField('Assignment Name', validators=[InputRequired(), Length(max=200)])
+    CoveringModule = StringField('Covering Module', validators=[InputRequired(), Length(max=200)])
     submit = SubmitField('Create Assignment')
 
 class UpdateAssignmentForm(FlaskForm):
     AssignmentName = StringField('Assignment Name', validators=[InputRequired(), Length(max=200)])
+    CoveringModule = StringField('Covering Module', validators=[InputRequired(), Length(max=200)])
     submit = SubmitField('Update Assignment')
 
 class CreateAssignmentMarksForm(FlaskForm):
@@ -1086,7 +1088,8 @@ def create_assignment():
     
     if form.validate_on_submit():
         data = {
-            'AssignmentName': form.AssignmentName.data
+            'AssignmentName': form.AssignmentName.data,
+            'CoveringModule': form.CoveringModule.data
         }
         
         response = api_request('POST', 'assignments', data=data)
@@ -1121,11 +1124,14 @@ def edit_assignment(id):
     
     if request.method == 'GET':
         form.AssignmentName.data = assignment['assignmentName']
+        form.CoveringModule.data = assignment['coveringModule']
     
     if form.validate_on_submit():
         data = {}
         if form.AssignmentName.data:
             data['assignmentName'] = form.AssignmentName.data
+        if form.CoveringModule.data:
+            data['coveringModule'] = form.CoveringModule.data
         
         response = api_request('PUT', f'assignments/{id}', data=data)
         

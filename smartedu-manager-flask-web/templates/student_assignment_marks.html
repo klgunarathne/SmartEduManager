@@ -171,6 +171,7 @@
                             <thead>
                                 <tr>
                                     <th>Assignment</th>
+                                    <th>Covering Module</th>
                                     <th>Marks</th>
                                     <th>Assignment Date</th>
                                     <th>Actions</th>
@@ -180,6 +181,7 @@
                                 {% for assignment_mark in assignment_marks_list %}
                                     <tr>
                                         <td>{{ assignment_mark['assignmentName'] }}</td>
+                                        <td>{{ assignment_mark['coveringModule'] }}</td>
                                         <td>{{ assignment_mark['marks'] }}</td>
                                         <td>{{ assignment_mark['assignmentDate'] }}</td>
                                         <td>
