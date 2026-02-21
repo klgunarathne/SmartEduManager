@@ -9,6 +9,8 @@ import os
 import csv
 import io
 from dotenv import load_dotenv
+import pandas as pd
+from student_progress_analyzer import StudentProgressAnalyzer
 
 load_dotenv()
 
@@ -24,6 +26,26 @@ csrf = CSRFProtect(app)
 
 # Create a convenient reference to the API base URL
 API_BASE_URL = app.config['API_BASE_URL']
+
+# Custom Jinja2 filter for datetime formatting
+@app.template_filter('format_datetime')
+def format_datetime(value):
+    """Format datetime string to readable format."""
+    if not value:
+        return 'N/A'
+    try:
+        from datetime import datetime
+        if isinstance(value, str):
+            # Handle ISO format datetime
+            if 'T' in value:
+                dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                return dt.strftime('%Y-%m-%d')
+            return value
+        elif isinstance(value, datetime):
+            return value.strftime('%Y-%m-%d')
+        return str(value)
+    except Exception:
+        return value if value else 'N/A'
 
 # ==================== Forms ====================
 
@@ -1432,6 +1454,243 @@ def assign_batches_to_course(id):
                          batches=batches, 
                          assigned_batches=assigned_batches,
                          csrf_token=token)
+
+
+# ==================== Student Progress Analyzer Routes ====================
+
+@app.route('/student-progress')
+def student_progress_analyzer():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    # Get batch ID from query parameter
+    batch_id = request.args.get('batch_id', type=int)
+    
+    # Create analyzer instance
+    analyzer = StudentProgressAnalyzer()
+    
+    try:
+        # Fetch all students
+        students_response = api_request('GET', 'students')
+        if not students_response or students_response.status_code != 200:
+            flash('Failed to load students', 'danger')
+            return render_template('student_progress.html', report=None, error=True)
+        
+        students = students_response.json()
+        
+        # Fetch all continuous assessments
+        assessments_response = api_request('GET', 'continuousassessments')
+        if not assessments_response or assessments_response.status_code != 200:
+            flash('Failed to load continuous assessments', 'danger')
+            return render_template('student_progress.html', report=None, error=True)
+        
+        assessments = assessments_response.json()
+        
+        # Fetch all assignment marks
+        assignment_marks_response = api_request('GET', 'assignmentmarks')
+        if not assignment_marks_response or assignment_marks_response.status_code != 200:
+            flash('Failed to load assignment marks', 'danger')
+            return render_template('student_progress.html', report=None, error=True)
+        
+        assignment_marks = assignment_marks_response.json()
+        
+        # Fetch all batches for dropdown
+        batches_response = api_request('GET', 'batches')
+        batches = batches_response.json() if (batches_response and batches_response.status_code == 200) else []
+        
+        # Debug: Check what batches are being fetched
+        print("Batches response status:", batches_response.status_code if batches_response else "None")
+        print("Batches data:", batches)
+        
+        # Create features and train model (use all data for training)
+        features = analyzer.create_features(students, assessments, assignment_marks, batch_id)
+        
+        # Train or load model (use batch-filtered data for training if batch is selected)
+        try:
+            analyzer.load_model()
+        except FileNotFoundError:
+            # Use batch-filtered data for training if batch is selected, otherwise use all data
+            if batch_id:
+                training_features = features  # Use already filtered features
+            else:
+                training_features = analyzer.create_features(students, assessments, assignment_marks)
+            
+            if len(training_features) >= 2:  # Minimum 2 samples needed for training
+                metrics = analyzer.train_model(training_features)
+                flash('Model trained successfully with new data', 'success')
+            else:
+                flash('Not enough data to train the model (minimum 2 students required)', 'warning')
+                return render_template('student_progress.html', 
+                                     report=None, 
+                                     batches=batches, 
+                                     selected_batch=batch_id,
+                                     no_data=True)
+        
+        # Generate predictions for selected batch
+        if not features.empty:
+            predictions = analyzer.batch_predictions(features)
+            report = analyzer.generate_report(predictions)
+        else:
+            report = {
+                'total_students': 0,
+                'predicted_pass': 0,
+                'predicted_fail': 0,
+                'pass_rate': 0,
+                'risk_levels': {'Low': 0, 'Medium': 0, 'High': 0},
+                'predictions': []
+            }
+        
+        return render_template('student_progress.html', 
+                             report=report, 
+                             batches=batches, 
+                             selected_batch=batch_id,
+                             error=False, 
+                             no_data=False)
+        
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return render_template('student_progress.html', report=None, error=True)
+
+
+@app.route('/student-progress/<int:student_id>')
+def student_progress_detail(student_id):
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    analyzer = StudentProgressAnalyzer()
+    
+    try:
+        # Fetch student details
+        student_response = api_request('GET', f'students/{student_id}')
+        if not student_response or student_response.status_code != 200:
+            flash('Student not found', 'danger')
+            return redirect(url_for('student_progress_analyzer'))
+        
+        student = student_response.json()
+        
+        # Fetch all students, assessments, and assignment marks
+        students_response = api_request('GET', 'students')
+        students = students_response.json() if (students_response and students_response.status_code == 200) else []
+        
+        assessments_response = api_request('GET', 'continuousassessments')
+        assessments = assessments_response.json() if (assessments_response and assessments_response.status_code == 200) else []
+        
+        assignment_marks_response = api_request('GET', 'assignmentmarks')
+        assignment_marks = assignment_marks_response.json() if (assignment_marks_response and assignment_marks_response.status_code == 200) else []
+        
+        # Create features
+        features = analyzer.create_features(students, assessments, assignment_marks)
+        
+        # Load model
+        try:
+            analyzer.load_model()
+        except FileNotFoundError:
+            analyzer.train_model(features)
+        
+        # Analyze student performance
+        analysis = analyzer.analyze_student_performance(student_id, features)
+        
+        # Fetch detailed assessment and assignment data for the student
+        student_assessments_response = api_request('GET', f'continuousassessments/student/{student_id}')
+        student_assessments = student_assessments_response.json() if (student_assessments_response and student_assessments_response.status_code == 200) else []
+        
+        student_assignments_response = api_request('GET', f'assignmentmarks/student/{student_id}')
+        student_assignments = student_assignments_response.json() if (student_assignments_response and student_assignments_response.status_code == 200) else []
+        
+        return render_template('student_progress_detail.html', 
+                             student=student, 
+                             analysis=analysis, 
+                             assessments=student_assessments, 
+                             assignments=student_assignments)
+        
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return redirect(url_for('student_progress_analyzer'))
+
+
+@app.route('/student-progress/retrain')
+def retrain_model():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    analyzer = StudentProgressAnalyzer()
+    
+    try:
+        # Fetch all data (use all data for retraining)
+        students_response = api_request('GET', 'students')
+        students = students_response.json() if (students_response and students_response.status_code == 200) else []
+        
+        assessments_response = api_request('GET', 'continuousassessments')
+        assessments = assessments_response.json() if (assessments_response and assessments_response.status_code == 200) else []
+        
+        assignment_marks_response = api_request('GET', 'assignmentmarks')
+        assignment_marks = assignment_marks_response.json() if (assignment_marks_response and assignment_marks_response.status_code == 200) else []
+        
+        # Create features (use all data for training)
+        features = analyzer.create_features(students, assessments, assignment_marks)
+        
+        if len(features) < 2:  # Minimum 2 samples needed for training
+            flash('Not enough data to train the model (minimum 2 students required)', 'warning')
+            return redirect(url_for('student_progress_analyzer'))
+        
+        # Retrain model
+        metrics = analyzer.train_model(features)
+        
+        flash(f'Model retrained successfully! Accuracy: {metrics["accuracy"]:.2%}', 'success')
+        return redirect(url_for('student_progress_analyzer'))
+        
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return redirect(url_for('student_progress_analyzer'))
+
+
+@app.route('/student-progress/api/report')
+def api_progress_report():
+    if 'access_token' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Get batch ID from query parameter
+    batch_id = request.args.get('batch_id', type=int)
+    
+    analyzer = StudentProgressAnalyzer()
+    
+    try:
+        students_response = api_request('GET', 'students')
+        students = students_response.json() if (students_response and students_response.status_code == 200) else []
+        
+        assessments_response = api_request('GET', 'continuousassessments')
+        assessments = assessments_response.json() if (assessments_response and assessments_response.status_code == 200) else []
+        
+        assignment_marks_response = api_request('GET', 'assignmentmarks')
+        assignment_marks = assignment_marks_response.json() if (assignment_marks_response and assignment_marks_response.status_code == 200) else []
+        
+        # Create features (filter by batch if specified)
+        features = analyzer.create_features(students, assessments, assignment_marks, batch_id)
+        
+        try:
+            analyzer.load_model()
+        except FileNotFoundError:
+            # Use all data for initial training if model doesn't exist
+            training_features = analyzer.create_features(students, assessments, assignment_marks)
+            if len(training_features) >= 2:
+                analyzer.train_model(training_features)
+            else:
+                return jsonify({
+                    'total_students': 0,
+                    'predicted_pass': 0,
+                    'predicted_fail': 0,
+                    'pass_rate': 0,
+                    'risk_levels': {'Low': 0, 'Medium': 0, 'High': 0},
+                    'predictions': []
+                })
+        
+        predictions = analyzer.batch_predictions(features)
+        report = analyzer.generate_report(predictions)
+        
+        return jsonify(report)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/courses/create', methods=['GET', 'POST'])
 def create_course():

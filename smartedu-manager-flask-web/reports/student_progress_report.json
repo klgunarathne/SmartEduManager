@@ -1,0 +1,89 @@
+{
+    "generated_at": "2026-02-21T11:12:04.456179",
+    "total_students": 5,
+    "predicted_pass": 1,
+    "predicted_fail": 4,
+    "pass_rate": 0.2,
+    "risk_levels": {
+        "Low": 0,
+        "Medium": 1,
+        "High": 4
+    },
+    "predictions": [
+        {
+            "student_id": "1",
+            "found": true,
+            "prediction": 0,
+            "probability": 0.16,
+            "risk_level": "High",
+            "performance": {
+                "total_assessments": 3,
+                "competent_assessments": 2,
+                "competency_rate": 0.6666666666666666,
+                "total_assignments": 2,
+                "avg_marks": 77.5,
+                "assessment_to_assignment_ratio": 1.5
+            }
+        },
+        {
+            "student_id": "2",
+            "found": true,
+            "prediction": 0,
+            "probability": 0.4,
+            "risk_level": "High",
+            "performance": {
+                "total_assessments": 3,
+                "competent_assessments": 3,
+                "competency_rate": 1.0,
+                "total_assignments": 2,
+                "avg_marks": 87.5,
+                "assessment_to_assignment_ratio": 1.5
+            }
+        },
+        {
+            "student_id": "3",
+            "found": true,
+            "prediction": 0,
+            "probability": 0.16,
+            "risk_level": "High",
+            "performance": {
+                "total_assessments": 2,
+                "competent_assessments": 0,
+                "competency_rate": 0.0,
+                "total_assignments": 2,
+                "avg_marks": 47.5,
+                "assessment_to_assignment_ratio": 1.0
+            }
+        },
+        {
+            "student_id": "4",
+            "found": true,
+            "prediction": 1,
+            "probability": 0.71,
+            "risk_level": "Medium",
+            "performance": {
+                "total_assessments": 1,
+                "competent_assessments": 1,
+                "competency_rate": 1.0,
+                "total_assignments": 2,
+                "avg_marks": 62.5,
+                "assessment_to_assignment_ratio": 0.5
+            }
+        },
+        {
+            "student_id": "5",
+            "found": true,
+            "prediction": 0,
+            "probability": 0.14,
+            "risk_level": "High",
+            "performance": {
+                "total_assessments": 1,
+                "competent_assessments": 0,
+                "competency_rate": 0.0,
+                "total_assignments": 1,
+                "avg_marks": 35.0,
+                "assessment_to_assignment_ratio": 1.0
+            }
+        }
+    ]
+}
