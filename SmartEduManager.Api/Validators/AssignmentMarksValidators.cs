@@ -31,13 +31,11 @@ public class UpdateAssignmentMarksDtoValidator : AbstractValidator<UpdateAssignm
     public UpdateAssignmentMarksDtoValidator()
     {
         RuleFor(x => x.Marks)
-            .NotEmpty().WithMessage("Marks are required")
             .GreaterThanOrEqualTo(0).WithMessage("Marks must be at least 0")
             .LessThanOrEqualTo(100).WithMessage("Marks must be at most 100")
             .When(x => x.Marks >= 0);
 
         RuleFor(x => x.AssignmentDate)
-            .NotEmpty().WithMessage("Assignment date is required")
             .LessThanOrEqualTo(DateTime.Now).WithMessage("Assignment date must be in the past")
             .When(x => x.AssignmentDate != null);
     }

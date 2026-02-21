@@ -365,6 +365,106 @@ public class ContinuousAssessment
 - Interactive form elements with real-time validation
 - Status indicators for assessments
 
+## Assignments and Assignment Marks Functionality
+
+### API Implementation (SmartEduManager.Api)
+
+**Controllers**:
+
+1. **AssignmentsController.cs** (`/api/assignments`)
+   - `GET /api/assignments` - Get all assignments (Admin/Instructor)
+   - `GET /api/assignments/{id}` - Get specific assignment (Admin/Instructor)
+   - `POST /api/assignments` - Create new assignment (Admin/Instructor)
+   - `PUT /api/assignments/{id}` - Update assignment (Admin/Instructor)
+   - `DELETE /api/assignments/{id}` - Delete assignment (Admin only)
+
+2. **AssignmentMarksController.cs** (`/api/assignmentmarks`)
+   - `GET /api/assignmentmarks` - Get all assignment marks (Admin/Instructor)
+   - `GET /api/assignmentmarks/assignment/{assignmentId}` - Get marks by assignment (Admin/Instructor)
+   - `GET /api/assignmentmarks/student/{studentId}` - Get marks by student (Admin/Instructor)
+   - `GET /api/assignmentmarks/{id}` - Get specific assignment marks (Admin/Instructor)
+   - `POST /api/assignmentmarks` - Create new assignment marks (Admin/Instructor)
+   - `PUT /api/assignmentmarks/{id}` - Update assignment marks (Admin/Instructor)
+   - `PUT /api/assignmentmarks/assignment/{assignmentId}/student/{studentId}` - Update marks by assignment and student (upsert) (Admin/Instructor)
+   - `DELETE /api/assignmentmarks/{id}` - Delete assignment marks (Admin only)
+
+**Models**:
+
+```csharp
+// Assignment.cs
+public class Assignment
+{
+    public int Id { get; set; }
+    public string AssignmentName { get; set; } = string.Empty;
+    public ICollection<AssignmentMarks> AssignmentMarks { get; set; } = [];
+}
+
+// AssignmentMarks.cs
+public class AssignmentMarks
+{
+    public int Id { get; set; }
+    public int Marks { get; set; }
+    public DateTime AssignmentDate { get; set; }
+    public int AssignmentId { get; set; }
+    public required Assignment Assignment { get; set; }
+    public int StudentId { get; set; }
+    public required Student Student { get; set; }
+}
+```
+
+**DTOs**:
+- `AssignmentDto`, `CreateAssignmentDto`, `UpdateAssignmentDto`
+- `AssignmentMarksDto`, `CreateAssignmentMarksDto`, `UpdateAssignmentMarksDto`
+
+**Repository**:
+- `IAssignmentMarksRepository` - Interface with methods for filtering by assignment, student, and both
+- `AssignmentMarksRepository` - Implementation with Entity Framework Core queries
+
+**Mapping Profile**:
+```csharp
+CreateMap<Assignment, AssignmentDto>();
+CreateMap<CreateAssignmentDto, Assignment>();
+CreateMap<UpdateAssignmentDto, Assignment>()
+    .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+CreateMap<AssignmentMarks, AssignmentMarksDto>()
+    .ForMember(dest => dest.AssignmentName, opt => opt.MapFrom(src => src.Assignment.AssignmentName))
+    .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => $"{src.Student.NameWithInitials}"));
+CreateMap<CreateAssignmentMarksDto, AssignmentMarks>();
+CreateMap<UpdateAssignmentMarksDto, AssignmentMarks>()
+    .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+```
+
+### Flask App Implementation (smartedu-manager-flask-web)
+
+**Routes**:
+1. `/assignments` - List all assignments
+2. `/assignments/create` - Create new assignment
+3. `/assignments/<int:id>/edit` - Edit assignment
+4. `/assignments/<int:id>/delete` - Delete assignment
+5. `/assignment-marks` - List all assignment marks
+6. `/assignment-marks/create` - Create new assignment marks
+7. `/assignment-marks/<int:id>/edit` - Edit assignment marks
+8. `/assignment-marks/<int:id>/delete` - Delete assignment marks
+9. `/students/<int:student_id>/assignment-marks` - View and manage assignment marks for a specific student
+
+**Key Features**:
+- Assignment management (create, read, update, delete)
+- Assignment marks management
+- Student-specific assignment marks view
+- Form validation with Flask-WTF
+- CSRF protection
+- Error handling with user feedback
+
+**Templates**:
+- `assignments.html` - List all assignments
+- `create_assignment.html` - Create assignment form
+- `edit_assignment.html` - Edit assignment form
+- `assignment_marks.html` - List all assignment marks
+- `create_assignment_marks.html` - Create assignment marks form
+- `edit_assignment_marks.html` - Edit assignment marks form
+- `student_assignment_marks.html` - Student-specific assignment marks view
+
 ## Current Status
 
 The SmartEduManager system is well-architected and functional:
@@ -377,6 +477,7 @@ The SmartEduManager system is well-architected and functional:
 - ✅ Responsive user interface using Bootstrap
 - ✅ CSV import functionality for students
 - ✅ Continuous assessment management for students
+- ✅ Assignments and assignment marks management
 - ✅ Complete API documentation with Swagger
 
-Both applications are in good working condition and ready for use in a development environment. The continuous assessment feature adds significant value for tracking student progress through module tasks.
+Both applications are in good working condition and ready for use in a development environment. The continuous assessment and assignment management features provide comprehensive tools for tracking student progress.
