@@ -8,6 +8,9 @@
     <div class="analyzer-header">
         <div class="row align-items-center">
             <div class="col-md-6">
+                <a href="{{ url_for('dashboard') }}" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
                 <h1 class="analyzer-title">
                     <i class="fas fa-chart-line"></i> Student Progress Analyzer
                 </h1>
@@ -20,6 +23,29 @@
             </div>
         </div>
     </div>
+    <style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #6c757d;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: #f8f9fa;
+        transition: all 0.2s;
+    }
+    .back-link:hover {
+        color: #4f46e5;
+        background: #eef2ff;
+        text-decoration: none;
+    }
+    .back-link i {
+        font-size: 0.8rem;
+    }
+    </style>
 
     <!-- Batch Filter -->
     <div class="filter-section">
@@ -69,6 +95,156 @@
         </button>
     </div>
     {% endif %}
+
+    <!-- Methodology Explanation - Enhanced -->
+    <div class="methodology-summary mb-4">
+        <div class="methodology-summary-header" data-toggle="collapse" data-target="#methodologyDetails">
+            <div class="method-header-content">
+                <i class="fas fa-calculator"></i>
+                <span>How Pass Rate & Risk is Measured</span>
+            </div>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div id="methodologyDetails" class="collapse show">
+            <div class="methodology-summary-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="method-summary-item">
+                            <div class="method-icon-small competency">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div class="method-text">
+                                <strong>Competency Rate</strong>
+                                <small>(C marks ÷ Total) × 100</small>
+                                <span class="threshold">Threshold: >70%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="method-summary-item">
+                            <div class="method-icon-small assignment">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="method-text">
+                                <strong>Assignment Marks</strong>
+                                <small>Average of all marks</small>
+                                <span class="threshold">Threshold: >50</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="method-summary-item">
+                            <div class="method-icon-small risk">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="method-text">
+                                <strong>Risk Levels</strong>
+                                <small>Based on pass probability</small>
+                                <div class="risk-badges">
+                                    <span class="badge badge-success">Low ≥70%</span>
+                                    <span class="badge badge-warning">Med 40-69%</span>
+                                    <span class="badge badge-danger">High &lt;40%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+    .methodology-summary {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+    }
+    .methodology-summary-header {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        padding: 12px 20px;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .method-header-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .method-header-content i {
+        font-size: 1.2rem;
+    }
+    .method-header-content span {
+        font-weight: 600;
+    }
+    .toggle-icon {
+        transition: transform 0.3s;
+    }
+    .methodology-summary-header[aria-expanded="false"] .toggle-icon {
+        transform: rotate(-90deg);
+    }
+    .methodology-summary-body {
+        padding: 20px;
+    }
+    .method-summary-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .method-icon-small {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .method-icon-small.competency {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+    }
+    .method-icon-small.assignment {
+        background: linear-gradient(135deg, #cce5ff, #b8daff);
+        color: #004085;
+    }
+    .method-icon-small.risk {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        color: #721c24;
+    }
+    .method-text {
+        display: flex;
+        flex-direction: column;
+    }
+    .method-text strong {
+        color: #2d3748;
+        font-size: 0.9rem;
+    }
+    .method-text small {
+        color: #718096;
+        font-size: 0.75rem;
+        margin-top: 2px;
+    }
+    .method-text .threshold {
+        color: #4a5568;
+        font-size: 0.75rem;
+        margin-top: 4px;
+        font-weight: 500;
+    }
+    .risk-badges {
+        display: flex;
+        gap: 4px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+    }
+    .risk-badges .badge {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+    }
+    </style>
 
     <!-- Report Content -->
     {% if report %}
@@ -131,6 +307,30 @@
                         {% else %}0.0{% endif %}
                     </span>
                     <span class="stat-label">Avg. Marks</span>
+                </div>
+            </div>
+            
+            <!-- Competency-based Pass Rate -->
+            <div class="stat-card" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+                <div class="stat-icon">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-number">{{ "%.0f%%"|format(report.competency_based_pass * 100) }}</span>
+                    <span class="stat-label" style="color: #ffffff">Competency Pass</span>
+                    <span class="stat-percent" style="color: rgba(255,255,255,0.9);">Based on >70% C marks</span>
+                </div>
+            </div>
+            
+            <!-- Assignment-based Pass Rate -->
+            <div class="stat-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                <div class="stat-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-number">{{ "%.0f%%"|format(report.assignment_based_pass * 100) }}</span>
+                    <span class="stat-label" style="color: #ffffff;">Assignment Pass</span>
+                    <span class="stat-percent" style="color: rgba(255,255,255,0.9);">Based on >50 avg marks</span>
                 </div>
             </div>
         </div>

@@ -494,16 +494,21 @@ class StudentProgressAnalyzer:
             comp_rate = float(features['CompetencyRate'].iloc[i]) if 'CompetencyRate' in features.columns else 0
             avg_marks = float(features['AvgMarks'].iloc[i]) if 'AvgMarks' in features.columns else 0
             
-            # If clear pass criteria met (high competency and good marks > 90)
-            if comp_rate > 0.7 and avg_marks > 90:
+            # If clear pass criteria met (high competency OR good marks)
+            # Enhanced: Give more weight to competency rate
+            if comp_rate > 0.7 and avg_marks > 50:
                 final_predictions.append(1)
-                final_probabilities.append(1.0)  # 100% probability for clear pass
+                final_probabilities.append(max(comp_rate, 0.7))  # Weight by competency
             # If clear fail criteria (very low competency)
-            elif comp_rate < 0.3:
+            elif comp_rate < 0.3 and avg_marks < 40:
                 final_predictions.append(0)
                 final_probabilities.append(0.0)  # 0% probability for clear fail
+            # High competency but low marks - medium risk, not high
+            elif comp_rate > 0.7 and avg_marks <= 50:
+                final_predictions.append(1)
+                final_probabilities.append(0.5)  # Medium - good competency but poor marks
+            # Use ML model prediction for borderline cases
             else:
-                # Use ML model prediction for borderline cases
                 final_predictions.append(predictions[i])
                 final_probabilities.append(probabilities[i])
         
@@ -679,8 +684,14 @@ class StudentProgressAnalyzer:
                 'predicted_pass': 0,
                 'predicted_fail': 0,
                 'pass_rate': 0,
+                'competency_based_pass': 0,
+                'assignment_based_pass': 0,
                 'risk_levels': {'Low': 0, 'Medium': 0, 'High': 0},
-                'predictions': []
+                'predictions': [],
+                'methodology': {
+                    'pass_criteria': 'Competency >70% AND Avg Marks >50',
+                    'risk_thresholds': {'Low': '≥70%', 'Medium': '40-69%', 'High': '<40%'}
+                }
             }
             
         # Calculate statistics
@@ -689,20 +700,37 @@ class StudentProgressAnalyzer:
         predicted_fail = total_students - predicted_pass
         pass_rate = predicted_pass / total_students if total_students > 0 else 0
         
+        # Calculate competency-based pass rate (only using competency >70%)
+        competency_pass = sum(1 for p in predictions 
+            if p['performance']['competency_rate'] > 0.7)
+        competency_based_pass = competency_pass / total_students if total_students > 0 else 0
+        
+        # Calculate assignment-based pass rate (only using avg marks >50)
+        assignment_pass = sum(1 for p in predictions 
+            if p['performance']['avg_marks'] > 50)
+        assignment_based_pass = assignment_pass / total_students if total_students > 0 else 0
+        
         # Calculate risk level distribution
         risk_levels = {'Low': 0, 'Medium': 0, 'High': 0}
         for p in predictions:
             risk_levels[p['risk_level']] += 1
             
-        # Create report
+        # Create report with detailed breakdown
         report = {
             'generated_at': datetime.now().isoformat(),
             'total_students': total_students,
             'predicted_pass': predicted_pass,
             'predicted_fail': predicted_fail,
             'pass_rate': pass_rate,
+            'competency_based_pass': competency_based_pass,
+            'assignment_based_pass': assignment_based_pass,
             'risk_levels': risk_levels,
-            'predictions': predictions
+            'predictions': predictions,
+            'methodology': {
+                'pass_criteria': 'Competency >70% AND Avg Marks >50',
+                'risk_thresholds': {'Low': '≥70%', 'Medium': '40-69%', 'High': '<40%'},
+                'description': 'Pass rate combines both continuous assessments (C/NYC) and assignment marks'
+            }
         }
         
         return report

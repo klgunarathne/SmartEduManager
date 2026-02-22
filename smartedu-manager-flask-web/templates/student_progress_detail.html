@@ -4,9 +4,237 @@
 
 {% block content %}
 <div class="container">
+    <!-- Methodology Explanation - Enhanced Styling -->
+    <div class="methodology-card mb-4">
+        <div class="methodology-header">
+            <i class="fas fa-graduation-cap"></i>
+            <h5>How Pass Rate & Risk is Measured</h5>
+            <button class="methodology-toggle" onclick="document.querySelector('.methodology-content').classList.toggle('collapsed')">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="methodology-content">
+            <div class="row">
+                <!-- Competency Section -->
+                <div class="col-md-4">
+                    <div class="method-box competency-box">
+                        <div class="method-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <h6>Continuous Assessments</h6>
+                        <div class="method-formula">
+                            <span class="formula-text">(C marks ÷ Total) × 100</span>
+                        </div>
+                        <div class="method-details">
+                            <div class="detail-item">
+                                <span class="badge badge-success">C</span> = Competent (1 point)
+                            </div>
+                            <div class="detail-item">
+                                <span class="badge badge-danger">NYC</span> = Not Yet Competent (0 points)
+                            </div>
+                        </div>
+                        <div class="method-example">
+                            <small><i class="fas fa-lightbulb"></i> Example: 19C/20 = <strong>95%</strong></small>
+                        </div>
+                    </div>
+                </div>
+                <!-- Pass Criteria Section -->
+                <div class="col-md-4">
+                    <div class="method-box criteria-box">
+                        <div class="method-icon">
+                            <i class="fas fa-check-double"></i>
+                        </div>
+                        <h6>Pass Criteria</h6>
+                        <div class="pass-requirements">
+                            <div class="req-item pass">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Competency > <strong>70%</strong></span>
+                            </div>
+                            <div class="req-divider">AND</div>
+                            <div class="req-item pass">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Avg Marks > <strong>50</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Risk Levels Section -->
+                <div class="col-md-4">
+                    <div class="method-box risk-box">
+                        <div class="method-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h6>Risk Levels</h6>
+                        <div class="risk-indicators">
+                            <div class="risk-item low">
+                                <span class="risk-badge">Low</span>
+                                <span>≥70% pass probability</span>
+                            </div>
+                            <div class="risk-item medium">
+                                <span class="risk-badge">Medium</span>
+                                <span>40-69% pass probability</span>
+                            </div>
+                            <div class="risk-item high">
+                                <span class="risk-badge">High</span>
+                                <span>&lt;40% pass probability</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+    .methodology-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .methodology-header {
+        background: rgba(255,255,255,0.15);
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
+    .methodology-header i {
+        font-size: 1.5rem;
+        margin-right: 12px;
+    }
+    .methodology-header h5 {
+        margin: 0;
+        flex-grow: 1;
+        font-weight: 600;
+    }
+    .methodology-toggle {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .methodology-toggle:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    .methodology-content {
+        padding: 20px;
+        background: white;
+    }
+    .method-box {
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        height: 100%;
+    }
+    .competency-box {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+    }
+    .criteria-box {
+        background: linear-gradient(135deg, #fff6e5 0%, #ffecd2 100%);
+    }
+    .risk-box {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+    }
+    .method-box .method-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.3rem;
+    }
+    .competency-box .method-icon { background: #d4edda; color: #155724; }
+    .criteria-box .method-icon { background: #fff3cd; color: #856404; }
+    .risk-box .method-icon { background: #cce5ff; color: #004085; }
+    .method-box h6 {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #333;
+    }
+    .method-formula {
+        background: #2d3748;
+        color: #68d391;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: monospace;
+        margin-bottom: 10px;
+    }
+    .method-details .detail-item {
+        font-size: 0.85rem;
+        color: #666;
+        margin: 5px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .method-example {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed #ccc;
+    }
+    .method-example small {
+        color: #888;
+    }
+    .pass-requirements .req-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 6px;
+        background: white;
+    }
+    .req-item.pass { color: #28a745; }
+    .req-divider {
+        font-size: 0.75rem;
+        color: #999;
+        font-weight: 600;
+    }
+    .risk-indicators .risk-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        margin: 8px 0;
+        border-radius: 6px;
+        font-size: 0.85rem;
+    }
+    .risk-item.low { background: #d4edda; }
+    .risk-item.medium { background: #fff3cd; }
+    .risk-item.high { background: #f8d7da; }
+    .risk-item .risk-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+    .risk-item.low .risk-badge { background: #28a745; color: white; }
+    .risk-item.medium .risk-badge { background: #ffc107; color: #333; }
+    .risk-item.high .risk-badge { background: #dc3545; color: white; }
+    </style>
+
     <!-- Page Header -->
     <div class="page-header">
         <div class="header-content">
+            <div class="header-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-link">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <i class="fas fa-chevron-right nav-separator"></i>
+                <a href="{{ url_for('student_progress_analyzer') }}" class="nav-link">
+                    Progress Analyzer
+                </a>
+                <i class="fas fa-chevron-right nav-separator"></i>
+                <span class="nav-current">{{ student.FullName }}</span>
+            </div>
             <h1 class="page-title">Student Progress Detail</h1>
             <p class="page-subtitle">{{ student.FullName }} ({{ student.MISNo }})</p>
         </div>
@@ -16,6 +244,43 @@
             </a>
         </div>
     </div>
+    <style>
+    .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+    .nav-link {
+        color: #6c757d;
+        text-decoration: none;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    .nav-link:hover {
+        color: #4f46e5;
+        background: #eef2ff;
+        text-decoration: none;
+    }
+    .nav-link i {
+        font-size: 0.75rem;
+    }
+    .nav-separator {
+        color: #adb5bd;
+        font-size: 0.7rem;
+    }
+    .nav-current {
+        color: #495057;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    </style>
 
     {% if analysis %}
     <!-- Prediction Overview -->
@@ -58,6 +323,16 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                                 {{ analysis.risk_level }} Risk
                             </span>
+                        </div>
+                        <!-- Detailed Breakdown -->
+                        <div class="mt-3 p-2 bg-white rounded border">
+                            <small class="text-muted d-block mb-1"><strong>Current Status Breakdown:</strong></small>
+                            <div class="d-flex justify-content-between small">
+                                <span>✓ Competency: <strong>{{ "%.0f"|format(analysis.performance.competency_rate * 100) }}%</strong> {% if analysis.performance.competency_rate > 0.7 %}<span class="text-success">✓ Passes</span>{% else %}<span class="text-danger">✗ Below threshold</span>{% endif %}</span>
+                            </div>
+                            <div class="d-flex justify-content-between small mt-1">
+                                <span>✓ Avg Marks: <strong>{{ "%.1f"|format(analysis.performance.avg_marks) }}</strong> {% if analysis.performance.avg_marks > 50 %}<span class="text-success">✓ Passes</span>{% else %}<span class="text-danger">✗ Below threshold</span>{% endif %}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
