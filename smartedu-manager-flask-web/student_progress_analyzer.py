@@ -237,10 +237,10 @@ class StudentProgressAnalyzer:
                 features[col] = features[col].fillna(0)
         
         # Create target variable (pass/fail)
-        # Students with >70% competency rate and average assignment marks >90 pass
+        # Students with >70% competency rate and average assignment marks >50 pass
         # For students with no data, we'll set pass to 0 (fail)
         features['Pass'] = (
-            (features['CompetencyRate'] > 0.7) & (features['AvgMarks'] > 90)
+            (features['CompetencyRate'] > 0.7) & (features['AvgMarks'] > 50)
         ).astype(int)
         
         # Ensure all required columns for analysis are present (handle missing columns gracefully)
@@ -250,16 +250,37 @@ class StudentProgressAnalyzer:
         
         return features
     
-    def train_model(self, features):
+    def train_model(self, features, algorithm='random_forest', test_size=0.2, params=None):
         """
         Train a machine learning model on the features data.
         
         Args:
             features (pd.DataFrame): Features DataFrame with 'Pass' column as target
+            algorithm (str): Algorithm to use ('random_forest', 'decision_tree', 'logistic_regression', 'svm', 'gradient_boosting', 'naive_bayes')
+            test_size (float): Test set size ratio (default 0.2)
+            params (dict): Algorithm-specific parameters
             
         Returns:
             dict: Training metrics
         """
+        from sklearn.tree import DecisionTreeClassifier
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.svm import SVC
+        from sklearn.ensemble import GradientBoostingClassifier
+        from sklearn.naive_bayes import GaussianNB
+        
+        if params is None:
+            params = {}
+        
+        # Get algorithm display name
+        algorithm_names = {
+            'random_forest': 'Random Forest Classifier',
+            'decision_tree': 'Decision Tree Classifier',
+            'logistic_regression': 'Logistic Regression',
+            'svm': 'Support Vector Machine',
+            'gradient_boosting': 'Gradient Boosting Classifier',
+            'naive_bayes': 'Naive Bayes Classifier'
+        }
         # Separate features and target
         X = features.drop(['StudentId', 'BatchId', 'Gender', 'Pass'], axis=1, errors='ignore')
         y = features['Pass']
@@ -284,12 +305,12 @@ class StudentProgressAnalyzer:
             class_counts = y.value_counts()
             if class_counts.min() >= 2:
                 X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=0.2, random_state=42, stratify=y
+                    X, y, test_size=test_size, random_state=42, stratify=y
                 )
             else:
                 # Not enough samples in one class - don't use stratification
                 X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=0.2, random_state=42
+                    X, y, test_size=test_size, random_state=42
                 )
         
         # Create preprocessor
@@ -307,17 +328,58 @@ class StudentProgressAnalyzer:
             remainder='drop'
         )
         
-        # Create model pipeline
-        self.model = Pipeline(steps=[
-            ('preprocessor', preprocessor),
-            ('classifier', RandomForestClassifier(
+        # Create model based on selected algorithm
+        if algorithm == 'random_forest':
+            clf = RandomForestClassifier(
+                n_estimators=params.get('n_estimators', 100),
+                max_depth=params.get('max_depth', 10),
+                min_samples_split=params.get('min_samples_split', 5),
+                min_samples_leaf=params.get('min_samples_leaf', 2),
+                random_state=42,
+                n_jobs=-1
+            )
+        elif algorithm == 'decision_tree':
+            clf = DecisionTreeClassifier(
+                max_depth=params.get('max_depth', 10),
+                min_samples_split=params.get('min_samples_split', 5),
+                random_state=42
+            )
+        elif algorithm == 'logistic_regression':
+            clf = LogisticRegression(
+                max_iter=params.get('max_iter', 100),
+                C=params.get('C', 1.0),
+                random_state=42
+            )
+        elif algorithm == 'svm':
+            clf = SVC(
+                C=params.get('C', 1.0),
+                kernel=params.get('kernel', 'rbf'),
+                probability=True,
+                random_state=42
+            )
+        elif algorithm == 'gradient_boosting':
+            clf = GradientBoostingClassifier(
+                n_estimators=params.get('n_estimators', 100),
+                max_depth=params.get('max_depth', 5),
+                random_state=42
+            )
+        elif algorithm == 'naive_bayes':
+            clf = GaussianNB()
+        else:
+            # Default to random forest
+            clf = RandomForestClassifier(
                 n_estimators=100,
                 max_depth=10,
                 min_samples_split=5,
                 min_samples_leaf=2,
                 random_state=42,
                 n_jobs=-1
-            ))
+            )
+        
+        # Create model pipeline
+        self.model = Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('classifier', clf)
         ])
         
         # Train the model
@@ -372,6 +434,9 @@ class StudentProgressAnalyzer:
         # Save the trained model
         joblib.dump(self.model, self.model_path)
         
+        # Add algorithm name to metrics
+        metrics['algorithm'] = algorithm_names.get(algorithm, algorithm)
+        
         return metrics
     
     def load_model(self):
@@ -408,8 +473,13 @@ class StudentProgressAnalyzer:
         if proba.shape[1] > 1:
             probabilities = proba[:, 1]
         else:
-            # Only one class in model - use 0.5 as default probability
-            probabilities = proba[:, 0]
+            # Only one class in model - use 1.0 if it's the Pass class, 0.0 otherwise
+            # Check what class the model predicts
+            single_class_pred = self.model.predict(X)
+            if single_class_pred[0] == 1:
+                probabilities = np.ones(len(X))  # All 1.0 for Pass class
+            else:
+                probabilities = np.zeros(len(X))  # All 0.0 for Fail class
         
         # Use feature-based criteria to override ML predictions when clear
         # If competency rate > 70% AND avg marks > 50, it's clearly a pass
@@ -427,11 +497,11 @@ class StudentProgressAnalyzer:
             # If clear pass criteria met (high competency and good marks > 90)
             if comp_rate > 0.7 and avg_marks > 90:
                 final_predictions.append(1)
-                final_probabilities.append(0.95)  # High confidence
+                final_probabilities.append(1.0)  # 100% probability for clear pass
             # If clear fail criteria (very low competency)
             elif comp_rate < 0.3:
                 final_predictions.append(0)
-                final_probabilities.append(0.05)  # Low confidence
+                final_probabilities.append(0.0)  # 0% probability for clear fail
             else:
                 # Use ML model prediction for borderline cases
                 final_predictions.append(predictions[i])

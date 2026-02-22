@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from flask_wtf import FlaskForm
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, validate_csrf, ValidationError
 from flask_wtf.file import FileField, FileRequired, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField, IntegerField, SelectField, DecimalField, HiddenField
 from wtforms.validators import InputRequired, Email, Length
@@ -1642,6 +1642,142 @@ def retrain_model():
     except Exception as e:
         flash(f'An error occurred: {str(e)}', 'danger')
         return redirect(url_for('student_progress_analyzer'))
+
+
+@app.route('/student-progress/training')
+def model_training_page():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    analyzer = StudentProgressAnalyzer()
+    
+    try:
+        # Fetch all data
+        students_response = api_request('GET', 'students')
+        students = students_response.json() if (students_response and students_response.status_code == 200) else []
+        
+        assessments_response = api_request('GET', 'continuousassessments')
+        assessments = assessments_response.json() if (assessments_response and assessments_response.status_code == 200) else []
+        
+        assignment_marks_response = api_request('GET', 'assignmentmarks')
+        assignment_marks = assignment_marks_response.json() if (assignment_marks_response and assignment_marks_response.status_code == 200) else []
+        
+        # Create features
+        features = analyzer.create_features(students, assessments, assignment_marks)
+        
+        # Get dataset info
+        dataset_info = None
+        if len(features) >= 2:
+            dataset_info = {
+                'total_students': len(students),
+                'total_assessments': len(assessments),
+                'total_assignment_marks': len(assignment_marks),
+                'training_samples': len(features),
+                'pass_count': int(features['Pass'].sum()) if 'Pass' in features.columns else 0,
+                'fail_count': int(len(features) - features['Pass'].sum()) if 'Pass' in features.columns else 0
+            }
+        
+        return render_template('model_training.html',
+                             dataset_info=dataset_info,
+                             training_info=None,
+                             selected_algorithm='random_forest',
+                             test_size=20)
+                             
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return redirect(url_for('student_progress_analyzer'))
+
+
+@app.route('/student-progress/train', methods=['POST'])
+def train_model():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('Invalid CSRF token. Please try again.', 'danger')
+        return redirect(url_for('model_training_page'))
+    
+    analyzer = StudentProgressAnalyzer()
+    
+    try:
+        # Get form data
+        algorithm = request.form.get('algorithm', 'random_forest')
+        test_size = float(request.form.get('test_size', 20)) / 100
+        
+        # Get algorithm-specific parameters
+        params = {}
+        if algorithm == 'random_forest':
+            params = {
+                'n_estimators': int(request.form.get('n_estimators', 100)),
+                'max_depth': int(request.form.get('max_depth', 10)),
+                'min_samples_split': int(request.form.get('min_samples_split', 5)),
+                'min_samples_leaf': int(request.form.get('min_samples_leaf', 2))
+            }
+        elif algorithm == 'decision_tree':
+            params = {
+                'max_depth': int(request.form.get('dt_max_depth', 10)),
+                'min_samples_split': int(request.form.get('dt_min_samples_split', 5))
+            }
+        elif algorithm == 'logistic_regression':
+            params = {
+                'max_iter': int(request.form.get('lr_max_iter', 100)),
+                'C': float(request.form.get('lr_C', 1.0))
+            }
+        elif algorithm == 'svm':
+            params = {
+                'C': float(request.form.get('svm_C', 1.0)),
+                'kernel': request.form.get('svm_kernel', 'rbf')
+            }
+        elif algorithm == 'gradient_boosting':
+            params = {
+                'n_estimators': int(request.form.get('gb_n_estimators', 100)),
+                'max_depth': int(request.form.get('gb_max_depth', 5))
+            }
+        # naive_bayes has no parameters
+        
+        # Fetch all data
+        students_response = api_request('GET', 'students')
+        students = students_response.json() if (students_response and students_response.status_code == 200) else []
+        
+        assessments_response = api_request('GET', 'continuousassessments')
+        assessments = assessments_response.json() if (assessments_response and assessments_response.status_code == 200) else []
+        
+        assignment_marks_response = api_request('GET', 'assignmentmarks')
+        assignment_marks = assignment_marks_response.json() if (assignment_marks_response and assignment_marks_response.status_code == 200) else []
+        
+        # Create features
+        features = analyzer.create_features(students, assessments, assignment_marks)
+        
+        if len(features) < 2:
+            flash('Not enough data to train the model (minimum 2 students required)', 'warning')
+            return redirect(url_for('model_training_page'))
+        
+        # Get dataset info
+        dataset_info = {
+            'total_students': len(students),
+            'total_assessments': len(assessments),
+            'total_assignment_marks': len(assignment_marks),
+            'training_samples': len(features),
+            'pass_count': int(features['Pass'].sum()) if 'Pass' in features.columns else 0,
+            'fail_count': int(len(features) - features['Pass'].sum()) if 'Pass' in features.columns else 0
+        }
+        
+        # Train model with selected algorithm
+        metrics = analyzer.train_model(features, algorithm=algorithm, test_size=test_size, params=params)
+        
+        flash(f'Model trained successfully with {algorithm.replace("_", " ").title()}! Accuracy: {metrics["accuracy"]:.2%}', 'success')
+        
+        return render_template('model_training.html',
+                             dataset_info=dataset_info,
+                             training_info=metrics,
+                             selected_algorithm=algorithm,
+                             test_size=int(test_size * 100))
+                             
+    except Exception as e:
+        flash(f'An error occurred during training: {str(e)}', 'danger')
+        return redirect(url_for('model_training_page'))
 
 
 @app.route('/student-progress/api/report')

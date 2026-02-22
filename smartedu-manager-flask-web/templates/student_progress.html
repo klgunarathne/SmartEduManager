@@ -14,8 +14,8 @@
                 <p class="analyzer-subtitle">AI-powered student performance prediction and risk assessment</p>
             </div>
             <div class="col-md-6 text-md-right mt-3">
-                <a href="{{ url_for('retrain_model') }}" class="btn btn-retrain">
-                    <i class="fas fa-brain"></i> Retrain Model
+                <a href="{{ url_for('model_training_page') }}" class="btn btn-retrain">
+                    <i class="fas fa-brain"></i> Train Model
                 </a>
             </div>
         </div>
@@ -298,6 +298,166 @@
     .btn-retrain:hover {
         background: rgba(255,255,255,0.3);
         color: white;
+    }
+
+    /* Training Info Section */
+    .training-info-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        height: 100%;
+    }
+
+    .info-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-header h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .info-header h4 i {
+        margin-right: 0.5rem;
+        color: #667eea;
+    }
+
+    .dataset-card .info-header h4 i {
+        color: #38ef7d;
+    }
+
+    .training-card .info-header h4 i {
+        color: #f45c43;
+    }
+
+    .info-body {
+        padding: 1rem 1.25rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #718096;
+        font-weight: 500;
+    }
+
+    .info-value {
+        color: #2d3748;
+        font-weight: 600;
+    }
+
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .metric-item {
+        text-align: center;
+        padding: 0.75rem;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+
+    .metric-value {
+        display: block;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .metric-label {
+        font-size: 0.75rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-note {
+        margin-top: 0.75rem;
+        padding: 0.5rem;
+        background: #fef3c7;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #92400e;
+    }
+
+    .info-note i {
+        margin-right: 0.5rem;
+    }
+
+    .text-success {
+        color: #11998e;
+    }
+
+    .text-danger {
+        color: #eb3349;
+    }
+
+    /* Training Method Section */
+    .training-method {
+        margin-bottom: 1rem;
+    }
+
+    .training-method h5 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .training-method p {
+        margin-bottom: 0.25rem;
+        font-size: 0.85rem;
+    }
+
+    .training-method ul {
+        margin-bottom: 0;
+        padding-left: 1.25rem;
+        font-size: 0.8rem;
+    }
+
+    .training-method li {
+        color: #4a5568;
+    }
+
+    /* Modal Styles */
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .modal-header .close {
+        color: white;
+    }
+
+    .modal-title i {
+        margin-right: 0.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
     }
 
     /* Filter Section */

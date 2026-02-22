@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}Model Training - SmartEdu Manager{% endblock %}
+
+{% block extra_css %}
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    .training-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    .param-box {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    .metric-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    .metric-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .dataset-card {
+        border-left: 4px solid #667eea;
+    }
+    .results-card {
+        border-left: 4px solid #28a745;
+    }
+    .algo-badge {
+        background: #667eea;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .progress-dist {
+        height: 25px;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    .progress-pass {
+        background: #28a745;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    .progress-fail {
+        background: #dc3545;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+    .success-box {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="brand-logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>SmartEdu Manager</span>
+            </div>
+        </div>
+        
+        <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search..." class="search-input">
+        </div>
+        
+        <div class="navbar-actions">
+            <button class="action-btn">
+                <i class="fas fa-bell"></i>
+                <span class="badge">3</span>
+            </button>
+            <button class="action-btn">
+                <i class="fas fa-question-circle"></i>
+            </button>
+            <div class="user-profile">
+                <img src="https://ui-avatars.com/api/?name={{ session['first_name'] }}&background=random" alt="User Profile" class="user-avatar">
+                <div class="user-info">
+                    <span class="user-name">{{ session['first_name'] }}</span>
+                    <span class="user-role">{{ session['roles'][0] if session['roles'] else 'User' }}</span>
+                </div>
+                <button class="profile-menu-btn" onclick="toggleProfileMenu()">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Menu -->
+    <div class="profile-menu" id="profileMenu">
+        <div class="menu-header">
+            <span class="menu-title">Account</span>
+        </div>
+        <button class="menu-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </button>
+        <button class="menu-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </button>
+        <button class="menu-item">
+            <i class="fas fa-question-circle"></i>
+            <span>Help</span>
+        </button>
+        <hr class="menu_divider">
+        <button class="menu-item" onclick="window.location.href='{{ url_for('logout') }}';">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <span class="section-title">Main Menu</span>
+                <div class="nav-items">
+                    <a href="{{ url_for('dashboard') }}" class="nav-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('students') }}" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Students</span>
+                    </a>
+                    <a href="{{ url_for('batches') }}" class="nav-item">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Batches</span>
+                    </a>
+                    <a href="{{ url_for('courses') }}" class="nav-item">
+                        <i class="fas fa-book"></i>
+                        <span>Courses</span>
+                    </a>
+                    <a href="{{ url_for('centers') }}" class="nav-item">
+                        <i class="fas fa-school"></i>
+                        <span>Centers</span>
+                    </a>
+                    <a href="{{ url_for('instructors') }}" class="nav-item">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <span>Instructors</span>
+                    </a>
+                </div>
+            </div>
+            <div class="nav-section">
+                <span class="section-title">Academic</span>
+                <div class="nav-items">
+                    <a href="{{ url_for('modules') }}" class="nav-item">
+                        <i class="fas fa-bookmark"></i>
+                        <span>Modules</span>
+                    </a>
+                    <a href="{{ url_for('ncs') }}" class="nav-item">
+                        <i class="fas fa-list-alt"></i>
+                        <span>NCS</span>
+                    </a>
+                    <a href="{{ url_for('assignments') }}" class="nav-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Assignments</span>
+                    </a>
+                    <a href="{{ url_for('assignment_marks') }}" class="nav-item">
+                        <i class="fas fa-clipboard-check"></i>
+                        <span>Assignment Marks</span>
+                    </a>
+                </div>
+            </div>
+            <div class="nav-section">
+                <span class="section-title">Analytics</span>
+                <div class="nav-items">
+                    <a href="{{ url_for('student_progress_analyzer') }}" class="nav-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Student Progress</span>
+                    </a>
+                    <a href="{{ url_for('model_training_page') }}" class="nav-item active">
+                        <i class="fas fa-brain"></i>
+                        <span>Model Training</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <div class="training-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2><i class="fas fa-brain"></i> Machine Learning Model Training</h2>
+                    <p class="mb-0">Train and optimize student performance prediction models</p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <a href="{{ url_for('student_progress_analyzer') }}" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> Back to Analyzer
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Training Configuration -->
+            <div class="col-lg-7">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-cog"></i> Training Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('train_model') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-robot"></i> Algorithm</label>
+                                        <select name="algorithm" class="form-control">
+                                            <option value="random_forest" {% if selected_algorithm == 'random_forest' %}selected{% endif %}>Random Forest Classifier</option>
+                                            <option value="decision_tree" {% if selected_algorithm == 'decision_tree' %}selected{% endif %}>Decision Tree Classifier</option>
+                                            <option value="logistic_regression" {% if selected_algorithm == 'logistic_regression' %}selected{% endif %}>Logistic Regression</option>
+                                            <option value="svm" {% if selected_algorithm == 'svm' %}selected{% endif %}>Support Vector Machine</option>
+                                            <option value="gradient_boosting" {% if selected_algorithm == 'gradient_boosting' %}selected{% endif %}>Gradient Boosting</option>
+                                            <option value="naive_bayes" {% if selected_algorithm == 'naive_bayes' %}selected{% endif %}>Naive Bayes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-sliders-h"></i> Test Size (%)</label>
+                                        <input type="number" name="test_size" class="form-control" value="{{ test_size if test_size else 20 }}" min="10" max="50" step="5">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Parameters -->
+                            <div class="param-box">
+                                <h6><i class="fas fa-list-ul"></i> Algorithm Parameters</h6>
+                                
+                                <!-- Random Forest -->
+                                <div class="param-group" data-algorithm="random_forest">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label>n_estimators</label>
+                                            <input type="number" name="n_estimators" class="form-control form-control-sm" value="100">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label>max_depth</label>
+                                            <input type="number" name="max_depth" class="form-control form-control-sm" value="10">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label>min_samples_split</label>
+                                            <input type="number" name="min_samples_split" class="form-control form-control-sm" value="5">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label>min_samples_leaf</label>
+                                            <input type="number" name="min_samples_leaf" class="form-control form-control-sm" value="2">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Decision Tree -->
+                                <div class="param-group" data-algorithm="decision_tree" style="display:none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label>max_depth</label>
+                                            <input type="number" name="dt_max_depth" class="form-control form-control-sm" value="10">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label>min_samples_split</label>
+                                            <input type="number" name="dt_min_samples_split" class="form-control form-control-sm" value="5">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Logistic Regression -->
+                                <div class="param-group" data-algorithm="logistic_regression" style="display:none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label>max_iter</label>
+                                            <input type="number" name="lr_max_iter" class="form-control form-control-sm" value="100">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label>C</label>
+                                            <input type="number" name="lr_C" class="form-control form-control-sm" value="1.0" step="0.1">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- SVM -->
+                                <div class="param-group" data-algorithm="svm" style="display:none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label>C</label>
+                                            <input type="number" name="svm_C" class="form-control form-control-sm" value="1.0" step="0.1">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label>kernel</label>
+                                            <select name="svm_kernel" class="form-control form-control-sm">
+                                                <option value="rbf">RBF</option>
+                                                <option value="linear">Linear</option>
+                                                <option value="poly">Polynomial</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Gradient Boosting -->
+                                <div class="param-group" data-algorithm="gradient_boosting" style="display:none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label>n_estimators</label>
+                                            <input type="number" name="gb_n_estimators" class="form-control form-control-sm" value="100">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label>max_depth</label>
+                                            <input type="number" name="gb_max_depth" class="form-control form-control-sm" value="5">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Naive Bayes -->
+                                <div class="param-group" data-algorithm="naive_bayes" style="display:none;">
+                                    <p class="text-muted mb-0"><i class="fas fa-info-circle"></i> Naive Bayes uses default parameters.</p>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fas fa-brain"></i> Train Model
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Column -->
+            <div class="col-lg-5">
+                <!-- Dataset Info -->
+                {% if dataset_info %}
+                <div class="card shadow-sm mb-4 dataset-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-database"></i> Dataset Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6 mb-3">
+                                <div class="info-icon bg-primary text-white mx-auto mb-2">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <strong>{{ dataset_info.total_students }}</strong>
+                                <br><small class="text-muted">Students</small>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="info-icon bg-success text-white mx-auto mb-2">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                                <strong>{{ dataset_info.total_assessments }}</strong>
+                                <br><small class="text-muted">Assessments</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-icon bg-warning text-white mx-auto mb-2">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <strong>{{ dataset_info.total_assignment_marks }}</strong>
+                                <br><small class="text-muted">Assignments</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-icon bg-danger text-white mx-auto mb-2">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <strong>{{ dataset_info.training_samples }}</strong>
+                                <br><small class="text-muted">Training Samples</small>
+                            </div>
+                        </div>
+                        
+                        {% if dataset_info.pass_count is defined %}
+                        <div class="mt-3">
+                            <label>Pass/Fail Distribution</label>
+                            <div class="progress progress-dist">
+                                <div class="progress-pass" style="width: {{ (dataset_info.pass_count / dataset_info.training_samples * 100) if dataset_info.training_samples > 0 else 0 }}%">
+                                    {{ dataset_info.pass_count }} Pass
+                                </div>
+                                <div class="progress-fail" style="width: {{ (dataset_info.fail_count / dataset_info.training_samples * 100) if dataset_info.training_samples > 0 else 0 }}%">
+                                    {{ dataset_info.fail_count }} Fail
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Training Results -->
+                {% if training_info %}
+                <div class="card shadow-sm mb-4 results-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> Training Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <span class="algo-badge">
+                                <i class="fas fa-robot"></i> {{ training_info.algorithm }}
+                            </span>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="metric-card">
+                                    <div class="metric-value">{{ "%.1f%%"|format(training_info.accuracy * 100) }}</div>
+                                    <div class="metric-label">Accuracy</div>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="metric-card">
+                                    <div class="metric-value">{{ "%.1f%%"|format(training_info.precision * 100) }}</div>
+                                    <div class="metric-label">Precision</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value">{{ "%.1f%%"|format(training_info.recall * 100) }}</div>
+                                    <div class="metric-label">Recall</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-card">
+                                    <div class="metric-value">{{ "%.1f%%"|format(training_info.f1 * 100) }}</div>
+                                    <div class="metric-label">F1 Score</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if training_info.roc_auc is defined %}
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="fas fa-chart-area"></i> ROC AUC: <strong>{{ "%.3f"|format(training_info.roc_auc) }}</strong>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="success-box mt-3">
+                            <i class="fas fa-check-circle"></i> <strong>Model trained successfully!</strong>
+                            <a href="{{ url_for('student_progress_analyzer') }}" class="btn btn-sm btn-success btn-block mt-2">
+                                View Predictions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- No Data -->
+                {% if not dataset_info and not training_info %}
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-database fa-4x text-muted mb-3"></i>
+                        <h5>No Dataset Available</h5>
+                        <p class="text-muted">Please ensure student data is available before training.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+{% endblock %}
+
+<script>
+    // Show/hide parameters based on algorithm selection
+    document.getElementById('algorithm')?.addEventListener('change', function() {
+        const selectedAlgorithm = this.value;
+        document.querySelectorAll('.param-group').forEach(group => {
+            group.style.display = group.dataset.algorithm === selectedAlgorithm ? 'block' : 'none';
+        });
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const algorithmSelect = document.getElementById('algorithm');
+        if (algorithmSelect) {
+            const selectedAlgorithm = algorithmSelect.value;
+            document.querySelectorAll('.param-group').forEach(group => {
+                group.style.display = group.dataset.algorithm === selectedAlgorithm ? 'block' : 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}

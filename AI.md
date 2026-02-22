@@ -13,6 +13,7 @@
 10. [Model Evaluation Metrics](#model-evaluation-metrics)
 11. [API Integration](#api-integration)
 12. [Output & Reports](#output--reports)
+13. [Security & CSRF Protection](#security--csrf-protection)
 
 ---
 
@@ -264,6 +265,17 @@ X = features.drop(['StudentId', 'BatchId', 'Gender', 'Pass'], axis=1)
 
 ## 7. Machine Learning Algorithm
 
+### Supported Algorithms
+
+The Student Progress Analyzer supports multiple machine learning algorithms for training:
+
+| Algorithm | Description | Best For |
+|-----------|-------------|----------|
+| **Random Forest** | Ensemble of decision trees | General purpose, good for most datasets |
+| **Decision Tree** | Single tree-based classifier | Interpretability, small datasets |
+| **Logistic Regression** | Linear classification model | Binary classification, probability estimation |
+| **Gradient Boosting** | Sequential ensemble method | High accuracy, complex patterns |
+
 ### Algorithm: Random Forest Classifier
 
 **Why Random Forest?**
@@ -503,6 +515,63 @@ def generate_report(predictions):
 5. **Model Management**
    - Retrain model button
    - Model persistence across sessions
+   - Algorithm selection (Random Forest, Decision Tree, Logistic Regression, Gradient Boosting)
+   - Training results with evaluation metrics
+   - Dataset visualization with pass/fail distribution
+
+6. **Model Training Page**
+   - Algorithm selection dropdown
+   - Training/test split configuration
+   - Real-time training progress display
+   - Evaluation metrics (Accuracy, Precision, Recall, F1, ROC AUC)
+   - Confusion matrix visualization
+
+---
+
+## 13. Security & CSRF Protection
+
+### 13.1 CSRF Protection Implementation
+
+The Flask application implements CSRF (Cross-Site Request Forgery) protection using Flask-WTF to secure form submissions.
+
+### CSRF Token Generation
+```python
+# In templates, CSRF token is auto-generated for each form
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+```
+
+### CSRF Token Validation
+```python
+from flask_wtf.csrf import validate_csrf, ValidationError
+
+@app.route('/student-progress/train', methods=['POST'])
+def train_model():
+    if 'access_token' not in session:
+        return redirect(url_for('login'))
+    
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        flash('Invalid CSRF token. Please try again.', 'danger')
+        return redirect(url_for('model_training_page'))
+    
+    # Continue with model training...
+```
+
+### 13.2 Protected Routes
+
+| Route | Method | Protection |
+|-------|--------|------------|
+| `/student-progress` | GET | Session check |
+| `/student-progress/train` | POST | Session + CSRF validation |
+| `/student-progress/analyze` | POST | Session + CSRF validation |
+
+### 13.3 Security Best Practices
+
+1. **Session-based Authentication**: All ML routes require valid session with access token
+2. **CSRF Tokens**: All POST forms include hidden CSRF token field
+3. **Token Validation**: Server validates CSRF token before processing requests
+4. **Error Handling**: Invalid CSRF tokens flash error message and redirect user
 
 ---
 
