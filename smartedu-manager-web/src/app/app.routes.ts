@@ -3,6 +3,7 @@ import { LoginComponent } from './auth/login/login.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { AdminComponent } from './admin/admin.component';
 import { authGuard } from './core/guards/auth.guard';
+import { UserManagementComponent } from './components/user-management/user-management.component';
 
 export const routes: Routes = [
   {
@@ -22,6 +23,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     title: 'Admin - SmartEdu Manager',
     children: [
+      { path: 'user-manager', component: UserManagementComponent },
     ],
   },
   {

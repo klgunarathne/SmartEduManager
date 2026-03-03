@@ -17,47 +17,54 @@
     </div>
     
     <div class="navbar-actions">
-      <button class="action-btn">
+      <button class="action-btn" matTooltip="Notifications">
         <i class="fas fa-bell"></i>
         <span class="badge">3</span>
       </button>
-      <button class="action-btn">
+      <button class="action-btn" matTooltip="Help">
         <i class="fas fa-question-circle"></i>
       </button>
-      <div class="user-profile">
-        <img src="https://ui-avatars.com/api/?name={{ userFirstName() }}&background=random" alt="User Profile" class="user-avatar">
+      <div class="user-profile" [matMenuTriggerFor]="userMenu">
+        <img src="https://ui-avatars.com/api/?name={{ userFirstName() }}&background=random&color=fff" alt="User Profile" class="user-avatar">
         <div class="user-info">
           <span class="user-name">{{ userFirstName() }}</span>
           <span class="user-role">{{ userRole() }}</span>
         </div>
-        <button class="profile-menu-btn" [matMenuTriggerFor]="userMenu">
-          <i class="fas fa-chevron-down"></i>
-        </button>
+        <i class="fas fa-chevron-down dropdown-arrow"></i>
       </div>
     </div>
   </nav>
 
-  <mat-menu #userMenu="matMenu" class="user-menu">
-    <div class="menu-header">
-      <span class="menu-title">Account</span>
+  <mat-menu #userMenu="matMenu" class="user-dropdown-menu" [overlapTrigger]="false">
+    <div class="menu-user-info">
+      <img [src]="userAvatarUrl" alt="User" class="menu-avatar" (error)="onAvatarError($event)">
+      <div class="menu-user-details">
+        <span class="menu-user-name">{{ userFirstName() }}</span>
+        <span class="menu-user-role">{{ userRole() }}</span>
+      </div>
     </div>
-    <button mat-menu-item>
-      <i class="fas fa-user"></i>
-      <span>Profile</span>
-    </button>
-    <button mat-menu-item>
-      <i class="fas fa-cog"></i>
-      <span>Settings</span>
-    </button>
-    <button mat-menu-item>
-      <i class="fas fa-question-circle"></i>
-      <span>Help</span>
-    </button>
     <mat-divider></mat-divider>
-    <button mat-menu-item (click)="logout()">
-      <i class="fas fa-sign-out-alt"></i>
-      <span>Logout</span>
-    </button>
+    
+    <!-- Menu items rendered from configuration array -->
+    <ng-container *ngFor="let item of menuItems">
+      <button 
+        *ngIf="!item.isDivider" 
+        mat-menu-item 
+        class="menu-item"
+        [class.logout-item]="item.isLogout"
+        [disabled]="item.disabled || isLoggingOut"
+        [attr.aria-label]="item.ariaLabel"
+        (click)="handleMenuItemClick(item)">
+        <i [class]="item.icon" [class.fa-spin]="item.isLogout && isLoggingOut"></i>
+        <span>{{ item.label }}</span>
+      </button>
+      <mat-divider *ngIf="item.isDivider"></mat-divider>
+    </ng-container>
+    
+    <!-- Loading overlay for logout -->
+    <div class="menu-loading-overlay" *ngIf="isLoggingOut">
+      <mat-spinner diameter="24"></mat-spinner>
+    </div>
   </mat-menu>
 
   <!-- Sidebar -->
@@ -96,7 +103,7 @@
       <div class="nav-section">
         <span class="section-title">Administration</span>
         <div class="nav-items">
-          <a href="#" class="nav-item">
+          <a routerLink="/admin/user-manager" class="nav-item">
             <i class="fas fa-users"></i>
             <span>User Management</span>
           </a>

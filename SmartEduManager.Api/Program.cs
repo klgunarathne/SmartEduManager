@@ -138,17 +138,26 @@ builder.Services.AddSwaggerGen(options =>
  // Configure CORS
  builder.Services.AddCors(options =>
  {
-     options.AddPolicy("AllowSpecificOrigins",
+     options.AddPolicy("AllowAllOrigins",
          policy =>
          {
              policy.WithOrigins(
-                     "https://localhost:4200", // Angular app
-                     "http://localhost:5000", // Flask app
-                     "http://localhost:5001"  // Flask app (HTTPS)
+                     "http://localhost:4200",
+                     "https://localhost:4200",
+                     "http://localhost:4201",
+                     "https://localhost:4201",
+                     "http://localhost:5000",
+                     "https://localhost:5000",
+                     "http://localhost:5001",
+                     "https://localhost:5001",
+                     "http://localhost:5173",
+                     "https://localhost:5173",
+                     "http://localhost:3000",
+                     "https://localhost:3001"
                  )
-                 .AllowCredentials()
-                 .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                 .WithHeaders("Content-Type", "Authorization");
+                 .AllowAnyMethod()
+                 .AllowAnyHeader()
+                 .AllowCredentials();
          });
  });
 
@@ -176,7 +185,7 @@ app.UseStaticFiles();
 app.UseSerilogRequestLogging();
 
 // Enable CORS
-app.UseCors("AllowSpecificOrigins");
+app.UseCors("AllowAllOrigins");
 
 // Custom error handling
 app.UseErrorHandling();

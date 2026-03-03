@@ -8,7 +8,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.getToken();
 
-  if (token) {
+  // Skip adding Authorization header for OPTIONS (preflight) requests
+  if (token && req.method !== 'OPTIONS') {
     const clonedRequest = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`,
