@@ -1,0 +1,142 @@
+<div class="students-container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="fas fa-user-graduate me-2"></i>Manage Students</h2>
+      <p class="text-muted mb-0">Register and manage student records</p>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>{{ isEditing() ? 'Edit Student' : 'Add New Student' }}</h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="studentForm" (ngSubmit)="onSubmit()">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="misNo" class="form-label">MIS No *</label>
+            <input type="text" class="form-control" id="misNo" formControlName="misNo">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="batchId" class="form-label">Batch *</label>
+            <select class="form-select" id="batchId" formControlName="batchId">
+              <option value="">Select Batch</option>
+              <option *ngFor="let batch of batches()" [value]="batch.batchId">
+                {{ batch.batchCode }} - {{ batch.courseName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="nameWithInitials" class="form-label">Name with Initials *</label>
+            <input type="text" class="form-control" id="nameWithInitials" formControlName="nameWithInitials">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="fullName" class="form-label">Full Name *</label>
+            <input type="text" class="form-control" id="fullName" formControlName="fullName">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="nicNo" class="form-label">NIC No *</label>
+            <input type="text" class="form-control" id="nicNo" formControlName="nicNo">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="gender" class="form-label">Gender *</label>
+            <select class="form-select" id="gender" formControlName="gender">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="telephone" class="form-label">Telephone *</label>
+            <input type="text" class="form-control" id="telephone" formControlName="telephone">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" formControlName="email">
+          </div>
+
+          <div class="col-12 mb-3">
+            <label for="address" class="form-label">Address *</label>
+            <textarea class="form-control" id="address" formControlName="address" rows="2"></textarea>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="gsDivision" class="form-label">GS Division</label>
+            <input type="text" class="form-control" id="gsDivision" formControlName="gsDivision">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="agDivision" class="form-label">AG Division</label>
+            <input type="text" class="form-control" id="agDivision" formControlName="agDivision">
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn btn-primary" [disabled]="studentForm.invalid || isLoading()">
+            <i *ngIf="!isLoading()" class="fas" [class.fa-plus]="!isEditing()" [class.fa-save]="isEditing()"></i>
+            <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isEditing() ? 'Update Student' : 'Add Student' }}
+          </button>
+          <button type="button" class="btn btn-secondary ms-2" (click)="resetForm()" *ngIf="isEditing()">
+            <i class="fas fa-times me-1"></i> Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-list me-2"></i>Students List</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped" *ngIf="students().length > 0; else noData">
+          <thead class="table-light">
+            <tr>
+              <th><i class="fas fa-id-card me-1"></i>MIS No</th>
+              <th><i class="fas fa-user me-1"></i>Name</th>
+              <th><i class="fas fa-user-tag me-1"></i>Full Name</th>
+              <th><i class="fas fa-users me-1"></i>Batch</th>
+              <th><i class="fas fa-venus-mars me-1"></i>Gender</th>
+              <th><i class="fas fa-envelope me-1"></i>Email</th>
+              <th><i class="fas fa-cogs me-1"></i>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of students()">
+              <td>{{ s.misNo }}</td>
+              <td>{{ s.nameWithInitials }}</td>
+              <td>{{ s.fullName }}</td>
+              <td>{{ s.batchCode }}</td>
+              <td>{{ s.gender }}</td>
+              <td>{{ s.email }}</td>
+              <td>
+                <button class="btn btn-sm btn-primary me-1" (click)="editStudent(s)">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" (click)="deleteStudent(s.studentId)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ng-template #noData>
+          <div class="text-center py-5">
+            <i class="fas fa-user-graduate fa-4x text-muted mb-3"></i>
+            <p class="text-muted">No students found. Add your first student above.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>

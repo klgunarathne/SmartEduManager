@@ -4,13 +4,13 @@ import { RouterModule } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 
 @Component({
-  selector: 'app-admin',
+  selector: 'app-instructor',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './admin.component.html',
-  styleUrls: ['./admin.component.scss']
+  templateUrl: './instructor.component.html',
+  styleUrls: ['./instructor.component.scss']
 })
-export class AdminComponent {
+export class InstructorComponent {
   isSidebarCollapsed = false;
   isProfileMenuOpen = false;
 

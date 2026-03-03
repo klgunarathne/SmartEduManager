@@ -1,0 +1,118 @@
+<div class="batches-container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="fas fa-users me-2"></i>Manage Batches</h2>
+      <p class="text-muted mb-0">Create, edit, and manage student batches</p>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>{{ isEditing() ? 'Edit Batch' : 'Add New Batch' }}</h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="batchForm" (ngSubmit)="onSubmit()">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="batchName" class="form-label">Batch Name *</label>
+            <input type="text" class="form-control" id="batchName" formControlName="batchName">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="centerId" class="form-label">Center *</label>
+            <select class="form-select" id="centerId" formControlName="centerId">
+              <option value="">Select Center</option>
+              <option *ngFor="let center of centers()" [value]="center.centerId">
+                {{ center.centerName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="courseId" class="form-label">Course *</label>
+            <select class="form-select" id="courseId" formControlName="courseId">
+              <option value="">Select Course</option>
+              <option *ngFor="let course of courses()" [value]="course.courseId">
+                {{ course.courseName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="startDate" class="form-label">Start Date *</label>
+            <input type="date" class="form-control" id="startDate" formControlName="startDate">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="endDate" class="form-label">End Date *</label>
+            <input type="date" class="form-control" id="endDate" formControlName="endDate">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="maxCapacity" class="form-label">Max Capacity *</label>
+            <input type="number" class="form-control" id="maxCapacity" formControlName="maxCapacity">
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn btn-primary" [disabled]="batchForm.invalid || isLoading()">
+            <i *ngIf="!isLoading()" class="fas" [class.fa-plus]="!isEditing()" [class.fa-save]="isEditing()"></i>
+            <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isEditing() ? 'Update Batch' : 'Add Batch' }}
+          </button>
+          <button type="button" class="btn btn-secondary ms-2" (click)="cancelEdit()" *ngIf="isEditing()">
+            <i class="fas fa-times me-1"></i> Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-list me-2"></i>Batches List</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped" *ngIf="batches().length > 0; else noData">
+          <thead class="table-light">
+            <tr>
+              <th><i class="fas fa-users me-1"></i>Batch Name</th>
+              <th><i class="fas fa-building me-1"></i>Center</th>
+              <th><i class="fas fa-book me-1"></i>Course</th>
+              <th><i class="fas fa-calendar me-1"></i>Start Date</th>
+              <th><i class="fas fa-calendar me-1"></i>End Date</th>
+              <th><i class="fas fa-user-friends me-1"></i>Capacity</th>
+              <th><i class="fas fa-cogs me-1"></i>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let batch of batches()">
+              <td>{{ batch.batchName }}</td>
+              <td>{{ batch.centerName }}</td>
+              <td>{{ batch.courseName }}</td>
+              <td>{{ batch.startDate | date:'mediumDate' }}</td>
+              <td>{{ batch.endDate | date:'mediumDate' }}</td>
+              <td>{{ batch.currentStudentCount || 0 }} / {{ batch.maxCapacity }}</td>
+              <td>
+                <button class="btn btn-sm btn-primary me-1" (click)="editBatch(batch)">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" (click)="deleteBatch(batch.batchId)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ng-template #noData>
+          <div class="text-center py-5">
+            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+            <p class="text-muted">No batches found. Add your first batch above.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>

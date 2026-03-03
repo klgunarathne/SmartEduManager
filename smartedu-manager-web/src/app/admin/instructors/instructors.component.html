@@ -1,0 +1,101 @@
+<div class="instructors-container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="fas fa-chalkboard-teacher me-2"></i>Manage Instructors</h2>
+      <p class="text-muted mb-0">Create, edit, and manage instructor profiles</p>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>{{ isEditing() ? 'Edit Instructor' : 'Add New Instructor' }}</h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="instructorForm" (ngSubmit)="onSubmit()">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="epfNo" class="form-label">EPF No *</label>
+            <input type="text" class="form-control" id="epfNo" formControlName="epfNo">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="fullName" class="form-label">Full Name *</label>
+            <input type="text" class="form-control" id="fullName" formControlName="fullName">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="nic" class="form-label">NIC *</label>
+            <input type="text" class="form-control" id="nic" formControlName="nic">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="email" class="form-label">Email *</label>
+            <input type="email" class="form-control" id="email" formControlName="email">
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="phone" class="form-label">Phone *</label>
+            <input type="text" class="form-control" id="phone" formControlName="phone">
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <button type="submit" class="btn btn-primary" [disabled]="instructorForm.invalid || isLoading()">
+            <i *ngIf="!isLoading()" class="fas" [class.fa-plus]="!isEditing()" [class.fa-save]="isEditing()"></i>
+            <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isEditing() ? 'Update Instructor' : 'Add Instructor' }}
+          </button>
+          <button type="button" class="btn btn-secondary ms-2" (click)="cancelEdit()" *ngIf="isEditing()">
+            <i class="fas fa-times me-1"></i> Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-list me-2"></i>Instructors List</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped" *ngIf="instructors().length > 0; else noData">
+          <thead class="table-light">
+            <tr>
+              <th><i class="fas fa-id-card me-1"></i>EPF No</th>
+              <th><i class="fas fa-user me-1"></i>Full Name</th>
+              <th><i class="fas fa-id-card me-1"></i>NIC</th>
+              <th><i class="fas fa-envelope me-1"></i>Email</th>
+              <th><i class="fas fa-phone me-1"></i>Phone</th>
+              <th><i class="fas fa-cogs me-1"></i>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let instructor of instructors()">
+              <td>{{ instructor.epfNo }}</td>
+              <td>{{ instructor.fullName }}</td>
+              <td>{{ instructor.nic }}</td>
+              <td>{{ instructor.email }}</td>
+              <td>{{ instructor.phone }}</td>
+              <td>
+                <button class="btn btn-sm btn-primary me-1" (click)="editInstructor(instructor)">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" (click)="deleteInstructor(instructor.instructorId)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ng-template #noData>
+          <div class="text-center py-5">
+            <i class="fas fa-chalkboard-teacher fa-4x text-muted mb-3"></i>
+            <p class="text-muted">No instructors found. Add your first instructor above.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>

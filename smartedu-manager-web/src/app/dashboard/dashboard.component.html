@@ -17,58 +17,52 @@
     </div>
     
     <div class="navbar-actions">
-      <button class="action-btn" matTooltip="Notifications">
+      <button class="action-btn">
         <i class="fas fa-bell"></i>
         <span class="badge">3</span>
       </button>
-      <button class="action-btn" matTooltip="Help">
+      <button class="action-btn">
         <i class="fas fa-question-circle"></i>
       </button>
-      <div class="user-profile" [matMenuTriggerFor]="userMenu">
-        <img src="https://ui-avatars.com/api/?name={{ userFirstName() }}&background=random&color=fff" alt="User Profile" class="user-avatar">
+      <div class="user-profile" (click)="toggleProfileMenu()">
+        <img [src]="getUserAvatar()" alt="User Profile" class="user-avatar">
         <div class="user-info">
           <span class="user-name">{{ userFirstName() }}</span>
           <span class="user-role">{{ userRole() }}</span>
         </div>
-        <i class="fas fa-chevron-down dropdown-arrow"></i>
+        <button class="profile-menu-btn">
+          <i class="fas fa-chevron-down"></i>
+        </button>
       </div>
     </div>
   </nav>
 
-  <mat-menu #userMenu="matMenu" class="user-dropdown-menu" [overlapTrigger]="false">
-    <div class="menu-user-info">
-      <img [src]="userAvatarUrl" alt="User" class="menu-avatar" (error)="onAvatarError($event)">
-      <div class="menu-user-details">
-        <span class="menu-user-name">{{ userFirstName() }}</span>
-        <span class="menu-user-role">{{ userRole() }}</span>
-      </div>
+  <!-- Profile Menu -->
+  <div class="profile-menu" [class.active]="isProfileMenuOpen" id="profileMenu">
+    <div class="menu-header">
+      <span class="menu-title">Account</span>
     </div>
-    <mat-divider></mat-divider>
-    
-    <!-- Menu items rendered from configuration array -->
-    <ng-container *ngFor="let item of menuItems">
-      <button 
-        *ngIf="!item.isDivider" 
-        mat-menu-item 
-        class="menu-item"
-        [class.logout-item]="item.isLogout"
-        [disabled]="item.disabled || isLoggingOut"
-        [attr.aria-label]="item.ariaLabel"
-        (click)="handleMenuItemClick(item)">
-        <i [class]="item.icon" [class.fa-spin]="item.isLogout && isLoggingOut"></i>
-        <span>{{ item.label }}</span>
-      </button>
-      <mat-divider *ngIf="item.isDivider"></mat-divider>
-    </ng-container>
-    
-    <!-- Loading overlay for logout -->
-    <div class="menu-loading-overlay" *ngIf="isLoggingOut">
-      <mat-spinner diameter="24"></mat-spinner>
-    </div>
-  </mat-menu>
+    <button class="menu-item">
+      <i class="fas fa-user"></i>
+      <span>Profile</span>
+    </button>
+    <button class="menu-item">
+      <i class="fas fa-cog"></i>
+      <span>Settings</span>
+    </button>
+    <button class="menu-item">
+      <i class="fas fa-question-circle"></i>
+      <span>Help</span>
+    </button>
+    <hr class="menu-divider">
+    <button class="menu-item" (click)="logout()">
+      <i class="fas fa-sign-out-alt"></i>
+      <span>Logout</span>
+    </button>
+  </div>
 
   <!-- Sidebar -->
-  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" id="sidebar">
     <nav class="sidebar-nav">
       <div class="nav-section">
         <span class="section-title">Main Menu</span>
@@ -99,239 +93,150 @@
           </a>
         </div>
       </div>
-
-      <div class="nav-section">
-        <span class="section-title">Administration</span>
-        <div class="nav-items">
-          <a routerLink="/admin/user-manager" class="nav-item">
-            <i class="fas fa-users"></i>
-            <span>User Management</span>
-          </a>
-          <a href="#" class="nav-item">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-          </a>
-          <a href="#" class="nav-item">
-            <i class="fas fa-shield-alt"></i>
-            <span>Permissions</span>
-          </a>
-          <a href="#" class="nav-item">
-            <i class="fas fa-chart-line"></i>
-            <span>Reports</span>
-          </a>
-          <a href="#" class="nav-item has-submenu" (click)="toggleSubmenu($event, 'system')">
-            <i class="fas fa-tools"></i>
-            <span>System</span>
-            <i class="fas fa-chevron-down submenu-toggle"></i>
-          </a>
-          <div class="submenu" id="system">
-            <a href="#" class="nav-item submenu-item">
-              <span>Logs</span>
-            </a>
-            <a href="#" class="nav-item submenu-item">
-              <span>Maintenance</span>
-            </a>
-            <a href="#" class="nav-item submenu-item">
-              <span>Backups</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="nav-section">
-        <span class="section-title">Help & Support</span>
-        <div class="nav-items">
-          <a href="#" class="nav-item">
-            <i class="fas fa-question-circle"></i>
-            <span>Documentation</span>
-          </a>
-          <a href="#" class="nav-item">
-            <i class="fas fa-headset"></i>
-            <span>Support</span>
-          </a>
-        </div>
-      </div>
     </nav>
   </aside>
 
   <!-- Main Content -->
-  <main class="main-content" [class.expanded]="sidebarCollapsed">
-    <!-- Page Header -->
+  <main class="main-content" [class.expanded]="isSidebarCollapsed">
     <div class="page-header">
       <div class="header-info">
         <h1 class="page-title">Dashboard</h1>
-        <p class="page-subtitle">Welcome back! Here's what's happening with your courses today.</p>
+        <p class="page-subtitle">Welcome to the SmartEdu Manager dashboard. Here you can manage all your educational activities.</p>
       </div>
       <div class="header-actions">
+        <button class="btn-primary">
+          <i class="fas fa-plus"></i>
+          <span>Create Course</span>
+        </button>
         <button class="btn-secondary">
           <i class="fas fa-download"></i>
           <span>Export Report</span>
         </button>
-        <button class="btn-primary">
-          <i class="fas fa-plus"></i>
-          <span>New Course</span>
-        </button>
       </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="stats-grid">
+    <div class="dashboard-grid">
       <div class="stat-card">
-        <div class="stat-icon blue">
-          <i class="fas fa-users"></i>
+        <div class="stat-header">
+          <div class="stat-icon bg-blue">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>12%</span>
+          </div>
         </div>
         <div class="stat-content">
-          <h3 class="stat-value">1,234</h3>
+          <h3 class="stat-value">1,250</h3>
           <p class="stat-label">Total Students</p>
-          <span class="stat-change positive">+12.5% <i class="fas fa-arrow-up"></i></span>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon green">
-          <i class="fas fa-graduation-cap"></i>
-        </div>
-        <div class="stat-content">
-          <h3 class="stat-value">89</h3>
-          <p class="stat-label">Active Instructors</p>
-          <span class="stat-change positive">+3.2% <i class="fas fa-arrow-up"></i></span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon purple">
-          <i class="fas fa-book"></i>
+        <div class="stat-header">
+          <div class="stat-icon bg-green">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>8%</span>
+          </div>
         </div>
         <div class="stat-content">
           <h3 class="stat-value">45</h3>
-          <p class="stat-label">Courses Offered</p>
-          <span class="stat-change positive">+5.0% <i class="fas fa-arrow-up"></i></span>
+          <p class="stat-label">Active Courses</p>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon orange">
-          <i class="fas fa-calendar-alt"></i>
+        <div class="stat-header">
+          <div class="stat-icon bg-purple">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-change neutral">
+            <i class="fas fa-minus"></i>
+            <span>0%</span>
+          </div>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-value">28</h3>
+          <p class="stat-label">Active Batches</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon bg-orange">
+            <i class="fas fa-map-marker-alt"></i>
+          </div>
+          <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>
+            <span>5%</span>
+          </div>
         </div>
         <div class="stat-content">
           <h3 class="stat-value">12</h3>
-          <p class="stat-label">Active Batches</p>
-          <span class="stat-change negative">-1.8% <i class="fas fa-arrow-down"></i></span>
+          <p class="stat-label">Training Centers</p>
         </div>
       </div>
     </div>
 
-    <!-- Content Grid -->
-    <div class="content-grid">
-      <!-- Recent Activity -->
+    <div class="content-cards">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Recent Activity</h2>
-          <button class="btn-text">View All</button>
+          <h3 class="card-title">Recent Courses</h3>
+          <a href="#" class="card-link">View all →</a>
         </div>
-        <div class="card-content">
-          <div class="activity-list">
-            <div class="activity-item">
-              <div class="activity-icon green">
-                <i class="fas fa-user-plus"></i>
-              </div>
-              <div class="activity-content">
-                <p class="activity-title">New student enrolled</p>
-                <p class="activity-meta">John Doe joined Advanced Python Course</p>
-              </div>
-              <span class="activity-time">2 hours ago</span>
+        <div class="card-body">
+          <div class="course-item">
+            <div class="course-info">
+              <h4>Web Development</h4>
+              <p>Full stack development course</p>
             </div>
-            <div class="activity-item">
-              <div class="activity-icon blue">
-                <i class="fas fa-book"></i>
+            <div class="course-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 75%;"></div>
               </div>
-              <div class="activity-content">
-                <p class="activity-title">Course updated</p>
-                <p class="activity-meta">Web Development Fundamentals course content refreshed</p>
-              </div>
-              <span class="activity-time">5 hours ago</span>
+              <span class="progress-text">75%</span>
             </div>
-            <div class="activity-item">
-              <div class="activity-icon purple">
-                <i class="fas fa-graduation-cap"></i>
-              </div>
-              <div class="activity-content">
-                <p class="activity-title">Instructor added</p>
-                <p class="activity-meta">Jane Smith joined as new instructor</p>
-              </div>
-              <span class="activity-time">1 day ago</span>
+          </div>
+          <div class="course-item">
+            <div class="course-info">
+              <h4>Data Science</h4>
+              <p>Machine learning and analytics</p>
             </div>
-            <div class="activity-item">
-              <div class="activity-icon orange">
-                <i class="fas fa-calendar-check"></i>
+            <div class="course-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 60%;"></div>
               </div>
-              <div class="activity-content">
-                <p class="activity-title">Batch completed</p>
-                <p class="activity-meta">Data Science Batch 2024 completed successfully</p>
-              </div>
-              <span class="activity-time">2 days ago</span>
+              <span class="progress-text">60%</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Upcoming Events -->
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Upcoming Events</h2>
-          <button class="btn-text">Calendar</button>
+          <h3 class="card-title">Upcoming Batches</h3>
+          <a href="#" class="card-link">View all →</a>
         </div>
-        <div class="card-content">
-          <div class="events-list">
-            <div class="event-item">
-              <div class="event-date">
-                <span class="date-day">28</span>
-                <span class="date-month">Jan</span>
-              </div>
-              <div class="event-content">
-                <p class="event-title">Python Workshop</p>
-                <p class="event-meta">
-                  <i class="fas fa-clock"></i> 10:00 AM - 12:00 PM
-                </p>
-                <p class="event-meta">
-                  <i class="fas fa-map-marker-alt"></i> Room A-101
-                </p>
-              </div>
+        <div class="card-body">
+          <div class="batch-item">
+            <div class="batch-info">
+              <h4>Batch A - Python</h4>
+              <p>Starts on: Jan 15, 2024</p>
             </div>
-            <div class="event-item">
-              <div class="event-date">
-                <span class="date-day">30</span>
-                <span class="date-month">Jan</span>
-              </div>
-              <div class="event-content">
-                <p class="event-title">Web Dev Masterclass</p>
-                <p class="event-meta">
-                  <i class="fas fa-clock"></i> 2:00 PM - 4:00 PM
-                </p>
-                <p class="event-meta">
-                  <i class="fas fa-map-marker-alt"></i> Online (Zoom)
-                </p>
-              </div>
+            <div class="batch-status">
+              <span class="status-pill upcoming">Upcoming</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Course Performance Chart -->
-      <div class="card full-width">
-        <div class="card-header">
-          <h2 class="card-title">Course Performance</h2>
-          <div class="chart-actions">
-            <button class="btn-text active">Weekly</button>
-            <button class="btn-text">Monthly</button>
-            <button class="btn-text">Yearly</button>
-          </div>
-        </div>
-        <div class="card-content">
-          <div class="chart-container">
-            <div class="chart-placeholder">
-              <i class="fas fa-chart-bar"></i>
-              <p>Performance Chart Placeholder</p>
+          <div class="batch-item">
+            <div class="batch-info">
+              <h4>Batch B - Java</h4>
+              <p>Starts on: Feb 1, 2024</p>
+            </div>
+            <div class="batch-status">
+              <span class="status-pill upcoming">Upcoming</span>
             </div>
           </div>
         </div>
