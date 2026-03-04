@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj": {}
+    "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj": {}
   },
   "projects": {
-    "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj": {
+    "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
+        "projectUniqueName": "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
         "projectName": "SmartEduManager.Api",
-        "projectPath": "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
+        "projectPath": "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
         "packagesPath": "C:\\Users\\klgun\\.nuget\\packages\\",
-        "outputPath": "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\obj\\",
+        "outputPath": "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

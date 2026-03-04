@@ -120,11 +120,15 @@ public class AuthController : ControllerBase
 
             _logger.LogInformation($"User logged in successfully: {user.Email}");
 
-            return Ok(new TokenDto
+            var userDto = _mapper.Map<UserDto>(user);
+            userDto.Roles = userRoles;
+
+            return Ok(new 
             {
                 AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
                 RefreshToken = refreshToken,
-                ExpiresAt = token.ValidTo
+                ExpiresAt = token.ValidTo,
+                User = userDto
             });
         }
         catch (Exception ex)

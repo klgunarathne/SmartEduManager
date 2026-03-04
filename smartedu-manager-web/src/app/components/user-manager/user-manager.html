@@ -1,0 +1,217 @@
+<div class="user-manager">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>User Management</h2>
+      <p>Manage system users and their roles</p>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="fas fa-plus"></i>
+        Add New User
+      </button>
+    </div>
+  </div>
+
+  <!-- Search & Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Search users..." 
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      >
+    </div>
+    <div class="filter-info">
+      <span>{{ filteredUsers.length }} users found</span>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-card">
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading users...</span>
+      </div>
+    }
+    
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Roles</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of paginatedUsers; track user.id) {
+            <tr>
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar" [style.background]="getAvatarColor(user)">
+                    {{ getInitials(user) }}
+                  </div>
+                  <div class="user-info">
+                    <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>
+                <div class="roles-list">
+                  @for (role of user.roles; track role) {
+                    <span class="role-badge">{{ role }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [class.active]="user.status === 'Active'" [class.inactive]="user.status === 'Inactive'">
+                  {{ user.status }}
+                </span>
+              </td>
+              <td>{{ user.createdAt | date:'mediumDate' }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-btn edit" (click)="openEditModal(user)" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-btn delete" (click)="deleteUser(user)" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>No users found</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPagesCount() > 1) {
+      <div class="pagination">
+        <button class="page-btn" (click)="prevPage()" [disabled]="currentPage() === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="page-info">Page {{ currentPage() }} of {{ totalPagesCount() }}</span>
+        <button class="page-btn" (click)="nextPage()" [disabled]="currentPage() === totalPagesCount()">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ modalMode() === 'add' ? 'Add New User' : 'Edit User' }}</h3>
+        <button class="close-btn" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form (ngSubmit)="saveUser()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" [(ngModel)]="selectedUser.firstName" name="firstName" required>
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" [(ngModel)]="selectedUser.lastName" name="lastName" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="selectedUser.email" name="email" required>
+          </div>
+          
+          @if (modalMode() === 'add') {
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" [(ngModel)]="selectedUser.password" name="password" required>
+              <div class="password-requirements">
+                <p class="req-title"><i class="fas fa-info-circle"></i> Password requirements:</p>
+                <ul class="req-list">
+                  <li [class.met]="passwordRequirements.minLength">At least 6 characters</li>
+                  <li [class.met]="passwordRequirements.digit">At least one digit (0-9)</li>
+                  <li [class.met]="passwordRequirements.lowercase">At least one lowercase letter (a-z)</li>
+                  <li [class.met]="passwordRequirements.uppercase">At least one uppercase letter (A-Z)</li>
+                  <li [class.met]="passwordRequirements.special">At least one special character (!@@#$%^&*)</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Confirm Password</label>
+              <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required>
+              @if (confirmPassword && selectedUser.password !== confirmPassword) {
+                <span class="password-mismatch">Passwords do not match</span>
+              }
+            </div>
+          }
+          
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" [(ngModel)]="selectedUser.address" name="address">
+          </div>
+          
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" [(ngModel)]="selectedUser.dateOfBirth" name="dateOfBirth">
+          </div>
+          
+          <div class="form-group">
+            <label>Status</label>
+            <select [(ngModel)]="selectedUser.status" name="status">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Roles</label>
+            <div class="roles-checkbox">
+              @for (role of availableRoles; track role) {
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    [checked]="selectedUser.roles.includes(role)"
+                    (change)="toggleRole(role)"
+                  >
+                  <span class="checkmark"></span>
+                  {{ role }}
+                </label>
+              }
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              {{ modalMode() === 'add' ? 'Create User' : 'Update User' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}

@@ -1,90 +1,114 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './auth/login/login.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { AdminComponent } from './admin/admin.component';
-import { InstructorComponent } from './instructor/instructor.component';
-import { UserManagementComponent } from './components/user-management/user-management.component';
-import { authGuard } from './core/guards/auth.guard';
-import { adminGuard, instructorGuard } from './core/guards/role.guard';
+import { LoginComponent } from './components/login/login.component';
+import { AdminLayoutComponent } from './components/admin-layout/admin-layout.component';
+import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
+import { inject } from '@angular/core';
+import { AuthService } from './services/auth.service';
+import { Router } from '@angular/router';
+
+const authGuard = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (authService.checkAuthStatus()) {
+    return true;
+  }
+  router.navigate(['/login']);
+  return false;
+};
 
 export const routes: Routes = [
   {
-    path: 'login',
-    component: LoginComponent,
-    title: 'Login - SmartEdu Manager',
+    path: '',
+    redirectTo: 'login',
+    pathMatch: 'full'
   },
   {
-    path: 'dashboard',
-    component: DashboardComponent,
-    canActivate: [authGuard],
-    title: 'Dashboard - SmartEdu Manager',
+    path: 'login',
+    component: LoginComponent
   },
   {
     path: 'admin',
-    component: AdminComponent,
-    canActivate: [authGuard, adminGuard],
-    title: 'Admin - SmartEdu Manager',
+    component: AdminLayoutComponent,
+    canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'centers', pathMatch: 'full' },
-      { 
-        path: 'centers', 
-        loadComponent: () => import('./admin/centers/centers.component').then(m => m.CentersComponent) 
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
       },
-      { 
-        path: 'courses', 
-        loadComponent: () => import('./admin/courses/courses.component').then(m => m.CoursesComponent) 
+      {
+        path: 'dashboard',
+        component: AdminDashboardComponent
       },
-      { 
-        path: 'instructors', 
-        loadComponent: () => import('./admin/instructors/instructors.component').then(m => m.InstructorsComponent) 
+      {
+        path: 'students',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
       },
-      { 
-        path: 'batches', 
-        loadComponent: () => import('./admin/batches/batches.component').then(m => m.BatchesComponent) 
+      {
+        path: 'instructors',
+        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent)
       },
-      { 
-        path: 'students', 
-        loadComponent: () => import('./admin/students/students.component').then(m => m.StudentsComponent) 
+      {
+        path: 'courses',
+        loadComponent: () => import('./components/courses/courses').then(m => m.CoursesComponent)
       },
-      { path: 'user-manager', component: UserManagementComponent },
-    ],
+      {
+        path: 'batches',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+      },
+      {
+        path: 'centers',
+        loadComponent: () => import('./components/centers/centers').then(m => m.CentersComponent)
+      },
+      {
+        path: 'assignments',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./components/user-manager/user-manager').then(m => m.UserManagerComponent)
+      }
+    ]
   },
   {
     path: 'instructor',
-    component: InstructorComponent,
-    canActivate: [authGuard, instructorGuard],
-    title: 'Instructor - SmartEdu Manager',
+    component: AdminLayoutComponent,
+    canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'my-courses', pathMatch: 'full' },
-      { 
-        path: 'my-courses', 
-        loadComponent: () => import('./instructor/my-courses/my-courses.component').then(m => m.MyCoursesComponent) 
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
       },
-      { 
-        path: 'my-batches', 
-        loadComponent: () => import('./instructor/my-batches/my-batches.component').then(m => m.MyBatchesComponent) 
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
       },
-      { 
-        path: 'my-students', 
-        loadComponent: () => import('./instructor/my-students/my-students.component').then(m => m.MyStudentsComponent) 
+      {
+        path: 'batches',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
       },
-      { 
-        path: 'assignments', 
-        loadComponent: () => import('./instructor/assignments/assignments.component').then(m => m.AssignmentsComponent) 
+      {
+        path: 'students',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
       },
-      { 
-        path: 'continuous-assessments', 
-        loadComponent: () => import('./instructor/continuous-assessments/continuous-assessments.component').then(m => m.ContinuousAssessmentsComponent) 
+      {
+        path: 'assignments',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
       },
-    ],
-  },
-  {
-    path: '',
-    redirectTo: '/dashboard',
-    pathMatch: 'full',
+      {
+        path: 'continuous-assessments',
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+      }
+    ]
   },
   {
     path: '**',
-    redirectTo: '/dashboard',
-  },
+    redirectTo: 'login'
+  }
 ];

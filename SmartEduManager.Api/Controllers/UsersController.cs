@@ -10,7 +10,7 @@ namespace SmartEduManager.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-// [Authorize(Roles = "Admin")] // Temporarily disabled for testing
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -25,39 +25,25 @@ public class UsersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetUsers()
     {
-        var users = await _userManager.Users
-            .Select(u => new
-            {
-                id = u.Id,
-                firstName = u.FirstName,
-                lastName = u.LastName,
-                email = u.Email,
-                address = u.Address,
-                dateOfBirth = u.DateOfBirth,
-                imageUrl = u.ImageUrl,
-                roles = _userManager.GetRolesAsync(u),
-                status = u.EmailConfirmed ? "Active" : "Inactive",
-                createdAt = u.CreatedAt,
-                updatedAt = u.UpdatedAt
-            })
-            .ToListAsync();
+        var users = await _userManager.Users.ToListAsync();
 
         var userDtos = new List<object>();
         foreach (var user in users)
         {
+            var roles = await _userManager.GetRolesAsync(user);
             userDtos.Add(new
             {
-                id = user.id,
-                firstName = user.firstName,
-                lastName = user.lastName,
-                email = user.email,
-                address = user.address,
-                dateOfBirth = user.dateOfBirth,
-                imageUrl = user.imageUrl,
-                roles = await user.roles,
-                status = user.status,
-                createdAt = user.createdAt,
-                updatedAt = user.updatedAt
+                id = user.Id,
+                firstName = user.FirstName,
+                lastName = user.LastName,
+                email = user.Email,
+                address = user.Address,
+                dateOfBirth = user.DateOfBirth,
+                imageUrl = user.ImageUrl,
+                roles = roles,
+                status = user.EmailConfirmed ? "Active" : "Inactive",
+                createdAt = user.CreatedAt,
+                updatedAt = user.UpdatedAt
             });
         }
 
@@ -239,7 +225,6 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("roles")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetRoles()
     {
         var roles = await _roleManager.Roles

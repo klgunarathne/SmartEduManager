@@ -1,0 +1,144 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Instructors</h2>
+      <p>Manage instructor records</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="fas fa-plus"></i> Add Instructor
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search instructors..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
+    </div>
+    <span class="filter-info">{{ filteredInstructors.length }} instructors found</span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    @if (isLoading) {
+      <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading instructors...</span>
+      </div>
+    }
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Instructor</th>
+            <th>EPF No</th>
+            <th>NIC</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (instructor of paginatedInstructors; track instructor.instructorId) {
+            <tr>
+              <td>
+                <div class="instructor-cell">
+                  <div class="instructor-avatar" [style.background]="getAvatarColor(instructor.fullName)">
+                    {{ getInitials(instructor.fullName) }}
+                  </div>
+                  <span class="instructor-name">{{ instructor.fullName }}</span>
+                </div>
+              </td>
+              <td>{{ instructor.epfNo }}</td>
+              <td>{{ instructor.nic }}</td>
+              <td>{{ instructor.email }}</td>
+              <td>{{ instructor.phone }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-btn edit" (click)="openEditModal(instructor)" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-btn delete" (click)="deleteInstructor(instructor)" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-state">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <p>No instructors found</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPagesCount() > 1) {
+      <div class="pagination">
+        <button class="page-btn" (click)="prevPage()" [disabled]="currentPage() === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="page-info">Page {{ currentPage() }} of {{ totalPagesCount() }}</span>
+        <button class="page-btn" (click)="nextPage()" [disabled]="currentPage() === totalPagesCount()">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ modalMode() === 'add' ? 'Add New Instructor' : 'Edit Instructor' }}</h3>
+        <button class="close-btn" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form (ngSubmit)="saveInstructor()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" [(ngModel)]="selectedInstructor.fullName" name="fullName" required>
+            </div>
+            <div class="form-group">
+              <label>EPF No</label>
+              <input type="text" [(ngModel)]="selectedInstructor.epfNo" name="epfNo" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>NIC</label>
+            <input type="text" [(ngModel)]="selectedInstructor.nic" name="nic" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="selectedInstructor.email" name="email" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" [(ngModel)]="selectedInstructor.phone" name="phone" required>
+          </div>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              {{ modalMode() === 'add' ? 'Create Instructor' : 'Update Instructor' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
