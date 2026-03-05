@@ -86,7 +86,7 @@ public class ModulesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> CreateModule([FromBody] CreateModulesDto createModuleDto)
     {
         try
@@ -111,7 +111,7 @@ public class ModulesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> UpdateModule(int id, [FromBody] UpdateModulesDto updateModuleDto)
     {
         try

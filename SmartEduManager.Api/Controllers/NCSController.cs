@@ -86,7 +86,7 @@ public class NCSController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> CreateNCS([FromBody] CreateNCSDto createNCSDto)
     {
         try
@@ -111,7 +111,7 @@ public class NCSController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> UpdateNCS(int id, [FromBody] UpdateNCSDto updateNCSDto)
     {
         try

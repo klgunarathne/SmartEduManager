@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
 import { AdminLayoutComponent } from './components/admin-layout/admin-layout.component';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
+import { InstructorDashboardComponent } from './components/instructor-dashboard/instructor-dashboard.component';
 import { inject } from '@angular/core';
 import { AuthService } from './services/auth.service';
 import { Router } from '@angular/router';
@@ -87,23 +88,31 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        component: InstructorDashboardComponent
       },
       {
         path: 'batches',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
       },
       {
         path: 'students',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
       },
       {
         path: 'assignments',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
       },
       {
         path: 'continuous-assessments',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
+      },
+      {
+        path: 'ncs',
+        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent)
+      },
+      {
+        path: 'modules',
+        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent)
       }
     ]
   },

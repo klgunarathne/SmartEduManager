@@ -86,6 +86,14 @@ import { AuthService } from '../../services/auth.service';
                 </a>
               </li>
               <li class="nav-item">
+                <a routerLink="/instructor/ncs" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-layer-group"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>NCS & Modules</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
                 <a routerLink="/instructor/batches" routerLinkActive="active" class="nav-link">
                   <i class="fas fa-users"></i>
                   @if (!sidebarCollapsed()) {
