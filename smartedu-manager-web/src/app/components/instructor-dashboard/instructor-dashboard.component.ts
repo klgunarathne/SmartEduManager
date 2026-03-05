@@ -3,115 +3,138 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../services/auth.service';
 import { InstructorService, Instructor } from '../../services/instructor.service';
+import { BatchService, Batch } from '../../services/batch.service';
+import { StudentService, Student } from '../../services/student.service';
+import { FormsModule } from '@angular/forms';
+
+interface BatchStudent {
+  id: number;
+  name: string;
+  nicNo: string;
+  email: string;
+  phone: string;
+  batchCode: string;
+  status: 'active' | 'inactive' | 'pending';
+}
 
 @Component({
   selector: 'app-instructor-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <div class="dashboard">
-      @if (instructorData) {
-        <div class="instructor-welcome">
-          <div class="welcome-left">
-            <div class="profile-avatar-lg" [style.background]="getAvatarColor(instructorData.fullName)">
+      @if (isLoading()) {
+        <div class="loading-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading instructor data...</p>
+        </div>
+      } @else if (instructorData) {
+        <!-- Profile Welcome -->
+        <div class="profile-welcome">
+          <div class="profile-info">
+            <div class="profile-avatar" [style.background]="getAvatarColor(instructorData.fullName)">
               {{ getInitials(instructorData.fullName) }}
             </div>
-            <div class="welcome-text">
+            <div class="profile-details">
               <h2>Welcome, {{ instructorData.fullName }}!</h2>
-              <p>Manage your batches, students, and curriculum</p>
-            </div>
-          </div>
-          <div class="profile-quick-info">
-            <div class="info-item">
-              <i class="fas fa-id-card"></i>
-              <span>{{ instructorData.epfNo }}</span>
-            </div>
-            <div class="info-item">
-              <i class="fas fa-envelope"></i>
-              <span>{{ instructorData.email }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="instructor-stats">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6)">
-              <i class="fas fa-user-graduate"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-title">Total Students</span>
-              <span class="stat-value">{{ instructorStats().totalStudents }}</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #34d399)">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-title">No of Batches</span>
-              <span class="stat-value">{{ instructorStats().totalBatches }}</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)">
-              <i class="fas fa-user-check"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-title">Active Batch</span>
-              <span class="stat-value">{{ instructorStats().activeBatch }}</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6)">
-              <i class="fas fa-user-clock"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-title">Active Batch Students</span>
-              <span class="stat-value">{{ instructorStats().activeStudents }}</span>
+              <p>{{ instructorData.email }} | EPF: {{ instructorData.epfNo }}</p>
             </div>
           </div>
         </div>
 
-        <div class="instructor-actions">
-          <div class="action-card" routerLink="/admin/instructors">
-            <div class="action-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6)">
-              <i class="fas fa-book"></i>
-            </div>
-            <div class="action-content">
-              <h3>NCS & Modules</h3>
-              <p>Manage Curriculum</p>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-          </div>
-          <div class="action-card" routerLink="/instructor/batches">
-            <div class="action-icon" style="background: linear-gradient(135deg, #10b981, #34d399)">
-              <i class="fas fa-users"></i>
-            </div>
-            <div class="action-content">
-              <h3>Batches</h3>
-              <p>Manage Batches</p>
-            </div>
-            <i class="fas fa-chevron-right arrow"></i>
-          </div>
-          <div class="action-card" routerLink="/instructor/students">
-            <div class="action-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple">
               <i class="fas fa-user-graduate"></i>
             </div>
-            <div class="action-content">
-              <h3>Students</h3>
-              <p>View Students</p>
+            <div class="stat-content">
+              <span class="stat-label">Total Students</span>
+              <span class="stat-value">{{ stats().totalStudents }}</span>
             </div>
-            <i class="fas fa-chevron-right arrow"></i>
           </div>
-          <div class="action-card" routerLink="/instructor/assignments">
-            <div class="action-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6)">
-              <i class="fas fa-tasks"></i>
+          <div class="stat-card">
+            <div class="stat-icon green">
+              <i class="fas fa-users"></i>
             </div>
-            <div class="action-content">
-              <h3>Assignments</h3>
-              <p>Manage Assignments</p>
+            <div class="stat-content">
+              <span class="stat-label">No of Batches</span>
+              <span class="stat-value">{{ stats().totalBatches }}</span>
             </div>
-            <i class="fas fa-chevron-right arrow"></i>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Active Batch</span>
+              <span class="stat-value">{{ stats().activeBatch }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon pink">
+              <i class="fas fa-user-clock"></i>
+            </div>
+            <div class="stat-content">
+              <span class="stat-label">Active Batch Students</span>
+              <span class="stat-value">{{ stats().activeStudents }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Batch Students Table -->
+        <div class="table-section">
+          <div class="section-header">
+            <h3>Active Batch Students - {{ stats().activeBatch }}</h3>
+            <div class="table-actions">
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search students..." [(ngModel)]="searchTerm" (input)="filterStudents()">
+              </div>
+            </div>
+          </div>
+          
+          <div class="table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>NIC</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (student of filteredStudents; track student.id) {
+                  <tr>
+                    <td>
+                      <div class="student-cell">
+                        <div class="student-avatar">
+                          <i class="fas fa-user"></i>
+                        </div>
+                        <span>{{ student.name }}</span>
+                      </div>
+                    </td>
+                    <td>{{ student.nicNo }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>{{ student.phone }}</td>
+                    <td>
+                      <span class="status-badge" [class]="student.status">
+                        {{ student.status }}
+                      </span>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="empty-state">
+                      <i class="fas fa-user-graduate"></i>
+                      <p>No students found in this batch</p>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         </div>
       }
@@ -119,67 +142,202 @@ import { InstructorService, Instructor } from '../../services/instructor.service
   `,
   styles: [`
     .dashboard { display: flex; flex-direction: column; gap: 24px; }
-    .instructor-welcome { background: linear-gradient(135deg, #1e293b, #0f172a); border-radius: 20px; padding: 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
-    .welcome-left { display: flex; align-items: center; gap: 20px; }
-    .profile-avatar-lg { width: 70px; height: 70px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700; }
-    .welcome-text h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-    .welcome-text p { opacity: 0.8; font-size: 14px; }
-    .profile-quick-info { display: flex; gap: 24px; }
-    .info-item { display: flex; align-items: center; gap: 8px; opacity: 0.9; }
-    .info-item i { color: #818cf8; }
+    
+    .profile-welcome {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border-radius: 20px; padding: 30px; color: white;
+    }
+    .profile-info { display: flex; align-items: center; gap: 20px; }
+    .profile-avatar {
+      width: 70px; height: 70px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 24px; font-weight: 700;
+    }
+    .profile-details h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .profile-details p { opacity: 0.8; font-size: 14px; }
 
-    .instructor-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-    .stat-card { background: white; border-radius: 16px; padding: 24px; display: flex; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .stat-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .stat-card {
+      background: white; border-radius: 16px; padding: 24px;
+      display: flex; align-items: center; gap: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .stat-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
     .stat-icon i { font-size: 24px; color: white; }
+    .stat-icon.purple { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .stat-icon.green { background: linear-gradient(135deg, #10b981, #34d399); }
+    .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+    .stat-icon.pink { background: linear-gradient(135deg, #ec4899, #f472b6); }
     .stat-content { display: flex; flex-direction: column; }
-    .stat-title { font-size: 14px; color: #64748b; font-weight: 500; }
-    .stat-value { font-size: 28px; font-weight: 700; color: #1e293b; margin: 4px 0; }
+    .stat-label { font-size: 13px; color: #64748b; font-weight: 500; }
+    .stat-value { font-size: 24px; font-weight: 700; color: #1e293b; }
 
-    .instructor-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-    .action-card { background: white; border-radius: 16px; padding: 24px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-decoration: none; }
-    .action-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    .action-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-    .action-icon i { font-size: 20px; color: white; }
-    .action-content h3 { font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
-    .action-content p { font-size: 13px; color: #64748b; }
-    .arrow { margin-left: auto; color: #cbd5e1; }
+    .table-section { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 24px; border-bottom: 1px solid #f1f5f9;
+    }
+    .section-header h3 { font-size: 18px; font-weight: 600; color: #1e293b; margin: 0; }
+    .search-box { position: relative; }
+    .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+    .search-box input {
+      padding: 10px 14px 10px 40px; border: 2px solid #e2e8f0;
+      border-radius: 10px; font-size: 14px; width: 250px;
+    }
+    .search-box input:focus { outline: none; border-color: #6366f1; }
 
-    @media (max-width: 1200px) { .instructor-stats, .instructor-actions { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 768px) { .instructor-welcome { flex-direction: column; text-align: center; gap: 20px; } .instructor-stats, .instructor-actions { grid-template-columns: 1fr; } .profile-quick-info { flex-direction: column; gap: 12px; } }
+    .table-card { overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+    .data-table th { background: #f8fafc; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+    .data-table tbody tr:hover { background: #f8fafc; }
+    .student-cell { display: flex; align-items: center; gap: 12px; }
+    .student-avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: #e2e8f0; color: #64748b; font-size: 14px;
+    }
+    .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: capitalize; }
+    .status-badge.active { background: #dcfce7; color: #16a34a; }
+    .status-badge.pending { background: #fef3c7; color: #d97706; }
+    .status-badge.inactive { background: #fee2e2; color: #dc2626; }
+    .empty-state { text-align: center; padding: 40px !important; color: #94a3b8; }
+    .empty-state i { font-size: 40px; margin-bottom: 12px; }
+
+    .loading-state { text-align: center; padding: 60px; color: #64748b; }
+    .loading-state i { font-size: 40px; margin-bottom: 12px; }
+
+    @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { 
+      .stats-grid { grid-template-columns: 1fr; }
+      .profile-info { flex-direction: column; text-align: center; }
+      .section-header { flex-direction: column; gap: 12px; }
+      .search-box input { width: 100%; }
+    }
   `]
 })
 export class InstructorDashboardComponent implements OnInit {
   currentUser: UserDto | null = null;
   instructorData: Instructor | null = null;
-
-  instructorStats = signal({
+  isLoading = signal(true);
+  searchTerm = '';
+  
+  stats = signal({
     totalStudents: 0,
     totalBatches: 0,
     activeBatch: 'N/A',
     activeStudents: 0
   });
 
+  allStudents: BatchStudent[] = [];
+  filteredStudents: BatchStudent[] = [];
+
   ngOnInit(): void {
-    this.currentUser = this.authService.getUser();
     this.loadInstructorData();
   }
 
   private loadInstructorData(): void {
+    this.currentUser = this.authService.getUser();
+    
     this.instructorService.getInstructors().subscribe({
       next: (instructors) => {
-        const userEmail = this.currentUser?.email?.toLowerCase();
-        this.instructorData = instructors.find(i => i.email?.toLowerCase() === userEmail) || null;
-        if (this.instructorData) {
-          this.instructorStats.set({
-            totalStudents: 45,
-            totalBatches: 3,
-            activeBatch: 'WD-2026-A',
-            activeStudents: 18
-          });
+        if (this.currentUser) {
+          const userEmail = this.currentUser.email?.toLowerCase();
+          this.instructorData = instructors.find(i => i.email?.toLowerCase() === userEmail) || null;
+          
+          if (this.instructorData) {
+            this.loadBatchData();
+          } else {
+            console.log('No matching instructor found for email:', this.currentUser.email);
+            console.log('Available instructors:', instructors);
+          }
         }
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading instructors:', error);
+        this.isLoading.set(false);
       }
     });
+  }
+
+  private loadBatchData(): void {
+    this.batchService.getBatches().subscribe({
+      next: (batches) => {
+        if (batches.length === 0) {
+          this.stats.set({
+            totalStudents: 0,
+            totalBatches: 0,
+            activeBatch: 'N/A',
+            activeStudents: 0
+          });
+          this.isLoading.set(false);
+          return;
+        }
+
+        const sortedBatches = [...batches].sort((a, b) => {
+          const dateA = new Date(a.startDate).getTime();
+          const dateB = new Date(b.startDate).getTime();
+          return dateB - dateA;
+        });
+
+        const currentBatch = sortedBatches[0];
+        
+        this.stats.set({
+          totalStudents: 45,
+          totalBatches: batches.length,
+          activeBatch: currentBatch.batchCode,
+          activeStudents: 0
+        });
+
+        this.studentService.getStudentsByBatch(currentBatch.batchId).subscribe({
+          next: (students) => {
+            this.allStudents = students.map(s => ({
+              id: s.id,
+              name: s.nameWithInitials,
+              nicNo: s.nicNo,
+              email: s.email,
+              phone: s.telephone,
+              batchCode: s.batchCode,
+              status: 'active' as const
+            }));
+            this.filteredStudents = [...this.allStudents];
+            
+            this.stats.update(s => ({
+              ...s,
+              activeStudents: students.length
+            }));
+            this.isLoading.set(false);
+          },
+          error: (error) => {
+            console.error('Error loading students:', error);
+            this.isLoading.set(false);
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error loading batches:', error);
+        this.stats.set({
+          totalStudents: 0,
+          totalBatches: 0,
+          activeBatch: 'N/A',
+          activeStudents: 0
+        });
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  filterStudents(): void {
+    const term = this.searchTerm.toLowerCase();
+    this.filteredStudents = this.allStudents.filter(s => 
+      s.name.toLowerCase().includes(term) ||
+      s.nicNo.toLowerCase().includes(term) ||
+      s.email.toLowerCase().includes(term)
+    );
   }
 
   getInitials(name: string): string {
@@ -200,6 +358,8 @@ export class InstructorDashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private instructorService: InstructorService
+    private instructorService: InstructorService,
+    private batchService: BatchService,
+    private studentService: StudentService
   ) {}
 }

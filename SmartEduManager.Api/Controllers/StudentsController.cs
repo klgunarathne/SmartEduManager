@@ -41,6 +41,25 @@ public class StudentsController : ControllerBase
         }
     }
 
+    [HttpGet("batch/{batchId}")]
+    public async Task<IActionResult> GetStudentsByBatch(int batchId)
+    {
+        try
+        {
+            var students = await _repository.GetStudentsWithBatchAndCourseAsync();
+            var batchStudents = students.Where(s => s.BatchId == batchId).ToList();
+            var studentsDto = _mapper.Map<IEnumerable<StudentDto>>(batchStudents);
+
+            _logger.LogInformation($"Retrieved {batchStudents.Count()} students for batch {batchId}");
+            return Ok(studentsDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving students by batch");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetStudent(int id)
     {

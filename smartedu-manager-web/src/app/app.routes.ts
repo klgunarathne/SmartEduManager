@@ -92,19 +92,19 @@ export const routes: Routes = [
       },
       {
         path: 'batches',
-        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
+        loadComponent: () => import('./components/instructor-batches/instructor-batches.component').then(m => m.InstructorBatchesComponent)
       },
       {
         path: 'students',
-        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
+        loadComponent: () => import('./components/instructor-students/instructor-students.component').then(m => m.InstructorStudentsComponent)
       },
       {
         path: 'assignments',
-        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
+        loadComponent: () => import('./components/instructor-assignments/instructor-assignments.component').then(m => m.InstructorAssignmentsComponent)
       },
       {
         path: 'continuous-assessments',
-        loadComponent: () => import('./components/instructor-dashboard/instructor-dashboard.component').then(m => m.InstructorDashboardComponent)
+        loadComponent: () => import('./components/instructor-continuous-assessments/instructor-continuous-assessments.component').then(m => m.InstructorContinuousAssessmentsComponent)
       },
       {
         path: 'ncs',

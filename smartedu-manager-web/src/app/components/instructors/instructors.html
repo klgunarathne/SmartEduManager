@@ -166,7 +166,7 @@
                 <td>{{ ncs.name }}</td>
                 <td>{{ ncs.courseName }}</td>
                 <td>{{ ncs.updatedDate | date:'mediumDate' }}</td>
-                <td><span class="badge badge-secondary">{{ ncs.modules?.length || 0 }}</span></td>
+                <td><span class="badge badge-secondary">{{ ncs.modules.length }}</span></td>
                 <td>
                   <div class="action-buttons">
                     <button class="action-btn edit" (click)="openEditNCSModal(ncs)" title="Edit">

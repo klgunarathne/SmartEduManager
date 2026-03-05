@@ -52,14 +52,14 @@
               <td>{{ course.centerName }}</td>
               <td>
                 @if (course.hasInstructors) {
-                  <span class="badge success">{{ course.instructorNames?.length || 0 }}</span>
+                  <span class="badge success">{{ course.instructorNames.length }}</span>
                 } @else {
                   <span class="badge warning">None</span>
                 }
               </td>
               <td>
                 @if (course.hasBatches) {
-                  <span class="badge success">{{ course.batchCodes?.length || 0 }}</span>
+                  <span class="badge success">{{ course.batchCodes.length }}</span>
                 } @else {
                   <span class="badge warning">None</span>
                 }
