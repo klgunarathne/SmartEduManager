@@ -67,7 +67,7 @@ public class BatchesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> CreateBatch([FromBody] CreateBatchDto createBatchDto)
     {
         try
@@ -76,6 +76,7 @@ public class BatchesController : ControllerBase
                 return BadRequest(ModelState);
 
             var batch = _mapper.Map<Batch>(createBatchDto);
+            batch.Duration = (int)(batch.EndDate - batch.StartDate).TotalDays;
             await _repository.AddAsync(batch);
             await _repository.SaveChangesAsync();
 
@@ -92,7 +93,7 @@ public class BatchesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> UpdateBatch(int id, [FromBody] UpdateBatchDto updateBatchDto)
     {
         try
@@ -108,6 +109,10 @@ public class BatchesController : ControllerBase
             }
 
             _mapper.Map(updateBatchDto, batch);
+            if (batch.StartDate != default && batch.EndDate != default)
+            {
+                batch.Duration = (int)(batch.EndDate - batch.StartDate).TotalDays;
+            }
             _repository.Update(batch);
             await _repository.SaveChangesAsync();
 
@@ -122,7 +127,7 @@ public class BatchesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> DeleteBatch(int id)
     {
         try

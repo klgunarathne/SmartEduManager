@@ -20,19 +20,15 @@ public class CreateStudentDtoValidator : AbstractValidator<CreateStudentDto>
                 .MaximumLength(100).WithMessage("Full name must be less than 100 characters");
 
             RuleFor(x => x.NICNo)
-                .NotEmpty().WithMessage("NIC is required")
                 .MaximumLength(20).WithMessage("NIC must be less than 20 characters");
 
             RuleFor(x => x.Gender)
-                .NotEmpty().WithMessage("Gender is required")
                 .MaximumLength(10).WithMessage("Gender must be less than 10 characters");
 
             RuleFor(x => x.Address)
-                .NotEmpty().WithMessage("Address is required")
                 .MaximumLength(200).WithMessage("Address must be less than 200 characters");
 
             RuleFor(x => x.Telephone)
-                .NotEmpty().WithMessage("Telephone number is required")
                 .MaximumLength(20).WithMessage("Telephone number must be less than 20 characters");
 
             RuleFor(x => x.Email)

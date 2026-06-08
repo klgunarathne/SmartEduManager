@@ -13,6 +13,20 @@ export interface Batch {
   duration: number;
 }
 
+export interface CreateBatchDto {
+  batchCode: string;
+  courseId: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface UpdateBatchDto {
+  batchCode?: string;
+  courseId?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -45,5 +59,43 @@ export class BatchService {
 
   getActiveBatches(): Observable<Batch[]> {
     return this.http.get<Batch[]>(`${this.API_URL}/batches/active`);
+  }
+
+  createBatch(dto: CreateBatchDto): Observable<Batch> {
+    return this.http.post<Batch>(`${this.API_URL}/batches`, dto).pipe(
+      tap(created => {
+        this.batches.update(list => [...list, created]);
+      }),
+      catchError(error => {
+        console.error('Error creating batch:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  updateBatch(id: number, dto: UpdateBatchDto): Observable<string> {
+    return this.http.put(`${this.API_URL}/batches/${id}`, dto, { responseType: 'text' }).pipe(
+      tap(() => {
+        this.batches.update(list =>
+          list.map(b => b.batchId === id ? { ...b, ...dto, batchId: b.batchId } : b)
+        );
+      }),
+      catchError(error => {
+        console.error('Error updating batch:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  deleteBatch(id: number): Observable<string> {
+    return this.http.delete(`${this.API_URL}/batches/${id}`, { responseType: 'text' }).pipe(
+      tap(() => {
+        this.batches.update(list => list.filter(b => b.batchId !== id));
+      }),
+      catchError(error => {
+        console.error('Error deleting batch:', error);
+        return throwError(() => error);
+      })
+    );
   }
 }

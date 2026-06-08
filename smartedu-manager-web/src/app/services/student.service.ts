@@ -194,12 +194,13 @@ export class StudentService {
   }
 
   updateStudent(id: number, dto: UpdateStudentDto): Observable<string> {
-    return this.http.put<string>(`${this.API_URL}/students/${id}`, this.toApiUpdateStudent(dto)).pipe(
+    return this.http.put(`${this.API_URL}/students/${id}`, this.toApiUpdateStudent(dto), { responseType: 'text' }).pipe(
       tap(() => {
         this.students.update(list => 
           list.map(s => s.id === id ? { ...s, ...dto, id: s.id, batchCode: s.batchCode } : s)
         );
       }),
+      map(() => 'Student updated successfully'),
       catchError(error => {
         console.error('Error updating student:', error);
         return throwError(() => error);
@@ -208,10 +209,11 @@ export class StudentService {
   }
 
   deleteStudent(id: number): Observable<string> {
-    return this.http.delete<string>(`${this.API_URL}/students/${id}`).pipe(
+    return this.http.delete(`${this.API_URL}/students/${id}`, { responseType: 'text' }).pipe(
       tap(() => {
         this.students.update(list => list.filter(s => s.id !== id));
       }),
+      map(() => 'Student deleted successfully'),
       catchError(error => {
         console.error('Error deleting student:', error);
         return throwError(() => error);

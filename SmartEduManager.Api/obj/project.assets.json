@@ -4600,11 +4600,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
+      "projectUniqueName": "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
       "projectName": "SmartEduManager.Api",
-      "projectPath": "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
+      "projectPath": "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\SmartEduManager.Api.csproj",
       "packagesPath": "C:\\Users\\klgun\\.nuget\\packages\\",
-      "outputPath": "d:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\obj\\",
+      "outputPath": "D:\\New folder (2)\\SmartEduManager\\SmartEduManager.Api\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -4713,7 +4713,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.108/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -5130,5 +5130,17 @@
         }
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'AutoMapper' 12.0.1 has a known high severity vulnerability, https://github.com/advisories/GHSA-rvv3-g6hj-g44x",
+      "libraryId": "AutoMapper",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
 }

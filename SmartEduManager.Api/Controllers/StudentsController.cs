@@ -137,7 +137,7 @@ public class StudentsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> DeleteStudent(int id)
     {
         try
@@ -149,8 +149,7 @@ public class StudentsController : ControllerBase
                 return NotFound("Student not found");
             }
 
-            _repository.Delete(student);
-            await _repository.SaveChangesAsync();
+            await _repository.DeleteStudentWithRelationsAsync(id);
 
             _logger.LogInformation($"Deleted student with id {id}");
             return Ok("Student deleted successfully");

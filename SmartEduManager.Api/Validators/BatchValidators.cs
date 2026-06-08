@@ -21,10 +21,6 @@ public class CreateBatchDtoValidator : AbstractValidator<CreateBatchDto>
         RuleFor(x => x.EndDate)
             .NotEmpty().WithMessage("End date is required")
             .GreaterThan(x => x.StartDate).WithMessage("End date must be after start date");
-
-        RuleFor(x => x.Duration)
-            .NotEmpty().WithMessage("Duration is required")
-            .GreaterThan(0).WithMessage("Duration must be greater than 0");
     }
 }
 
@@ -40,14 +36,8 @@ public class UpdateBatchDtoValidator : AbstractValidator<UpdateBatchDto>
             .GreaterThan(0).WithMessage("Course ID must be greater than 0")
             .When(x => x.CourseId.HasValue);
 
-
-
         RuleFor(x => x.EndDate)
             .GreaterThan(x => x.StartDate).WithMessage("End date must be after start date")
             .When(x => x.EndDate.HasValue && x.StartDate.HasValue);
-
-        RuleFor(x => x.Duration)
-            .GreaterThan(0).WithMessage("Duration must be greater than 0")
-            .When(x => x.Duration.HasValue);
     }
 }

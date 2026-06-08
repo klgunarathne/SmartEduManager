@@ -160,6 +160,18 @@
         <member name="M:SmartEduManager.Api.Migrations.AddCoveringModuleToAssignment.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Migrations.UpdateStudentDeleteCascade">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.UpdateStudentDeleteCascade.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.UpdateStudentDeleteCascade.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.UpdateStudentDeleteCascade.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:Program">
             <summary>
             Auto-generated public partial Program class for top-level statement apps.

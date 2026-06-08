@@ -14,12 +14,13 @@ import { CenterService, Center } from '../../services/center.service';
 export class CoursesComponent implements OnInit {
   showModal = signal(false);
   modalMode = signal<'add' | 'edit'>('add');
-  
+  editingCourseId: number | null = null;
+
   searchTerm = signal('');
   currentPage = signal(1);
   pageSize = 10;
 
-  selectedCourse: CreateCourse = this.getEmptyCourse();
+  selectedCourse: Partial<CreateCourse> = this.getEmptyCourse();
   centers = signal<Center[]>([]);
 
   constructor(
@@ -51,6 +52,7 @@ export class CoursesComponent implements OnInit {
   }
 
   openEditModal(course: Course): void {
+    this.editingCourseId = course.courseId;
     this.selectedCourse = {
       courseName: course.courseName,
       description: course.description,
@@ -64,23 +66,21 @@ export class CoursesComponent implements OnInit {
 
   closeModal(): void {
     this.showModal.set(false);
+    this.editingCourseId = null;
     this.selectedCourse = this.getEmptyCourse();
   }
 
   saveCourse(): void {
     if (this.modalMode() === 'add') {
-      this.courseService.createCourse(this.selectedCourse).subscribe({
+      this.courseService.createCourse(this.selectedCourse as CreateCourse).subscribe({
         next: () => this.closeModal(),
         error: (error) => alert('Failed to create course: ' + (error.error?.message || error.message))
       });
-    } else {
-      const course = this.courseService.courses().find(c => c.courseName === this.selectedCourse.courseName);
-      if (course) {
-        this.courseService.updateCourse(course.courseId, this.selectedCourse).subscribe({
-          next: () => this.closeModal(),
-          error: (error) => alert('Failed to update course: ' + (error.error?.message || error.message))
-        });
-      }
+    } else if (this.editingCourseId) {
+      this.courseService.updateCourse(this.editingCourseId, this.selectedCourse).subscribe({
+        next: () => this.closeModal(),
+        error: (error) => alert('Failed to update course: ' + (error.error?.message || error.message))
+      });
     }
   }
 

@@ -70,7 +70,14 @@ export class CourseService {
   }
 
   updateCourse(id: number, course: Partial<CreateCourse>): Observable<any> {
-    return this.http.put(`${this.API_URL}/courses/${id}`, course).pipe(
+    const apiPayload: any = {};
+    if (course.courseName !== undefined) apiPayload.courseName = course.courseName;
+    if (course.description !== undefined) apiPayload.description = course.description;
+    if (course.duration !== undefined) apiPayload.duration = course.duration;
+    if (course.courseFee !== undefined) apiPayload.courseFee = course.courseFee;
+    if (course.centerId !== undefined) apiPayload.centerId = course.centerId;
+
+    return this.http.put(`${this.API_URL}/courses/${id}`, apiPayload).pipe(
       tap(() => {
         this.courses.update(courses => 
           courses.map(c => c.courseId === id ? { ...c, ...course } : c)

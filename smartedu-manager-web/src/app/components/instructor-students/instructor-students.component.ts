@@ -1,8 +1,10 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StudentService, Student, CreateStudentDto, UpdateStudentDto, STUDENT_FIELDS, CsvStudentRow, CsvMapping } from '../../services/student.service';
 import { BatchService, Batch } from '../../services/batch.service';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
 @Component({
   selector: 'app-instructor-students',
@@ -190,7 +192,12 @@ import { BatchService, Batch } from '../../services/batch.service';
               </div>
               <div class="modal-actions">
                 <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
-                <button type="submit" class="btn-primary">{{ isEditing() ? 'Update' : 'Create' }}</button>
+                <button type="submit" class="btn-primary" [disabled]="saving()">
+                  @if (saving()) {
+                    <i class="fas fa-spinner fa-spin"></i>
+                  }
+                  {{ isEditing() ? 'Update' : 'Create' }}
+                </button>
               </div>
             </form>
           </div>
@@ -496,6 +503,7 @@ export class InstructorStudentsComponent implements OnInit {
   showModal = signal(false);
   isEditing = signal(false);
   editingStudentId: number | null = null;
+  saving = signal(false);
   
   showCsvModal = signal(false);
   csvStep = signal(1);
@@ -528,7 +536,9 @@ export class InstructorStudentsComponent implements OnInit {
 
   constructor(
     private studentService: StudentService, 
-    private batchService: BatchService
+    private batchService: BatchService,
+    private toast: ToastService,
+    private confirmDialog: ConfirmDialogService
   ) {}
 
   ngOnInit(): void {
@@ -620,33 +630,52 @@ export class InstructorStudentsComponent implements OnInit {
   }
 
   saveStudent(): void {
+    this.saving.set(true);
     if (this.isEditing() && this.editingStudentId) {
       const updateData: UpdateStudentDto = this.formData;
       this.studentService.updateStudent(this.editingStudentId, updateData).subscribe({
         next: () => {
           this.loadStudents();
           this.closeModal();
+          this.saving.set(false);
+          this.toast.success('Student updated successfully');
         },
-        error: (err) => console.error('Error updating student:', err)
+        error: (err) => {
+          console.error('Error updating student:', err);
+          this.saving.set(false);
+          this.toast.error('Failed to update student');
+        }
       });
     } else {
       this.studentService.createStudent(this.formData).subscribe({
         next: () => {
           this.loadStudents();
           this.closeModal();
+          this.saving.set(false);
+          this.toast.success('Student created successfully');
         },
-        error: (err) => console.error('Error creating student:', err)
+        error: (err) => {
+          console.error('Error creating student:', err);
+          this.saving.set(false);
+          this.toast.error('Failed to create student');
+        }
       });
     }
   }
 
-  deleteStudent(student: Student): void {
-    if (confirm(`Are you sure you want to delete ${student.nameWithInitials}?`)) {
+  async deleteStudent(student: Student): Promise<void> {
+    const confirmed = await this.confirmDialog.confirmDelete(student.nameWithInitials);
+    if (confirmed) {
       this.studentService.deleteStudent(student.id).subscribe({
         next: () => {
-          this.loadStudents();
+          this.students.update(list => list.filter(s => s.id !== student.id));
+          this.filterStudents();
+          this.toast.success('Student deleted successfully');
         },
-        error: (err) => console.error('Error deleting student:', err)
+        error: (err) => {
+          console.error('Error deleting student:', err);
+          this.toast.error('Failed to delete student');
+        }
       });
     }
   }
@@ -693,7 +722,7 @@ export class InstructorStudentsComponent implements OnInit {
 
   handleFile(file: File): void {
     if (!file.name.endsWith('.csv')) {
-      alert('Please upload a CSV file');
+      this.toast.error('Please upload a CSV file');
       return;
     }
     this.csvFile.set(file);
@@ -721,7 +750,7 @@ export class InstructorStudentsComponent implements OnInit {
   parseCsv(content: string): void {
     const lines = content.split('\n').filter(line => line.trim());
     if (lines.length < 2) {
-      alert('CSV file must have headers and at least one data row');
+      this.toast.error('CSV file must have headers and at least one data row');
       return;
     }
 
@@ -813,7 +842,7 @@ export class InstructorStudentsComponent implements OnInit {
 
   importStudents(): void {
     if (!this.csvBatchId()) {
-      alert('Please select a batch');
+      this.toast.warning('Please select a batch');
       return;
     }
 
@@ -821,6 +850,7 @@ export class InstructorStudentsComponent implements OnInit {
     this.importComplete.set(false);
     this.importSuccess.set(0);
     this.importFailed.set(0);
+    this.toast.info('Starting import...');
 
     const data = this.csvData();
     const mapping = this.csvMapping();
@@ -836,6 +866,11 @@ export class InstructorStudentsComponent implements OnInit {
         this.importSuccess.set(success);
         this.importFailed.set(failed);
         this.loadStudents();
+        if (failed === 0) {
+          this.toast.success(`Successfully imported ${success} students`);
+        } else {
+          this.toast.warning(`Imported ${success} students, ${failed} failed`);
+        }
         return;
       }
 
