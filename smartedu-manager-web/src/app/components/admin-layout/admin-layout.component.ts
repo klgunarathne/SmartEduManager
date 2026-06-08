@@ -58,6 +58,14 @@ import { AuthService } from '../../services/auth.service';
                   }
                 </a>
               </li>
+              <li class="nav-item">
+                <a routerLink="/admin/attendance" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-calendar-check"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>Attendance</span>
+                  }
+                </a>
+              </li>
             </ul>
 
             @if (!sidebarCollapsed()) {
@@ -122,6 +130,14 @@ import { AuthService } from '../../services/auth.service';
                   <i class="fas fa-clipboard-list"></i>
                   @if (!sidebarCollapsed()) {
                     <span>Continuous Assessments</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
+                <a routerLink="/instructor/attendance" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-calendar-check"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>Attendance</span>
                   }
                 </a>
               </li>

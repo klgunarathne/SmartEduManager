@@ -108,5 +108,14 @@ public class MappingProfile : Profile
         CreateMap<CreateAssignmentMarksDto, AssignmentMarks>();
         CreateMap<UpdateAssignmentMarksDto, AssignmentMarks>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+        // Attendance mapping
+        CreateMap<Attendance, AttendanceDto>()
+            .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => src.Student.NameWithInitials))
+            .ForMember(dest => dest.MISNo, opt => opt.MapFrom(src => src.Student.MISNo))
+            .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch.BatchCode));
+        CreateMap<CreateAttendanceDto, Attendance>();
+        CreateMap<UpdateAttendanceDto, Attendance>()
+            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
     }
 }

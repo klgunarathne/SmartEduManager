@@ -90,6 +90,7 @@ builder.Services.AddScoped<ICourseInstructorRepository, CourseInstructorReposito
     builder.Services.AddScoped<IContinuousAssessmentRepository, ContinuousAssessmentRepository>();
     builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
     builder.Services.AddScoped<IAssignmentMarksRepository, AssignmentMarksRepository>();
+    builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 
 // Configure AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));

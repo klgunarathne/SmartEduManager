@@ -44,7 +44,7 @@ export const routes: Routes = [
       },
       {
         path: 'students',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/students/students').then(m => m.StudentsComponent)
       },
       {
         path: 'instructors',
@@ -73,6 +73,10 @@ export const routes: Routes = [
       {
         path: 'users',
         loadComponent: () => import('./components/user-manager/user-manager').then(m => m.UserManagerComponent)
+      },
+      {
+        path: 'attendance',
+        loadComponent: () => import('./components/attendance/attendance').then(m => m.AttendanceComponent)
       }
     ]
   },
@@ -113,6 +117,10 @@ export const routes: Routes = [
       {
         path: 'modules',
         loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent)
+      },
+      {
+        path: 'attendance',
+        loadComponent: () => import('./components/attendance/attendance').then(m => m.AttendanceComponent)
       }
     ]
   },

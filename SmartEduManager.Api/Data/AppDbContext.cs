@@ -24,10 +24,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
       public DbSet<Modules> Modules { get; set; } = null!;
       public DbSet<ModuleTask> ModuleTasks { get; set; } = null!;
       public DbSet<ContinuousAssessment> ContinuousAssessments { get; set; } = null!;
-      public DbSet<Assignment> Assignments { get; set; } = null!;
-      public DbSet<AssignmentMarks> AssignmentMarks { get; set; } = null!;
+public DbSet<Assignment> Assignments { get; set; } = null!;
+       public DbSet<AssignmentMarks> AssignmentMarks { get; set; } = null!;
+       public DbSet<Attendance> Attendances { get; set; } = null!;
 
-    protected override void OnModelCreating(ModelBuilder builder)
+     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
@@ -122,6 +123,24 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         // Composite unique key to prevent duplicate assignment marks
         builder.Entity<AssignmentMarks>()
             .HasIndex(am => new { am.AssignmentId, am.StudentId })
+            .IsUnique();
+
+        // Attendance relationships
+        builder.Entity<Attendance>()
+            .HasOne(a => a.Student)
+            .WithMany()
+            .HasForeignKey(a => a.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Attendance>()
+            .HasOne(a => a.Batch)
+            .WithMany()
+            .HasForeignKey(a => a.BatchId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Composite unique key to prevent duplicate attendance for same student on same date
+        builder.Entity<Attendance>()
+            .HasIndex(a => new { a.StudentId, a.Date })
             .IsUnique();
     }
 }
