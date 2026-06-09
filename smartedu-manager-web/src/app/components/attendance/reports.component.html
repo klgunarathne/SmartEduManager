@@ -1,0 +1,363 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Attendance Reports</h2>
+      <p>Generate and export attendance reports</p>
+    </div>
+  </div>
+
+  <!-- Report Type Tabs -->
+  <div class="tabs">
+    <button 
+      type="button" 
+      class="tab-btn" 
+      [class.active]="reportType() === 'daily'"
+      (click)="reportType.set('daily')"
+    >
+      <i class="fas fa-calendar-day"></i> Daily
+    </button>
+    <button 
+      type="button" 
+      class="tab-btn" 
+      [class.active]="reportType() === 'monthly'"
+      (click)="reportType.set('monthly')"
+    >
+      <i class="fas fa-calendar-alt"></i> Monthly
+    </button>
+    <button 
+      type="button" 
+      class="tab-btn" 
+      [class.active]="reportType() === 'student'"
+      (click)="reportType.set('student')"
+    >
+      <i class="fas fa-user-graduate"></i> Student
+    </button>
+    <button 
+      type="button" 
+      class="tab-btn" 
+      [class.active]="reportType() === 'batch'"
+      (click)="reportType.set('batch')"
+    >
+      <i class="fas fa-users"></i> Batch
+    </button>
+  </div>
+
+  <!-- Daily Report Filter -->
+  @if (reportType() === 'daily') {
+    <div class="filters-section">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Batch</label>
+          <select [(ngModel)]="selectedBatchId">
+            <option [value]="0">Select Batch</option>
+            @for (batch of batches(); track batch.batchId) {
+              <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Date</label>
+          <input type="date" [(ngModel)]="selectedDate" [max]="todayDate" />
+        </div>
+        <button class="btn btn-primary" (click)="generateDailyReport()" [disabled]="selectedBatchId() === 0">
+          <i class="fas fa-file-alt"></i> Generate Report
+        </button>
+      </div>
+    </div>
+
+    @if (dailyReport().length > 0) {
+      <div class="report-section">
+        <div class="report-header">
+          <h3>Daily Attendance Report - {{ selectedDate() }}</h3>
+          <div class="report-actions">
+            <button class="btn btn-outline btn-sm" (click)="printReport()">
+              <i class="fas fa-print"></i> Print
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportPdf()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportExcel()">
+              <i class="fas fa-file-excel"></i> Excel
+            </button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>MIS No</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of dailyReport(); track record.attendanceId) {
+                <tr>
+                  <td>{{ record.studentName }}</td>
+                  <td><span class="mis-badge">{{ record.misNo }}</span></td>
+                  <td>
+                    <span class="status-badge" [class.present]="record.isPresent" [class.absent]="!record.isPresent">
+                      {{ record.isPresent ? 'Present' : 'Absent' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Monthly Report Filter -->
+  @if (reportType() === 'monthly') {
+    <div class="filters-section">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Batch</label>
+          <select [(ngModel)]="selectedBatchId">
+            <option [value]="0">Select Batch</option>
+            @for (batch of batches(); track batch.batchId) {
+              <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Month</label>
+          <select [(ngModel)]="selectedMonth">
+            @for (m of [0,1,2,3,4,5,6,7,8,9,10,11]; track m) {
+              <option [value]="m">{{ monthNames[m] }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Year</label>
+          <input type="number" [(ngModel)]="selectedYear" min="2020" max="2030" />
+        </div>
+        <button class="btn btn-primary" (click)="generateMonthlyReport()" [disabled]="selectedBatchId() === 0">
+          <i class="fas fa-file-alt"></i> Generate Report
+        </button>
+      </div>
+    </div>
+
+    @if (monthlyReport().length > 0) {
+      <div class="report-section">
+        <div class="report-header">
+          <h3>Monthly Attendance Report - {{ monthNames[selectedMonth()] }} {{ selectedYear() }}</h3>
+          <div class="report-actions">
+            <button class="btn btn-outline btn-sm" (click)="printReport()">
+              <i class="fas fa-print"></i> Print
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportPdf()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportExcel()">
+              <i class="fas fa-file-excel"></i> Excel
+            </button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>MIS No</th>
+                <th>Total Days</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of monthlyReport(); track record.studentId) {
+                <tr>
+                  <td>{{ record.studentName }}</td>
+                  <td><span class="mis-badge">{{ record.misNo }}</span></td>
+                  <td>{{ record.totalDays }}</td>
+                  <td>{{ record.presentCount }}</td>
+                  <td>{{ record.absentCount }}</td>
+                  <td>
+                    <span class="percentage" [class.low]="record.attendancePercentage < 75">
+                      {{ record.attendancePercentage }}%
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Student Report Filter -->
+  @if (reportType() === 'student') {
+    <div class="filters-section">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Batch</label>
+          <select [(ngModel)]="selectedBatchId" (change)="onBatchChange()">
+            <option [value]="0">Select Batch</option>
+            @for (batch of batches(); track batch.batchId) {
+              <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Student</label>
+          <select [(ngModel)]="selectedStudentId" [disabled]="selectedBatchId() === 0">
+            <option [value]="0">Select Student</option>
+            @for (student of students(); track student.id) {
+              <option [value]="student.id">{{ student.nameWithInitials }} ({{ student.misNo }})</option>
+            }
+          </select>
+        </div>
+        <button class="btn btn-primary" (click)="generateStudentReport()" [disabled]="selectedStudentId() === 0">
+          <i class="fas fa-file-alt"></i> Generate Report
+        </button>
+      </div>
+    </div>
+
+    @if (studentReport()) {
+      <div class="report-section">
+        <div class="report-header">
+          <h3>Student Attendance Report - {{ studentReport()!.studentName }}</h3>
+          <div class="report-actions">
+            <button class="btn btn-outline btn-sm" (click)="printReport()">
+              <i class="fas fa-print"></i> Print
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportPdf()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportExcel()">
+              <i class="fas fa-file-excel"></i> Excel
+            </button>
+          </div>
+        </div>
+        <div class="student-report-details">
+          <div class="detail-row">
+            <span class="label">Student:</span>
+            <span class="value">{{ studentReport()!.studentName }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">MIS No:</span>
+            <span class="value">{{ studentReport()!.misNo }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Batch:</span>
+            <span class="value">{{ studentReport()!.batchCode }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Total Days:</span>
+            <span class="value">{{ studentReport()!.totalDays }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Present Days:</span>
+            <span class="value">{{ studentReport()!.presentDays }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Absent Days:</span>
+            <span class="value">{{ studentReport()!.absentDays }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Attendance Percentage:</span>
+            <span class="value">{{ studentReport()!.attendancePercentage }}%</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Status:</span>
+            @if (studentReport()!.attendancePercentage >= 75) {
+              <span class="status-badge eligible">Eligible</span>
+            } @else {
+              <span class="status-badge not-eligible">Not Eligible</span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Batch Report Filter -->
+  @if (reportType() === 'batch') {
+    <div class="filters-section">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Batch</label>
+          <select [(ngModel)]="selectedBatchId">
+            <option [value]="0">Select Batch</option>
+            @for (batch of batches(); track batch.batchId) {
+              <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+            }
+          </select>
+        </div>
+        <button class="btn btn-primary" (click)="generateMonthlyReport()" [disabled]="selectedBatchId() === 0">
+          <i class="fas fa-file-alt"></i> Generate Report
+        </button>
+      </div>
+    </div>
+
+    @if (monthlyReport().length > 0) {
+      <div class="report-section">
+        <div class="report-header">
+          <h3>Batch Attendance Report</h3>
+          <div class="report-actions">
+            <button class="btn btn-outline btn-sm" (click)="printReport()">
+              <i class="fas fa-print"></i> Print
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportPdf()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="exportExcel()">
+              <i class="fas fa-file-excel"></i> Excel
+            </button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>MIS No</th>
+                <th>Total Days</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Percentage</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of monthlyReport(); track record.studentId) {
+                <tr [class.low-attendance]="record.attendancePercentage < 75">
+                  <td>{{ record.studentName }}</td>
+                  <td><span class="mis-badge">{{ record.misNo }}</span></td>
+                  <td>{{ record.totalDays }}</td>
+                  <td>{{ record.presentCount }}</td>
+                  <td>{{ record.absentCount }}</td>
+                  <td>
+                    <span class="percentage" [class.low]="record.attendancePercentage < 75">
+                      {{ record.attendancePercentage }}%
+                    </span>
+                  </td>
+                  <td>
+                    @if (record.attendancePercentage >= 75) {
+                      <span class="status-badge eligible">Eligible</span>
+                    } @else {
+                      <span class="status-badge not-eligible">Not Eligible</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  @if (isLoading) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading...</span>
+    </div>
+  }
+</div>

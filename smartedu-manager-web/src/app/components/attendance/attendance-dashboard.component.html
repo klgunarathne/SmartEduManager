@@ -1,0 +1,174 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Attendance Dashboard</h2>
+      <p>Overview of attendance statistics and recent activities</p>
+    </div>
+    <div class="header-right">
+      <select [(ngModel)]="selectedBatchId" (change)="onBatchChange()" class="batch-select">
+        <option [value]="0">Select Batch</option>
+        @for (batch of batches(); track batch.batchId) {
+          <option [value]="batch.batchId">{{ batch.batchCode }} - {{ batch.courseName }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading...</span>
+    </div>
+  } @else if (selectedBatchId() > 0) {
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card total-students">
+        <div class="card-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="card-content">
+          <h3>Total Students</h3>
+          <p class="stat-value">{{ totalStudents() }}</p>
+        </div>
+      </div>
+      
+      <div class="stat-card present">
+        <div class="card-icon">
+          <i class="fas fa-user-check"></i>
+        </div>
+        <div class="card-content">
+          <h3>Present Today</h3>
+          <p class="stat-value">{{ presentToday() }}</p>
+        </div>
+      </div>
+      
+      <div class="stat-card absent">
+        <div class="card-icon">
+          <i class="fas fa-user-times"></i>
+        </div>
+        <div class="card-content">
+          <h3>Absent Today</h3>
+          <p class="stat-value">{{ absentToday() }}</p>
+        </div>
+      </div>
+      
+      <div class="stat-card percentage">
+        <div class="card-icon">
+          <i class="fas fa-percentage"></i>
+        </div>
+        <div class="card-content">
+          <h3>Today's Attendance</h3>
+          <p class="stat-value">{{ todayPercentage() }}%</p>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="todayPercentage()"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <a routerLink="/admin/attendance/daily" class="action-card">
+        <i class="fas fa-calendar-day"></i>
+        <span>Daily Attendance</span>
+      </a>
+      <a routerLink="/admin/attendance/calendar" class="action-card">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Monthly Calendar</span>
+      </a>
+      <a routerLink="/admin/attendance/summary" class="action-card">
+        <i class="fas fa-chart-bar"></i>
+        <span>Batch Summary</span>
+      </a>
+      <a routerLink="/admin/attendance/reports" class="action-card">
+        <i class="fas fa-file-alt"></i>
+        <span>Reports</span>
+      </a>
+    </div>
+
+    <!-- Monthly Summary Table -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3>Monthly Attendance Summary</h3>
+        <div class="header-actions">
+          <a routerLink="/admin/attendance/summary" class="btn btn-sm btn-outline">View All</a>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>MIS No</th>
+              <th>Total Days</th>
+              <th>Present</th>
+              <th>Absent</th>
+              <th>Percentage</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (summary of monthlySummary().slice(0, 5); track summary.studentId) {
+              <tr>
+                <td>{{ summary.studentName }}</td>
+                <td><span class="mis-badge">{{ summary.misNo }}</span></td>
+                <td>{{ summary.totalDays }}</td>
+                <td>{{ summary.presentCount }}</td>
+                <td>{{ summary.absentCount }}</td>
+                <td>
+                  <span class="percentage" [class.low]="summary.attendancePercentage < 75">
+                    {{ summary.attendancePercentage }}%
+                  </span>
+                </td>
+                <td>
+                  @if (summary.attendancePercentage >= 75) {
+                    <span class="status-badge eligible">Eligible</span>
+                  } @else {
+                    <span class="status-badge not-eligible">Below Requirement</span>
+                  }
+                </td>
+              </tr>
+            }
+            @if (monthlySummary().length === 0) {
+              <tr>
+                <td colspan="7" class="no-data">No attendance records found</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3>Recent Attendance Activities</h3>
+      </div>
+      <div class="activities-list">
+        @for (activity of recentActivities(); track activity.attendanceId) {
+          <div class="activity-item">
+            <div class="activity-icon" [class.present]="activity.isPresent" [class.absent]="!activity.isPresent">
+              <i class="fas" [class.fa-check]="activity.isPresent" [class.fa-times]="!activity.isPresent"></i>
+            </div>
+            <div class="activity-content">
+              <span class="student-name">{{ activity.studentName }}</span>
+              <span class="activity-date">{{ formatDate(activity.date) }}</span>
+            </div>
+            <span class="activity-status" [class.present]="activity.isPresent" [class.absent]="!activity.isPresent">
+              {{ activity.isPresent ? 'Present' : 'Absent' }}
+            </span>
+          </div>
+        }
+        @if (recentActivities().length === 0) {
+          <div class="no-data">No recent activities</div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="select-prompt">
+      <i class="fas fa-chalkboard"></i>
+      <p>Select a batch to view attendance dashboard</p>
+    </div>
+  }
+</div>

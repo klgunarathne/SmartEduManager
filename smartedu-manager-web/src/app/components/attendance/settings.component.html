@@ -1,0 +1,80 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Attendance Settings</h2>
+      <p>Configure attendance parameters and rules</p>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <div class="settings-section">
+      <h3>General Settings</h3>
+      
+      <div class="setting-row">
+        <label>Minimum Required Attendance (%)</label>
+        <input 
+          type="number" 
+          [(ngModel)]="settings().minimumAttendancePercentage" 
+          min="0" 
+          max="100"
+        />
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Attendance Colors</h3>
+      
+      <div class="setting-row">
+        <label>Present Day Color</label>
+        <div class="color-picker">
+          <input type="color" [(ngModel)]="settings().presentColor" />
+          <span class="color-preview" [style.background]="settings().presentColor"></span>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Absent Day Color</label>
+        <div class="color-picker">
+          <input type="color" [(ngModel)]="settings().absentColor" />
+          <span class="color-preview" [style.background]="settings().absentColor"></span>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>No Class Day Color</label>
+        <div class="color-picker">
+          <input type="color" [(ngModel)]="settings().noClassColor" />
+          <span class="color-preview" [style.background]="settings().noClassColor"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Working Days</h3>
+      <p class="section-description">Select days when classes are conducted</p>
+      
+      <div class="days-selector">
+        @for (day of [1,2,3,4,5,6,0]; track day) {
+          <button 
+            type="button"
+            class="day-btn"
+            [class.active]="isWorkingDay(day)"
+            (click)="toggleWorkingDay(day)"
+          >
+            {{ dayNames[day] }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="settings-actions">
+      <button class="btn btn-primary" (click)="saveSettings()">
+        <i class="fas fa-save"></i> Save Settings
+      </button>
+      <button class="btn btn-outline" (click)="loadSettings()">
+        <i class="fas fa-redo"></i> Reset
+      </button>
+    </div>
+  </div>
+</div>

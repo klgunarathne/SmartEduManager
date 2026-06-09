@@ -45,4 +45,28 @@ public class AttendanceRepository : Repository<Attendance>, IAttendanceRepositor
             .Include(a => a.Batch)
             .FirstOrDefaultAsync(a => a.StudentId == studentId && a.Date.Date == date.Date);
     }
+
+    public async Task<IEnumerable<object>> GetBatchAttendanceSummaryAsync(int batchId, DateTime startDate, DateTime endDate)
+    {
+        return await _dbSet
+            .Include(a => a.Student)
+            .Where(a => a.BatchId == batchId && a.Date >= startDate && a.Date <= endDate)
+            .GroupBy(a => new { a.StudentId, a.Student.FullName, a.Student.MISNo })
+            .Select(g => new
+            {
+                StudentId = g.Key.StudentId,
+                StudentName = g.Key.FullName,
+                MISNo = g.Key.MISNo,
+                TotalDays = g.Count(),
+                PresentCount = g.Count(a => a.IsPresent),
+                AbsentCount = g.Count(a => !a.IsPresent),
+                AttendancePercentage = Math.Round((double)g.Count(a => a.IsPresent) / g.Count() * 100, 2)
+            })
+            .ToListAsync<object>();
+    }
+
+    public override IQueryable<Attendance> GetAll()
+    {
+        return _dbSet;
+    }
 }

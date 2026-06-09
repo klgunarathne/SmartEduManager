@@ -22,7 +22,7 @@ namespace SmartEduManager.Api.Migrations
                 name: "FK_ContinuousAssessments_Students_StudentId",
                 table: "ContinuousAssessments");
 
-            migrationBuilder.AddForeignKey(
+migrationBuilder.AddForeignKey(
                 name: "FK_AssignmentMarks_Students_StudentId",
                 table: "AssignmentMarks",
                 column: "StudentId",
@@ -44,7 +44,7 @@ namespace SmartEduManager.Api.Migrations
                 column: "StudentId",
                 principalTable: "Students",
                 principalColumn: "StudentId",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />

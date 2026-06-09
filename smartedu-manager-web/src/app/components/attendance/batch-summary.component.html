@@ -1,0 +1,169 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Batch Attendance Summary</h2>
+      <p>View attendance statistics for all students in a batch</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Batch</label>
+        <select [(ngModel)]="selectedBatchId" (change)="onBatchChange()">
+          <option [value]="0">Select Batch</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Search Student</label>
+        <input 
+          type="text" 
+          placeholder="Search by name or MIS..." 
+          [(ngModel)]="searchQuery"
+          (input)="applyFilterAndSort()"
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading...</span>
+    </div>
+  } @else if (selectedBatchId() > 0) {
+    <!-- Summary Stats -->
+    <div class="summary-stats">
+      <div class="stat-item">
+        <span class="stat-value">{{ attendanceSummary().length }}</span>
+        <span class="stat-label">Total Students</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{{ totalPresent }}</span>
+        <span class="stat-label">Total Present</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{{ totalAbsent }}</span>
+        <span class="stat-label">Total Absent</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{{ batchAverage }}%</span>
+        <span class="stat-label">Average Attendance</span>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-section">
+      <div class="section-header">
+        <h3>Attendance Records</h3>
+        <div class="low-attendance-count">
+          {{ lowAttendanceCount }} student(s) below {{ attendanceService.settings().minimumAttendancePercentage }}%
+        </div>
+      </div>
+      
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th (click)="sortBy('studentName')" class="sortable">
+                Student 
+                @if (sortField() === 'studentName') {
+                  <i class="fas" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i>
+                }
+              </th>
+              <th>MIS No</th>
+              <th (click)="sortBy('presentCount')" class="sortable">
+                Present Days
+                @if (sortField() === 'presentCount') {
+                  <i class="fas" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i>
+                }
+              </th>
+              <th>Absent Days</th>
+              <th (click)="sortBy('attendancePercentage')" class="sortable">
+                Percentage
+                @if (sortField() === 'attendancePercentage') {
+                  <i class="fas" [class.fa-sort-up]="sortDirection() === 'asc'" [class.fa-sort-down]="sortDirection() === 'desc'"></i>
+                }
+              </th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (summary of paginatedData; track summary.studentId) {
+              <tr [class.low-attendance]="summary.attendancePercentage < 75">
+                <td>{{ summary.studentName }}</td>
+                <td><span class="mis-badge">{{ summary.misNo }}</span></td>
+                <td>{{ summary.presentCount }}</td>
+                <td>{{ summary.absentCount }}</td>
+                <td>
+                  <div class="percentage-bar">
+                    <span class="percentage" [class.low]="summary.attendancePercentage < 75">
+                      {{ summary.attendancePercentage }}%
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  @if (summary.attendancePercentage >= 75) {
+                    <span class="status-badge eligible">Eligible</span>
+                  } @else {
+                    <span class="status-badge not-eligible">Below Requirement</span>
+                  }
+                </td>
+              </tr>
+            }
+            @if (paginatedData.length === 0) {
+              <tr>
+                <td colspan="6" class="no-data">No attendance records found</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button 
+            type="button" 
+            class="page-btn" 
+            (click)="goToPage(currentPage() - 1)"
+            [disabled]="currentPage() === 1"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          @for (page of pages; track page) {
+            <button 
+              type="button" 
+              class="page-btn" 
+              [class.active]="page === currentPage()"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          }
+          
+          <button 
+            type="button" 
+            class="page-btn" 
+            (click)="goToPage(currentPage() + 1)"
+            [disabled]="currentPage() === totalPages"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="select-prompt">
+      <i class="fas fa-users"></i>
+      <p>Select a batch to view attendance summary</p>
+    </div>
+  }
+</div>

@@ -1,0 +1,126 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Daily Attendance</h2>
+      <p>Mark and manage daily student attendance</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Batch</label>
+        <select [(ngModel)]="selectedBatchId" (change)="loadStudentsForBatch()">
+          <option [value]="0">Select Batch</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Date</label>
+        <input 
+          type="date" 
+          [(ngModel)]="selectedDate" 
+          (change)="onDateChange()"
+          [max]="todayDate"
+        />
+      </div>
+
+      <div class="filter-group">
+        <label>Search Student</label>
+        <input 
+          type="text" 
+          placeholder="Search by name or MIS..." 
+          [(ngModel)]="searchQuery"
+          (input)="applyFilter()"
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading...</span>
+    </div>
+  } @else if (selectedBatchId() > 0) {
+    <!-- Date Info -->
+    <div class="date-info">
+      <h3>{{ formattedDate }}</h3>
+      <div class="attendance-stats">
+        <span class="stat present"><i class="fas fa-user-check"></i> {{ presentCount }} Present</span>
+        <span class="stat absent"><i class="fas fa-user-times"></i> {{ absentCount }} Absent</span>
+        <span class="stat total"><i class="fas fa-users"></i> {{ students().length }} Total</span>
+      </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="actions-bar">
+      <div class="mark-all-buttons">
+        <button class="btn btn-sm btn-success" (click)="markAll(true)" [disabled]="students().length === 0">
+          <i class="fas fa-user-check"></i> Mark All Present
+        </button>
+        <button class="btn btn-sm btn-danger" (click)="markAll(false)" [disabled]="students().length === 0">
+          <i class="fas fa-user-times"></i> Mark All Absent
+        </button>
+      </div>
+      <button class="btn btn-primary btn-sm" (click)="saveAttendance()" [disabled]="!hasChanges">
+        <i class="fas fa-save"></i> Save Attendance
+      </button>
+    </div>
+
+    <!-- Students List -->
+    <div class="students-panel">
+      <div class="panel-header">
+        <h3>Student Attendance</h3>
+        <span class="count">{{ filteredStudents().length }} students</span>
+      </div>
+      
+      <div class="students-list">
+        @if (filteredStudents().length === 0) {
+          <div class="no-data">
+            @if (searchQuery()) {
+              No students match your search
+            } @else {
+              No students found in this batch
+            }
+          </div>
+        }
+        
+        @for (student of filteredStudents(); track student.id) {
+          <div class="student-item">
+            <div class="student-info">
+              <span class="student-name">{{ student.nameWithInitials }}</span>
+              <span class="mis-badge">{{ student.misNo }}</span>
+            </div>
+            <div class="student-actions">
+              <button 
+                type="button"
+                class="status-toggle"
+                [class.present]="getAttendanceStatus(student.id) === 'present'"
+                [class.absent]="getAttendanceStatus(student.id) === 'absent'"
+                (click)="toggleAttendance(student.id)"
+              >
+                <i class="fas" 
+                  [class.fa-check]="getAttendanceStatus(student.id) === 'present'"
+                  [class.fa-times]="getAttendanceStatus(student.id) === 'absent'"
+                  [class.fa-minus]="getAttendanceStatus(student.id) === 'none'"
+                ></i>
+                {{ getAttendanceStatus(student.id) === 'present' ? 'Present' : (getAttendanceStatus(student.id) === 'absent' ? 'Absent' : 'Not Marked') }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="select-prompt">
+      <i class="fas fa-chalkboard"></i>
+      <p>Select a batch to mark attendance</p>
+    </div>
+  }
+</div>

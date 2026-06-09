@@ -27,3 +27,14 @@ public class UpdateAttendanceDto
     public bool? IsPresent { get; set; }
     public string? Remarks { get; set; }
 }
+
+public class BatchAttendanceSummaryDto
+{
+    public int StudentId { get; set; }
+    public string StudentName { get; set; } = null!;
+    public string MISNo { get; set; } = null!;
+    public int TotalDays { get; set; }
+    public int PresentCount { get; set; }
+    public int AbsentCount { get; set; }
+    public double AttendancePercentage { get; set; }
+}

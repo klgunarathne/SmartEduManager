@@ -1,0 +1,125 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Course Completion Report</h2>
+      <p>Generate final attendance report when course ends</p>
+    </div>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Batch</label>
+        <select [(ngModel)]="selectedBatchId">
+          <option [value]="0">Select Batch</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }} - {{ batch.courseName }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Minimum Percentage</label>
+        <input 
+          type="number" 
+          [(ngModel)]="minimumPercentage" 
+          min="0" 
+          max="100"
+        />
+      </div>
+
+      <button class="btn btn-primary" (click)="generateReport()" [disabled]="selectedBatchId() === 0">
+        <i class="fas fa-file-alt"></i> Generate Report
+      </button>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading...</span>
+    </div>
+  } @else if (report()) {
+    <!-- Report Summary -->
+    <div class="report-summary">
+      <div class="report-header">
+        <h3>{{ report()!.batchCode }} - {{ report()!.courseName }}</h3>
+        <div class="report-actions">
+          <button class="btn btn-outline btn-sm" (click)="printReport()">
+            <i class="fas fa-print"></i> Print
+          </button>
+          <button class="btn btn-outline btn-sm" (click)="exportPdf()">
+            <i class="fas fa-file-pdf"></i> PDF
+          </button>
+          <button class="btn btn-outline btn-sm" (click)="exportExcel()">
+            <i class="fas fa-file-excel"></i> Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="summary-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ report()!.studentReports.length }}</span>
+          <span class="stat-label">Total Students</span>
+        </div>
+        <div class="stat-item eligible">
+          <span class="stat-value">{{ eligibleCount }}</span>
+          <span class="stat-label">Eligible</span>
+        </div>
+        <div class="stat-item not-eligible">
+          <span class="stat-value">{{ notEligibleCount }}</span>
+          <span class="stat-label">Not Eligible</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student Report Table -->
+    <div class="table-section">
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>MIS No</th>
+              <th>Total Days</th>
+              <th>Present</th>
+              <th>Absent</th>
+              <th>Percentage</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (student of report()!.studentReports; track student.studentId) {
+              <tr [class.not-eligible-row]="!isEligible(student.attendancePercentage)">
+                <td>{{ student.studentName }}</td>
+                <td><span class="mis-badge">{{ student.misNo }}</span></td>
+                <td>{{ student.totalDays }}</td>
+                <td>{{ student.presentDays }}</td>
+                <td>{{ student.absentDays }}</td>
+                <td>
+                  <span class="percentage" [class.low]="isBelowMinimum(student.attendancePercentage)">
+                    {{ student.attendancePercentage }}%
+                  </span>
+                </td>
+                <td>
+                  @if (isEligible(student.attendancePercentage)) {
+                    <span class="status-badge eligible">Eligible</span>
+                  } @else {
+                    <span class="status-badge not-eligible">Not Eligible</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <div class="select-prompt">
+      <i class="fas fa-certificate"></i>
+      <p>Select a batch to generate course completion report</p>
+    </div>
+  }
+</div>

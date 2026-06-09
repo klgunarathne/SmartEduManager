@@ -88,7 +88,7 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
             .WithOne(t => t.Module)
             .HasForeignKey(t => t.ModuleId);
 
-        // Continuous Assessment relationships
+// Continuous Assessment relationships
         builder.Entity<ContinuousAssessment>()
             .HasOne(ca => ca.Student)
             .WithMany()
@@ -99,9 +99,8 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
             .HasOne(ca => ca.ModuleTask)
             .WithMany()
             .HasForeignKey(ca => ca.ModuleTaskId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Composite unique key to prevent duplicate assessments
         builder.Entity<ContinuousAssessment>()
             .HasIndex(ca => new { ca.StudentId, ca.ModuleTaskId })
             .IsUnique();

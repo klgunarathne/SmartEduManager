@@ -3,6 +3,14 @@ import { LoginComponent } from './components/login/login.component';
 import { AdminLayoutComponent } from './components/admin-layout/admin-layout.component';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
 import { InstructorDashboardComponent } from './components/instructor-dashboard/instructor-dashboard.component';
+import { AttendanceDashboardComponent } from './components/attendance/attendance-dashboard.component';
+import { DailyAttendanceComponent } from './components/attendance/daily-attendance.component';
+import { MonthlyCalendarComponent } from './components/attendance/monthly-calendar.component';
+import { StudentSummaryComponent } from './components/attendance/student-summary.component';
+import { BatchSummaryComponent } from './components/attendance/batch-summary.component';
+import { CourseCompletionComponent } from './components/attendance/course-completion.component';
+import { ReportsComponent } from './components/attendance/reports.component';
+import { SettingsComponent } from './components/attendance/settings.component';
 import { inject } from '@angular/core';
 import { AuthService } from './services/auth.service';
 import { Router } from '@angular/router';
@@ -76,7 +84,35 @@ export const routes: Routes = [
       },
       {
         path: 'attendance',
-        loadComponent: () => import('./components/attendance/attendance').then(m => m.AttendanceComponent)
+        component: AttendanceDashboardComponent
+      },
+      {
+        path: 'attendance/daily',
+        component: DailyAttendanceComponent
+      },
+      {
+        path: 'attendance/calendar',
+        component: MonthlyCalendarComponent
+      },
+      {
+        path: 'attendance/summary',
+        component: StudentSummaryComponent
+      },
+      {
+        path: 'attendance/batch-summary',
+        component: BatchSummaryComponent
+      },
+      {
+        path: 'attendance/reports',
+        component: ReportsComponent
+      },
+      {
+        path: 'attendance/course-completion',
+        component: CourseCompletionComponent
+      },
+      {
+        path: 'attendance/settings',
+        component: SettingsComponent
       }
     ]
   },
@@ -120,7 +156,23 @@ export const routes: Routes = [
       },
       {
         path: 'attendance',
-        loadComponent: () => import('./components/attendance/attendance').then(m => m.AttendanceComponent)
+        component: AttendanceDashboardComponent
+      },
+      {
+        path: 'attendance/daily',
+        component: DailyAttendanceComponent
+      },
+      {
+        path: 'attendance/calendar',
+        component: MonthlyCalendarComponent
+      },
+      {
+        path: 'attendance/summary',
+        component: StudentSummaryComponent
+      },
+      {
+        path: 'attendance/batch-summary',
+        component: BatchSummaryComponent
       }
     ]
   },

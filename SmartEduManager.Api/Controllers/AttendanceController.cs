@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Repositories.Interfaces;
@@ -126,6 +127,101 @@ public class AttendanceController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error deleting attendance with id {id}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("batch/{batchId}/summary")]
+    public async Task<IActionResult> GetBatchAttendanceSummary(int batchId, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        try
+        {
+            var start = startDate ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var end = endDate ?? start.AddMonths(1).AddDays(-1);
+
+            var summary = await _repository.GetBatchAttendanceSummaryAsync(batchId, start, end);
+            return Ok(summary);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error retrieving attendance summary for batch {batchId}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("day/{date}/student/{studentId}/batch/{batchId}")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> DeleteAttendanceByStudent(string date, int studentId, int batchId)
+    {
+        try
+        {
+            var attendance = await _repository.GetAttendanceByStudentAndDateAsync(
+                studentId, 
+                DateTime.Parse(date)
+            );
+            if (attendance == null || attendance.BatchId != batchId)
+            {
+                return NotFound("Attendance record not found");
+            }
+
+            _repository.Delete(attendance);
+            await _repository.SaveChangesAsync();
+
+            return Ok("Attendance deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting attendance for student {studentId} on {date}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("day/{date}/batch/{batchId}")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> DeleteAttendanceForDay(string date, int batchId)
+    {
+        try
+        {
+            var attendance = await _repository.GetAll()
+                .Where(a => a.Date.Date == DateTime.Parse(date).Date && a.BatchId == batchId)
+                .ToListAsync();
+            
+            foreach (var a in attendance)
+            {
+                _repository.Delete(a);
+            }
+            await _repository.SaveChangesAsync();
+
+            return Ok("Attendance cleared for the day");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error clearing attendance for day {date} in batch {batchId}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("batch/{batchId}")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> DeleteAttendanceForBatch(int batchId)
+    {
+        try
+        {
+            var attendance = await _repository.GetAll()
+                .Where(a => a.BatchId == batchId)
+                .ToListAsync();
+            
+            foreach (var a in attendance)
+            {
+                _repository.Delete(a);
+            }
+            await _repository.SaveChangesAsync();
+
+            return Ok("All attendance records deleted for batch");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting all attendance for batch {batchId}");
             return StatusCode(500, "Internal server error");
         }
     }

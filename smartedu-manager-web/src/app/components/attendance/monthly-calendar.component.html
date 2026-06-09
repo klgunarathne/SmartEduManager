@@ -1,0 +1,173 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Monthly Attendance Calendar</h2>
+      <p>View monthly attendance for all students in a batch</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Batch</label>
+        <select [(ngModel)]="selectedBatchId" (change)="onBatchChange()">
+          <option [value]="0">Select Batch</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Month</label>
+        <select [(ngModel)]="selectedMonth">
+          @for (m of [0,1,2,3,4,5,6,7,8,9,10,11]; track m) {
+            <option [value]="m">{{ monthNames[m] }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Year</label>
+        <input type="number" [(ngModel)]="selectedYear" min="2020" max="2030" />
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading...</span>
+    </div>
+  } @else if (selectedBatchId() > 0) {
+    <!-- Students List + Calendar Layout -->
+    <div class="students-calendar-layout">
+      <!-- Students List -->
+      <div class="students-sidebar">
+        <div class="sidebar-header">
+          <h4>Students ({{ students().length }})</h4>
+        </div>
+        <div class="students-list">
+          @if (students().length === 0) {
+            <div class="no-students">No students in this batch</div>
+          }
+          @for (student of students(); track student.id) {
+            <button 
+              type="button"
+              class="student-item-btn"
+              [class.active]="selectedStudentId() === student.id"
+              (click)="onStudentSelect(student.id)"
+            >
+              <span class="student-name">{{ student.nameWithInitials }}</span>
+              <span class="mis-badge">{{ student.misNo }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Calendar Panel -->
+      <div class="calendar-panel">
+        @if (selectedStudentId() > 0 && monthlyData()) {
+          <!-- Month Navigation -->
+          <div class="month-navigation">
+            <button type="button" class="nav-btn" (click)="prevMonth()" title="Previous month">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <h3 class="month-title">{{ currentMonthName }}</h3>
+            <button type="button" class="nav-btn" (click)="nextMonth()" title="Next month">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Legend -->
+          <div class="legend-section">
+            <div class="legend-item">
+              <span class="legend-dot present"></span>
+              <span>Present</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot absent"></span>
+              <span>Absent</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot no-class"></span>
+              <span>No Class</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot none"></span>
+              <span>Not Marked</span>
+            </div>
+          </div>
+
+          <!-- Monthly Summary -->
+          <div class="summary-cards">
+            <div class="summary-card">
+              <span class="label">Total Days</span>
+              <span class="value">{{ monthlyData()!.totalDays }}</span>
+            </div>
+            <div class="summary-card present">
+              <span class="label">Present</span>
+              <span class="value">{{ monthlyData()!.presentDays }}</span>
+            </div>
+            <div class="summary-card absent">
+              <span class="label">Absent</span>
+              <span class="value">{{ monthlyData()!.absentDays }}</span>
+            </div>
+            <div class="summary-card no-class">
+              <span class="label">No Class</span>
+              <span class="value">{{ monthlyData()!.noClassDays }}</span>
+            </div>
+            <div class="summary-card percentage">
+              <span class="label">Percentage</span>
+              <span class="value">{{ monthlyData()!.attendancePercentage }}%</span>
+            </div>
+          </div>
+
+          <!-- Student Name Header -->
+          <div class="selected-student-header">
+            <h4>{{ monthlyData()!.studentName }}</h4>
+          </div>
+
+          <!-- Calendar -->
+          <div class="calendar-section">
+            <div class="calendar-grid">
+              <div class="calendar-day-header">Sun</div>
+              <div class="calendar-day-header">Mon</div>
+              <div class="calendar-day-header">Tue</div>
+              <div class="calendar-day-header">Wed</div>
+              <div class="calendar-day-header">Thu</div>
+              <div class="calendar-day-header">Fri</div>
+              <div class="calendar-day-header">Sat</div>
+
+              @for (day of calendarDays; track day.getTime()) {
+                <button 
+                  type="button"
+                  class="calendar-day"
+                  [class.other-month]="day.getMonth() !== selectedMonth()"
+                  [class.present]="getDayStatus(day) === 'present'"
+                  [class.absent]="getDayStatus(day) === 'absent'"
+                  [class.no-class]="getDayStatus(day) === 'no-class'"
+                  [class.none]="getDayStatus(day) === 'none'"
+                >
+                  <span class="day-number">{{ day.getDate() }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="select-prompt">
+            <i class="fas fa-calendar-alt"></i>
+            <p>Select a student to view their monthly attendance calendar</p>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="select-prompt">
+      <i class="fas fa-chalkboard"></i>
+      <p>Select a batch to view attendance calendar</p>
+    </div>
+  }
+</div>
