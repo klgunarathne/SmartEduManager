@@ -1,7 +1,14 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute, NavigationEnd } from '@angular/router';
+import { filter, map, mergeMap } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+
+interface Breadcrumb {
+  label: string;
+  url?: string;
+  isActive: boolean;
+}
 
 @Component({
   selector: 'app-admin-layout',
@@ -184,6 +191,20 @@ import { AuthService } from '../../services/auth.service';
             </div>
           </div>
         </header>
+
+        <nav class="breadcrumb" *ngIf="breadcrumbs().length > 1">
+          <ol class="breadcrumb-list">
+            @for (crumb of breadcrumbs(); track crumb.label) {
+              <li class="breadcrumb-item" [class.active]="crumb.isActive">
+                @if (crumb.url && !crumb.isActive) {
+                  <a [routerLink]="crumb.url">{{ crumb.label }}</a>
+                } @else {
+                  <span>{{ crumb.label }}</span>
+                }
+              </li>
+            }
+          </ol>
+        </nav>
 
         <div class="content-wrapper">
           <router-outlet></router-outlet>
@@ -487,6 +508,51 @@ import { AuthService } from '../../services/auth.service';
       padding: 30px;
     }
 
+    .breadcrumb {
+      padding: 12px 30px;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .breadcrumb-list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      flex-wrap: wrap;
+    }
+
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .breadcrumb-item:not(:last-child)::after {
+      content: '/';
+      color: #cbd5e1;
+      font-size: 12px;
+    }
+
+    .breadcrumb-item a {
+      color: #64748b;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .breadcrumb-item a:hover {
+      color: #6366f1;
+    }
+
+    .breadcrumb-item.active {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
     @media (max-width: 1024px) {
       .sidebar {
         width: 80px;
@@ -532,6 +598,38 @@ import { AuthService } from '../../services/auth.service';
 export class AdminLayoutComponent {
   sidebarCollapsed = signal(false);
   pageTitle = 'Dashboard';
+  breadcrumbs = signal<Breadcrumb[]>([]);
+
+  private rolePrefix: string;
+
+  constructor(private authService: AuthService, private router: Router, private activatedRoute: ActivatedRoute) {
+    const role = this.authService.isAdmin() ? 'admin' : 'instructor';
+    this.rolePrefix = `/${role}/`;
+
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.activatedRoute),
+      map((route) => {
+        while (route.firstChild) route = route.firstChild;
+        return route;
+      }),
+      mergeMap((route) => route.data),
+      map((data) => this.buildBreadcrumbs(data['breadcrumb']))
+    ).subscribe((crumbs) => this.breadcrumbs.set(crumbs));
+  }
+
+  private buildBreadcrumbs(currentLabel?: string): Breadcrumb[] {
+    const crumbs: Breadcrumb[] = [];
+
+    const role = this.authService.isAdmin() ? 'Admin' : 'Instructor';
+    crumbs.push({ label: role, url: '/' + (this.authService.isAdmin() ? 'admin' : 'instructor'), isActive: false });
+
+    if (currentLabel) {
+      crumbs.push({ label: currentLabel, isActive: true });
+    }
+
+    return crumbs;
+  }
 
   get userName(): string {
     const user = this.authService.getUser();
@@ -556,8 +654,6 @@ export class AdminLayoutComponent {
   isStudent(): boolean {
     return this.authService.isStudent();
   }
-
-  constructor(private authService: AuthService) {}
 
   toggleSidebar(): void {
     this.sidebarCollapsed.set(!this.sidebarCollapsed());

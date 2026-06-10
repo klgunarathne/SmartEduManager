@@ -34,12 +34,14 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    component: LoginComponent
+    component: LoginComponent,
+    data: { breadcrumb: 'Login' }
   },
   {
     path: 'admin',
     component: AdminLayoutComponent,
     canActivate: [authGuard],
+    data: { breadcrumb: 'Admin' },
     children: [
       {
         path: '',
@@ -48,39 +50,48 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
-        component: AdminDashboardComponent
+        component: AdminDashboardComponent,
+        data: { breadcrumb: 'Dashboard' }
       },
       {
         path: 'students',
-        loadComponent: () => import('./components/students/students').then(m => m.StudentsComponent)
+        loadComponent: () => import('./components/students/students').then(m => m.StudentsComponent),
+        data: { breadcrumb: 'Students' }
       },
       {
         path: 'instructors',
-        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent)
+        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
+        data: { breadcrumb: 'Instructors' }
       },
       {
         path: 'courses',
-        loadComponent: () => import('./components/courses/courses').then(m => m.CoursesComponent)
+        loadComponent: () => import('./components/courses/courses').then(m => m.CoursesComponent),
+        data: { breadcrumb: 'Courses' }
       },
       {
         path: 'batches',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+        data: { breadcrumb: 'Batches' }
       },
       {
         path: 'centers',
-        loadComponent: () => import('./components/centers/centers').then(m => m.CentersComponent)
+        loadComponent: () => import('./components/centers/centers').then(m => m.CentersComponent),
+        data: { breadcrumb: 'Centers' }
       },
       {
         path: 'assignments',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+        data: { breadcrumb: 'Assignments' }
       },
       {
         path: 'reports',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+        data: { breadcrumb: 'Reports' }
       },
       {
         path: 'users',
-        loadComponent: () => import('./components/user-manager/user-manager').then(m => m.UserManagerComponent)
+        loadComponent: () => import('./components/user-manager/user-manager').then(m => m.UserManagerComponent),
+        data: { breadcrumb: 'User Manager' }
       }
     ]
   },
@@ -88,6 +99,7 @@ export const routes: Routes = [
     path: 'instructor',
     component: AdminLayoutComponent,
     canActivate: [authGuard],
+    data: { breadcrumb: 'Instructor' },
     children: [
       {
         path: '',
@@ -96,31 +108,38 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
-        component: InstructorDashboardComponent
+        component: InstructorDashboardComponent,
+        data: { breadcrumb: 'Dashboard' }
       },
       {
         path: 'batches',
-        loadComponent: () => import('./components/instructor-batches/instructor-batches.component').then(m => m.InstructorBatchesComponent)
+        loadComponent: () => import('./components/instructor-batches/instructor-batches.component').then(m => m.InstructorBatchesComponent),
+        data: { breadcrumb: 'Batches' }
       },
       {
         path: 'students',
-        loadComponent: () => import('./components/instructor-students/instructor-students.component').then(m => m.InstructorStudentsComponent)
+        loadComponent: () => import('./components/instructor-students/instructor-students.component').then(m => m.InstructorStudentsComponent),
+        data: { breadcrumb: 'Students' }
       },
       {
         path: 'assignments',
-        loadComponent: () => import('./components/instructor-assignments/instructor-assignments.component').then(m => m.InstructorAssignmentsComponent)
+        loadComponent: () => import('./components/instructor-assignments/instructor-assignments.component').then(m => m.InstructorAssignmentsComponent),
+        data: { breadcrumb: 'Assignments' }
       },
       {
         path: 'continuous-assessments',
-        loadComponent: () => import('./components/instructor-continuous-assessments/instructor-continuous-assessments.component').then(m => m.InstructorContinuousAssessmentsComponent)
+        loadComponent: () => import('./components/instructor-continuous-assessments/instructor-continuous-assessments.component').then(m => m.InstructorContinuousAssessmentsComponent),
+        data: { breadcrumb: 'Continuous Assessments' }
       },
       {
         path: 'ncs',
-        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent)
+        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
+        data: { breadcrumb: 'NCS & Modules' }
       },
       {
         path: 'modules',
-        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent)
+        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
+        data: { breadcrumb: 'Modules' }
       },
       {
         path: 'attendance',
