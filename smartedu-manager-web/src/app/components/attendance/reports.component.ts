@@ -144,6 +144,33 @@ export class ReportsComponent implements OnInit {
     return total > 0 ? Math.round((present / total) * 100) : 0;
   }
 
+  getAveragePercentage(): number {
+    const grid = this.monthlyGrid();
+    if (!grid || grid.rows.length === 0) return 0;
+
+    let totalPresent = 0;
+    let totalMarked = 0;
+
+    grid.rows.forEach(row => {
+      totalPresent += row.attendances.filter(a => a === true).length;
+      totalMarked += row.attendances.filter(a => a === true || a === false).length;
+    });
+
+    return totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
+  }
+
+  getAveragePresent(): number {
+    const grid = this.monthlyGrid();
+    if (!grid || grid.rows.length === 0) return 0;
+    return grid.rows.reduce((sum, row) => sum + row.attendances.filter(a => a === true).length, 0);
+  }
+
+  getAverageTotal(): number {
+    const grid = this.monthlyGrid();
+    if (!grid || grid.rows.length === 0) return 0;
+    return grid.rows.reduce((sum, row) => sum + row.attendances.filter(a => a === true || a === false).length, 0);
+  }
+
   exportPdf(): void {
     console.log('Exporting PDF...');
   }

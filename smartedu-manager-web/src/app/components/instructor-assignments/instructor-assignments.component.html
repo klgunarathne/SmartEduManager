@@ -1,0 +1,151 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Assignments</h2>
+      <p>Manage assignments and student marks</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'assignments'"
+      (click)="activeTab.set('assignments'); loadAssignments()"
+    >
+      <i class="fas fa-clipboard-list"></i> Assignments
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'marks'"
+      (click)="activeTab.set('marks')"
+      [disabled]="selectedAssignmentId() === 0"
+    >
+      <i class="fas fa-pen-to-square"></i> Marks
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Batch</label>
+        <select [(ngModel)]="selectedBatchId" (ngModelChange)="loadStudents()">
+          <option [value]="0">Select Batch</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (activeTab() === 'assignments') {
+    <!-- Assignments List -->
+    <div class="filters-section">
+      <div class="create-row">
+        <input type="text" [(ngModel)]="newAssignmentName" placeholder="Assignment Name" class="input-sm" />
+        <input type="text" [(ngModel)]="newCoveringModule" placeholder="Covering Module" class="input-sm" />
+        <button class="btn btn-primary btn-sm" (click)="createAssignment()" [disabled]="isLoading() || !newAssignmentName.trim() || !newCoveringModule.trim()">
+          <i class="fas fa-plus"></i> Create
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Assignment Name</th>
+            <th>Covering Module</th>
+            <th style="width: 180px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (assignment of assignments(); track assignment.id) {
+            <tr [class.selected]="selectedAssignmentId() === assignment.id">
+              <td>
+                <a class="link-btn" (click)="selectAssignmentAndShowMarks(assignment)">{{ assignment.assignmentName }}</a>
+              </td>
+              <td>{{ assignment.coveringModule }}</td>
+              <td>
+                <button class="btn btn-outline btn-sm btn-view" (click)="selectAssignmentAndShowMarks(assignment)">
+                  <i class="fas fa-pen-to-square"></i> Manage Marks
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="deleteAssignment(assignment.id, assignment.assignmentName)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          }
+          @if (assignments().length === 0) {
+            <tr><td colspan="3" class="no-data">No assignments found. Create one above.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (activeTab() === 'marks' && selectedAssignmentId() > 0) {
+    <!-- Marks Management -->
+    <div class="filters-section">
+      <div class="marks-header">
+        <h4>Marks: {{ assignments().find(a => a.id === selectedAssignmentId())?.assignmentName || 'Loading...' }}</h4>
+        <span class="batch-label">Module: {{ assignments().find(a => a.id === selectedAssignmentId())?.coveringModule || '' }}</span>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table marks-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">#</th>
+            <th>MIS No</th>
+            <th>Student Name</th>
+            <th style="width: 120px;">Marks</th>
+            <th style="width: 140px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (student of students(); track student.id; let i = $index) {
+            <tr>
+              <td>{{ i + 1 }}</td>
+              <td><span class="mis-badge">{{ student.misNo }}</span></td>
+              <td>{{ student.nameWithInitials }}</td>
+              <td>
+                <input
+                  type="number"
+                  class="marks-input"
+                  [value]="getMarkValue(student.id)"
+                  (input)="onMarkInput(student.id, $event)"
+                  min="0"
+                  max="100"
+                />
+              </td>
+              <td>
+                <button class="btn btn-outline btn-sm" (click)="saveMark(student.id, null)" [disabled]="isLoading()">
+                  <i class="fas fa-save"></i> Save
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="deleteMark(student.id)" [disabled]="!isMarkSaved(student.id)" [class.disabled]="!isMarkSaved(student.id)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          }
+          @if (students().length === 0) {
+            <tr><td colspan="5" class="no-data">No students in this batch. Please select a batch first.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading...</span>
+    </div>
+  }
+</div>

@@ -105,6 +105,18 @@
                 </tr>
               }
             </tbody>
+            <tfoot>
+              <tr class="average-row">
+                <td class="sticky-col"><strong>Average</strong></td>
+                @for (day of monthlyGrid()!.days; track day) {
+                  <td></td>
+                }
+                <td><strong>{{ getAverageTotal() }}</strong></td>
+                <td><strong>{{ getAveragePresent() }}</strong></td>
+                <td><strong>{{ getAverageTotal() - getAveragePresent() }}</strong></td>
+                <td><strong>{{ getAveragePercentage() }}%</strong></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
