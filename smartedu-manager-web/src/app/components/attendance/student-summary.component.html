@@ -48,93 +48,133 @@
       <span>Loading...</span>
     </div>
   } @else if (selectedStudentId() > 0 && summary()) {
-    <!-- Student Profile -->
-    <div class="student-profile">
-      <div class="profile-header">
-        <div class="avatar">
-          <i class="fas fa-user-graduate"></i>
+    <!-- Students List + Calendar Layout -->
+    <div class="students-calendar-layout">
+      <!-- Students List -->
+      <div class="students-sidebar">
+        <div class="sidebar-header">
+          <h4>Students ({{ students().length }})</h4>
         </div>
-        <div class="profile-info">
-          <h3>{{ summary()!.studentName }}</h3>
-          <span class="mis-number">MIS: {{ summary()!.misNo }}</span>
-          <span class="batch-info">Batch: {{ summary()!.batchCode }}</span>
+        <div class="students-list">
+          @for (student of students(); track student.id) {
+            <button 
+              type="button"
+              class="student-item-btn"
+              [class.active]="selectedStudentId() === student.id"
+              (click)="selectedStudentId.set(student.id); loadStudentSummary()"
+            >
+              <span class="student-name">{{ student.nameWithInitials }}</span>
+              <span class="mis-badge">{{ student.misNo }}</span>
+            </button>
+          }
         </div>
       </div>
-    </div>
 
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span class="label">Total Class Days</span>
-        <span class="value">{{ summary()!.totalDays }}</span>
-      </div>
-      <div class="stat-card present">
-        <span class="label">Present Days</span>
-        <span class="value">{{ summary()!.presentDays }}</span>
-      </div>
-      <div class="stat-card absent">
-        <span class="label">Absent Days</span>
-        <span class="value">{{ summary()!.absentDays }}</span>
-      </div>
-      <div class="stat-card percentage">
-        <span class="label">Attendance %</span>
-        <span class="value">{{ summary()!.attendancePercentage }}%</span>
-      </div>
-    </div>
-
-    <!-- Progress Bar -->
-    <div class="progress-section">
-      <div class="progress-header">
-        <span>Attendance Progress</span>
-        <span>Required: {{ attendanceService.settings().minimumAttendancePercentage }}%</span>
-      </div>
-      <div class="progress-bar-container">
-        <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="summary()!.attendancePercentage"></div>
+      <!-- Details Panel -->
+      <div class="details-panel">
+        <!-- Student Profile -->
+        <div class="student-profile">
+          <div class="profile-header">
+            <div class="avatar">
+              <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="profile-info">
+              <h3>{{ summary()!.studentName }}</h3>
+              <span class="mis-number">MIS: {{ summary()!.misNo }}</span>
+              <span class="batch-info">Batch: {{ summary()!.batchCode }}</span>
+            </div>
+          </div>
         </div>
-        <div class="required-marker" [style.left.%]="attendanceService.settings().minimumAttendancePercentage">
-          <div class="marker-line"></div>
-          <span class="marker-label">Required</span>
-        </div>
-      </div>
-      <div class="status-badge" [class.eligible]="summary()!.attendancePercentage >= 75" [class.not-eligible]="summary()!.attendancePercentage < 75">
-        {{ summary()!.attendancePercentage >= 75 ? 'Eligible' : 'Not Eligible' }}
-      </div>
-    </div>
 
-    <!-- Attendance History Table -->
-    <div class="attendance-history">
-      <div class="section-header">
-        <h3>Attendance History</h3>
-      </div>
-      <div class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Remarks</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (record of attendanceHistory(); track record.attendanceId) {
-              <tr>
-                <td>{{ formatDisplayDate(record.date) }}</td>
-                <td>
-                  <span class="status-badge" [class.present]="record.isPresent" [class.absent]="!record.isPresent">
-                    {{ record.isPresent ? 'Present' : 'Absent' }}
-                  </span>
-                </td>
-                <td>{{ record.remarks || '-' }}</td>
-              </tr>
-            }
-            @if (attendanceHistory().length === 0) {
-              <tr>
-                <td colspan="3" class="no-data">No attendance records found</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="label">Total Class Days</span>
+            <span class="value">{{ summary()!.totalDays }}</span>
+          </div>
+          <div class="stat-card present">
+            <span class="label">Present Days</span>
+            <span class="value">{{ summary()!.presentDays }}</span>
+          </div>
+          <div class="stat-card absent">
+            <span class="label">Absent Days</span>
+            <span class="value">{{ summary()!.absentDays }}</span>
+          </div>
+          <div class="stat-card percentage">
+            <span class="label">Attendance %</span>
+            <span class="value">{{ summary()!.attendancePercentage }}%</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-section">
+          <div class="progress-header">
+            <span>Attendance Progress</span>
+            <span>Required: {{ attendanceService.settings().minimumAttendancePercentage }}%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="summary()!.attendancePercentage"></div>
+            </div>
+            <div class="required-marker" [style.left.%]="attendanceService.settings().minimumAttendancePercentage">
+              <div class="marker-line"></div>
+              <span class="marker-label">Required</span>
+            </div>
+          </div>
+          <div class="status-badge" [class.eligible]="summary()!.attendancePercentage >= 75" [class.not-eligible]="summary()!.attendancePercentage < 75">
+            {{ summary()!.attendancePercentage >= 75 ? 'Eligible' : 'Not Eligible' }}
+          </div>
+        </div>
+
+        <!-- Monthly Calendar -->
+        @if (monthlyData()) {
+          <div class="calendar-wrapper">
+            <app-calendar
+              [month]="calendarMonth()"
+              [year]="calendarYear()"
+              [dayStatusMap]="dayStatusMap()"
+              [workingDays]="workingDays()"
+              (prevMonth)="prevMonth()"
+              (nextMonth)="nextMonth()"
+            />
+          </div>
+        }
+
+        <!-- Attendance History Table -->
+        <div class="attendance-history">
+          <div class="section-header">
+            <h3>Attendance History</h3>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (record of attendanceHistory(); track record.attendanceId) {
+                  <tr>
+                    <td>{{ formatDisplayDate(record.date) }}</td>
+                    <td>
+                      <span class="status-badge" [class.present]="record.isPresent" [class.absent]="!record.isPresent">
+                        {{ record.isPresent ? 'Present' : 'Absent' }}
+                      </span>
+                    </td>
+                    <td>{{ record.remarks || '-' }}</td>
+                  </tr>
+                }
+                @if (attendanceHistory().length === 0) {
+                  <tr>
+                    <td colspan="3" class="no-data">No attendance records found</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   } @else {

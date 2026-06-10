@@ -22,11 +22,11 @@
 
       <div class="filter-group">
         <label>Month</label>
-        <select [(ngModel)]="selectedMonth">
-          @for (m of [0,1,2,3,4,5,6,7,8,9,10,11]; track m) {
-            <option [value]="m">{{ monthNames[m] }}</option>
-          }
-        </select>
+<select [(ngModel)]="selectedMonth">
+           @for (m of [0,1,2,3,4,5,6,7,8,9,10,11]; track m) {
+             <option [value]="+m">{{ monthNames[m] }}</option>
+           }
+         </select>
       </div>
 
       <div class="filter-group">
@@ -70,37 +70,6 @@
       <!-- Calendar Panel -->
       <div class="calendar-panel">
         @if (selectedStudentId() > 0 && monthlyData()) {
-          <!-- Month Navigation -->
-          <div class="month-navigation">
-            <button type="button" class="nav-btn" (click)="prevMonth()" title="Previous month">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <h3 class="month-title">{{ currentMonthName }}</h3>
-            <button type="button" class="nav-btn" (click)="nextMonth()" title="Next month">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
-
-          <!-- Legend -->
-          <div class="legend-section">
-            <div class="legend-item">
-              <span class="legend-dot present"></span>
-              <span>Present</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot absent"></span>
-              <span>Absent</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot no-class"></span>
-              <span>No Class</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot none"></span>
-              <span>Not Marked</span>
-            </div>
-          </div>
-
           <!-- Monthly Summary -->
           <div class="summary-cards">
             <div class="summary-card">
@@ -130,32 +99,15 @@
             <h4>{{ monthlyData()!.studentName }}</h4>
           </div>
 
-          <!-- Calendar -->
-          <div class="calendar-section">
-            <div class="calendar-grid">
-              <div class="calendar-day-header">Sun</div>
-              <div class="calendar-day-header">Mon</div>
-              <div class="calendar-day-header">Tue</div>
-              <div class="calendar-day-header">Wed</div>
-              <div class="calendar-day-header">Thu</div>
-              <div class="calendar-day-header">Fri</div>
-              <div class="calendar-day-header">Sat</div>
-
-              @for (day of calendarDays; track day.getTime()) {
-                <button 
-                  type="button"
-                  class="calendar-day"
-                  [class.other-month]="day.getMonth() !== selectedMonth()"
-                  [class.present]="getDayStatus(day) === 'present'"
-                  [class.absent]="getDayStatus(day) === 'absent'"
-                  [class.no-class]="getDayStatus(day) === 'no-class'"
-                  [class.none]="getDayStatus(day) === 'none'"
-                >
-                  <span class="day-number">{{ day.getDate() }}</span>
-                </button>
-              }
-            </div>
-          </div>
+          <!-- Reusable Calendar -->
+          <app-calendar
+            [month]="selectedMonth()"
+            [year]="selectedYear()"
+            [dayStatusMap]="dayStatusMap()"
+            [workingDays]="workingDays()"
+            (prevMonth)="prevMonth()"
+            (nextMonth)="nextMonth()"
+          />
         } @else {
           <div class="select-prompt">
             <i class="fas fa-calendar-alt"></i>

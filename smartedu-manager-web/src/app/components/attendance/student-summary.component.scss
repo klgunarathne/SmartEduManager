@@ -52,6 +52,80 @@
   }
 }
 
+.students-calendar-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.students-sidebar {
+  flex: 0 0 250px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+  }
+}
+
+.students-list {
+  padding: 8px;
+}
+
+.student-item-btn {
+  width: 100%;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &:hover {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+  }
+
+  &.active {
+    background: #f0f1ff;
+    border-color: #6366f1;
+  }
+
+  .student-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+  }
+
+  .mis-badge {
+    font-size: 11px;
+    color: #64748b;
+  }
+}
+
+.details-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .student-profile {
   background: white;
   border-radius: 16px;
@@ -217,6 +291,13 @@
   }
 }
 
+.calendar-wrapper {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+}
+
 .attendance-history {
   background: white;
   border-radius: 16px;
@@ -300,5 +381,15 @@
   .profile-header {
     flex-direction: column;
     text-align: center;
+  }
+
+  .students-calendar-layout {
+    flex-direction: column;
+  }
+
+  .students-sidebar {
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: 250px;
   }
 }

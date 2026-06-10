@@ -1,0 +1,60 @@
+<div class="calendar-container">
+  @if (showNavigation) {
+    <div class="month-navigation">
+      <button type="button" class="nav-btn" (click)="prevMonth.emit()" title="Previous month">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <h3 class="month-title">{{ getMonthName() }}</h3>
+      <button type="button" class="nav-btn" (click)="nextMonth.emit()" title="Next month">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  }
+
+  @if (showLegend) {
+    <div class="legend-section">
+      <div class="legend-item">
+        <span class="legend-dot present"></span>
+        <span>Present</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot absent"></span>
+        <span>Absent</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot no-class"></span>
+        <span>No Class</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot none"></span>
+        <span>Not Marked</span>
+      </div>
+    </div>
+  }
+
+  <div class="calendar-section">
+    <div class="calendar-grid">
+      <div class="calendar-day-header">Sun</div>
+      <div class="calendar-day-header">Mon</div>
+      <div class="calendar-day-header">Tue</div>
+      <div class="calendar-day-header">Wed</div>
+      <div class="calendar-day-header">Thu</div>
+      <div class="calendar-day-header">Fri</div>
+      <div class="calendar-day-header">Sat</div>
+
+      @for (day of days(); let i = $index; track day.getTime()) {
+        <button 
+          type="button"
+          class="calendar-day"
+          [class.other-month]="day.getMonth() !== currentMonth"
+          [class.present]="dayStatuses()[i] === 'present'"
+          [class.absent]="dayStatuses()[i] === 'absent'"
+          [class.no-class]="dayStatuses()[i] === 'no-class'"
+          [class.none]="dayStatuses()[i] === 'none'"
+        >
+          <span class="day-number">{{ day.getDate() }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>

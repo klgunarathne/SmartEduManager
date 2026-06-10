@@ -1,8 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StudentService, Student, CreateStudentDto, UpdateStudentDto } from '../../services/student.service';
 import { BatchService, Batch } from '../../services/batch.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-students',
@@ -12,6 +13,8 @@ import { BatchService, Batch } from '../../services/batch.service';
   styleUrl: './students.scss'
 })
 export class StudentsComponent implements OnInit {
+  private toast = inject(ToastService);
+
   showModal = signal(false);
   modalMode = signal<'add' | 'edit'>('add');
   editingStudentId: number | null = null;
@@ -83,13 +86,25 @@ export class StudentsComponent implements OnInit {
   saveStudent(): void {
     if (this.modalMode() === 'add') {
       this.studentService.createStudent(this.selectedStudent as CreateStudentDto).subscribe({
-        next: () => this.closeModal(),
-        error: (error) => alert('Failed to create student: ' + (error.error?.message || error.message))
+        next: () => {
+          this.closeModal();
+          this.toast.success('Student created successfully');
+        },
+        error: (error) => {
+          console.error('Failed to create student:', error);
+          this.toast.error('Failed to create student: ' + (error.error?.message || error.message));
+        }
       });
     } else if (this.editingStudentId) {
       this.studentService.updateStudent(this.editingStudentId, this.selectedStudent as UpdateStudentDto).subscribe({
-        next: () => this.closeModal(),
-        error: (error) => alert('Failed to update student: ' + (error.error?.message || error.message))
+        next: () => {
+          this.closeModal();
+          this.toast.success('Student updated successfully');
+        },
+        error: (error) => {
+          console.error('Failed to update student:', error);
+          this.toast.error('Failed to update student: ' + (error.error?.message || error.message));
+        }
       });
     }
   }
@@ -97,8 +112,13 @@ export class StudentsComponent implements OnInit {
   deleteStudent(student: Student): void {
     if (confirm(`Are you sure you want to delete ${student.nameWithInitials}?`)) {
       this.studentService.deleteStudent(student.id).subscribe({
-        next: () => {},
-        error: (error) => alert('Failed to delete student')
+        next: () => {
+          this.toast.success('Student deleted successfully');
+        },
+        error: (error) => {
+          console.error('Failed to delete student:', error);
+          this.toast.error('Failed to delete student');
+        }
       });
     }
   }

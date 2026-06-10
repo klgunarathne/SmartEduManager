@@ -54,40 +54,6 @@
   }
 }
 
-.month-navigation {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.nav-btn {
-  width: 42px;
-  height: 42px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #64748b;
-  font-size: 16px;
-  transition: all 0.3s;
-
-  &:hover {
-    background: #f8fafc;
-    border-color: #6366f1;
-    color: #6366f1;
-  }
-}
-
-.month-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0;
-}
-
 .students-calendar-layout {
   display: flex;
   gap: 24px;
@@ -170,31 +136,6 @@
   padding: 20px;
 }
 
-.legend-section {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #64748b;
-}
-
-.legend-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-
-  &.present { background: #22c55e; }
-  &.absent { background: #ef4444; }
-  &.no-class { background: #9ca3af; }
-  &.none { background: #e2e8f0; }
-}
-
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -202,7 +143,7 @@
 }
 
 .summary-card {
-  background: white;
+  background: #f8fafc;
   border-radius: 12px;
   padding: 16px;
   text-align: center;
@@ -226,74 +167,6 @@
   &.present .value { color: #16a34a; }
   &.absent .value { color: #dc2626; }
   &.percentage .value { color: #6366f1; }
-}
-
-.calendar-section {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 20px;
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: #f1f5f9;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.calendar-day-header {
-  padding: 12px 4px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  background: #f8fafc;
-}
-
-.calendar-day {
-  aspect-ratio: 0.8;
-  background: white;
-  border: none;
-  cursor: default;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 8px 4px;
-  position: relative;
-  transition: all 0.2s;
-
-  &.other-month {
-    background: #f9fafb;
-    color: #9ca3af;
-  }
-
-  &.present {
-    background: #dcfce7;
-    color: #16a34a;
-  }
-
-  &.absent {
-    background: #fee2e2;
-    color: #dc2626;
-  }
-
-  &.no-class {
-    background: #f3f4f6;
-    color: #9ca3af;
-  }
-
-  &:hover {
-    filter: brightness(0.95);
-  }
-}
-
-.day-number {
-  font-size: 14px;
-  font-weight: 600;
 }
 
 .selected-student-header {
@@ -334,11 +207,6 @@
   .filter-row {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .month-navigation {
-    width: 100%;
-    justify-content: center;
   }
 
   .students-calendar-layout {

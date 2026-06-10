@@ -1,9 +1,10 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceService, Attendance } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-daily-attendance',
@@ -28,6 +29,8 @@ export class DailyAttendanceComponent implements OnInit {
     private batchService: BatchService,
     private studentService: StudentService
   ) {}
+
+  private toast = inject(ToastService);
 
   ngOnInit(): void {
     this.loadBatches();
@@ -65,11 +68,22 @@ export class DailyAttendanceComponent implements OnInit {
     const date = this.selectedDate();
     
     if (batchId > 0) {
-      this.attendanceService.getAttendanceByDate(batchId, date).subscribe({
+      this.attendanceService.getAttendanceByBatch(batchId).subscribe({
         next: (data) => {
-          this.attendanceRecords.set(data);
+          const normalizeDate = (dateStr: string): string => {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+              const year = parts[0];
+              const month = parts[1].padStart(2, '0');
+              const day = parts[2].split('T')[0].padStart(2, '0');
+              return `${year}-${month}-${day}`;
+            }
+            return dateStr;
+          };
+          const todaysRecords = data.filter(a => normalizeDate(a.date) === date);
+          this.attendanceRecords.set(todaysRecords);
           const map = new Map<number, 'present' | 'absent'>();
-          data.forEach(a => map.set(a.studentId, a.isPresent ? 'present' : 'absent'));
+          todaysRecords.forEach(a => map.set(a.studentId, a.isPresent ? 'present' : 'absent'));
           this.attendanceMap.set(map);
         }
       });
@@ -120,6 +134,8 @@ export class DailyAttendanceComponent implements OnInit {
   saveAttendance(): void {
     const batchId = this.selectedBatchId();
     const date = this.selectedDate();
+    let saved = 0;
+    let failed = 0;
     
     this.students().forEach(student => {
       const status = this.attendanceMap().get(student.id);
@@ -127,11 +143,16 @@ export class DailyAttendanceComponent implements OnInit {
         const existingRecord = this.attendanceRecords().find(r => r.studentId === student.id);
         if (existingRecord) {
           this.attendanceService.updateAttendanceByStudent(date, student.id, batchId, status === 'present').subscribe({
-            error: (err) => console.error('Error updating attendance:', err)
+            next: () => saved++,
+            error: (err) => {
+              failed++;
+              console.error('Error updating attendance:', err);
+            }
           });
         } else {
           this.attendanceService.markAttendance(student.id, batchId, date, status === 'present').subscribe({
             next: () => {
+              saved++;
               this.attendanceRecords.update(list => [...list, {
                 attendanceId: 0,
                 studentId: student.id,
@@ -143,11 +164,24 @@ export class DailyAttendanceComponent implements OnInit {
                 isPresent: status === 'present'
               }]);
             },
-            error: (err) => console.error('Error saving attendance:', err)
+            error: (err) => {
+              failed++;
+              console.error('Error saving attendance:', err);
+            }
           });
         }
       }
     });
+    
+    setTimeout(() => {
+      if (saved > 0 && failed === 0) {
+        this.toast.success(`Attendance saved for ${saved} students`);
+      } else if (saved > 0) {
+        this.toast.warning(`Saved ${saved} students, ${failed} failed`);
+      } else if (failed > 0) {
+        this.toast.error(`Failed to save attendance for ${failed} students`);
+      }
+    }, 500);
   }
 
   get formattedDate(): string {

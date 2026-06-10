@@ -1,7 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CenterService, Center, CreateCenter, District } from '../../services/center.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-centers',
@@ -11,6 +12,8 @@ import { CenterService, Center, CreateCenter, District } from '../../services/ce
   styleUrl: './centers.scss'
 })
 export class CentersComponent implements OnInit {
+  private toast = inject(ToastService);
+
   showModal = signal(false);
   modalMode = signal<'add' | 'edit'>('add');
   
@@ -64,15 +67,27 @@ export class CentersComponent implements OnInit {
   saveCenter(): void {
     if (this.modalMode() === 'add') {
       this.centerService.createCenter(this.selectedCenter).subscribe({
-        next: () => this.closeModal(),
-        error: (error) => alert('Failed to create center: ' + (error.error?.message || error.message))
+        next: () => {
+          this.closeModal();
+          this.toast.success('Center created successfully');
+        },
+        error: (error) => {
+          console.error('Failed to create center:', error);
+          this.toast.error('Failed to create center: ' + (error.error?.message || error.message));
+        }
       });
     } else {
       const id = (this.centerService.centers().find(c => c.centerName === this.selectedCenter.centerName))?.centerId;
       if (id) {
         this.centerService.updateCenter(id, this.selectedCenter).subscribe({
-          next: () => this.closeModal(),
-          error: (error) => alert('Failed to update center: ' + (error.error?.message || error.message))
+          next: () => {
+            this.closeModal();
+            this.toast.success('Center updated successfully');
+          },
+          error: (error) => {
+            console.error('Failed to update center:', error);
+            this.toast.error('Failed to update center: ' + (error.error?.message || error.message));
+          }
         });
       }
     }
@@ -81,8 +96,13 @@ export class CentersComponent implements OnInit {
   deleteCenter(center: Center): void {
     if (confirm(`Are you sure you want to delete ${center.centerName}?`)) {
       this.centerService.deleteCenter(center.centerId).subscribe({
-        next: () => {},
-        error: (error) => alert('Failed to delete center')
+        next: () => {
+          this.toast.success('Center deleted successfully');
+        },
+        error: (error) => {
+          console.error('Failed to delete center:', error);
+          this.toast.error('Failed to delete center');
+        }
       });
     }
   }

@@ -1,7 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService, User, Role } from '../../services/user.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-user-manager',
@@ -11,6 +12,8 @@ import { UserService, User, Role } from '../../services/user.service';
   styleUrl: './user-manager.scss'
 })
 export class UserManagerComponent implements OnInit {
+  private toast = inject(ToastService);
+
   showModal = signal(false);
   modalMode = signal<'add' | 'edit'>('add');
   
@@ -66,32 +69,34 @@ export class UserManagerComponent implements OnInit {
 
   saveUser(): void {
     if (this.modalMode() === 'add') {
-      // Validate password
       if (!this.validatePassword()) {
         return;
       }
       
-      // Validate password match
       if (this.selectedUser.password !== this.confirmPassword) {
-        alert('Passwords do not match!');
+        this.toast.warning('Passwords do not match');
         return;
       }
       
       this.userService.createUser(this.selectedUser).subscribe({
         next: () => {
           this.closeModal();
+          this.toast.success('User created successfully');
         },
         error: (error) => {
-          alert('Failed to create user: ' + (error.error?.message || error.message));
+          console.error('Failed to create user:', error);
+          this.toast.error('Failed to create user: ' + (error.error?.message || error.message));
         }
       });
     } else {
       this.userService.updateUser(this.selectedUser.id, this.selectedUser).subscribe({
         next: () => {
           this.closeModal();
+          this.toast.success('User updated successfully');
         },
         error: (error) => {
-          alert('Failed to update user: ' + (error.error?.message || error.message));
+          console.error('Failed to update user:', error);
+          this.toast.error('Failed to update user: ' + (error.error?.message || error.message));
         }
       });
     }
@@ -101,23 +106,23 @@ export class UserManagerComponent implements OnInit {
     const password = this.selectedUser.password || '';
     
     if (password.length < 6) {
-      alert('Password must be at least 6 characters long');
+      this.toast.warning('Password must be at least 6 characters long');
       return false;
     }
     if (!/\d/.test(password)) {
-      alert('Password must contain at least one digit (0-9)');
+      this.toast.warning('Password must contain at least one digit (0-9)');
       return false;
     }
     if (!/[a-z]/.test(password)) {
-      alert('Password must contain at least one lowercase letter (a-z)');
+      this.toast.warning('Password must contain at least one lowercase letter (a-z)');
       return false;
     }
     if (!/[A-Z]/.test(password)) {
-      alert('Password must contain at least one uppercase letter (A-Z)');
+      this.toast.warning('Password must contain at least one uppercase letter (A-Z)');
       return false;
     }
     if (!/[!@#$%^&*]/.test(password)) {
-      alert('Password must contain at least one special character (!@#$%^&*)');
+      this.toast.warning('Password must contain at least one special character (!@#$%^&*)');
       return false;
     }
     
@@ -138,9 +143,12 @@ export class UserManagerComponent implements OnInit {
   deleteUser(user: User): void {
     if (confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) {
       this.userService.deleteUser(user.id).subscribe({
-        next: () => {},
+        next: () => {
+          this.toast.success('User deleted successfully');
+        },
         error: (error) => {
-          alert('Failed to delete user');
+          console.error('Failed to delete user:', error);
+          this.toast.error('Failed to delete user');
         }
       });
     }

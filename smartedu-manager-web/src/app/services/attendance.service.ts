@@ -141,11 +141,9 @@ export class AttendanceService {
   }
 
   getAttendanceByDate(batchId: number, date: string): Observable<Attendance[]> {
-    this.isLoading.set(true);
-    return this.http.get<Attendance[]>(`${this.API_URL}/attendance/batch/${batchId}/date/${date}`).pipe(
-      tap(() => this.isLoading.set(false)),
+    return this.getAttendanceByBatch(batchId).pipe(
+      map(data => data.filter(a => a.date === date)),
       catchError(error => {
-        this.isLoading.set(false);
         console.error('Error loading attendance by date:', error);
         return throwError(() => error);
       })
@@ -269,8 +267,36 @@ export class AttendanceService {
   }
 
   getMonthlyAttendance(studentId: number, year: number, month: number): Observable<MonthlyAttendanceData> {
+    return new Observable(observer => {
+      const attendances = this.attendances();
+      const monthStr = String(month + 1).padStart(2, '0');
+      const monthAttendances = attendances.filter(a => 
+        a.studentId === studentId && a.date.startsWith(`${year}-${monthStr}`)
+      );
+      
+      const data = this.buildMonthlyData(monthAttendances, studentId, year, month);
+      observer.next(data);
+      observer.complete();
+    });
+  }
+
+getMonthlyAttendanceFromBatch(studentId: number, batchId: number, year: any, month: any): Observable<MonthlyAttendanceData> {
     this.isLoading.set(true);
-    return this.http.get<MonthlyAttendanceData>(`${this.API_URL}/attendance/student/${studentId}/monthly?year=${year}&month=${month}`).pipe(
+    const numericMonth = typeof month === 'string' ? parseInt(month, 10) : (typeof month === 'number' ? month : 0);
+    const numericYear = typeof year === 'string' ? parseInt(year, 10) : (typeof year === 'number' ? year : 2026);
+    const monthStr = String(numericMonth + 1).padStart(2, '0');
+    return this.http.get<Attendance[]>(`${this.API_URL}/attendance/batch/${batchId}`).pipe(
+      map((attendances) => {
+        console.log('Raw attendance dates:', attendances.map(a => a.date));
+        // Normalize dates in attendances to padded format for consistent matching
+        const normalizedAttendances = attendances.map(a => ({
+          ...a,
+          date: this.normalizeDate(a.date)
+        }));
+        const monthAttendances = normalizedAttendances.filter(a => a.date.startsWith(`${numericYear}-${monthStr}`));
+        console.log('Monthly attendance request:', { studentId, year: numericYear, month: numericMonth, monthStr, total: attendances.length, filtered: monthAttendances.length });
+        return this.buildMonthlyData(monthAttendances, studentId, numericYear, numericMonth);
+      }),
       tap(() => this.isLoading.set(false)),
       catchError(error => {
         this.isLoading.set(false);
@@ -280,16 +306,87 @@ export class AttendanceService {
     );
   }
 
-  getStudentAttendanceSummary(studentId: number, startDate?: string, endDate?: string): Observable<StudentAttendanceSummary> {
-    let params = new HttpParams();
-    if (startDate) params = params.set('startDate', startDate);
-    if (endDate) params = params.set('endDate', endDate);
+  private buildMonthlyData(attendances: Attendance[], studentId: number, year: any, month: number): MonthlyAttendanceData {
+    const numericYear = typeof year === 'string' ? parseInt(year, 10) : year;
+    const monthStr = String(month + 1).padStart(2, '0');
     
-    this.isLoading.set(true);
-    return this.http.get<StudentAttendanceSummary>(`${this.API_URL}/attendance/student/${studentId}/summary`, { params }).pipe(
-      tap(() => this.isLoading.set(false)),
+    const daysInMonth = new Date(numericYear, month + 1, 0).getDate();
+    const workingDays = this.settings().workingDays;
+    const student = attendances.find(a => a.studentId === studentId);
+    
+    const days: MonthlyAttendanceDay[] = [];
+    let presentDays = 0;
+    let absentDays = 0;
+    let noClassDays = 0;
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(numericYear, month, day);
+      const dateStrPadded = `${numericYear}-${monthStr}-${String(day).padStart(2, '0')}`;
+      const attendance = attendances.find(a => a.studentId === studentId && a.date === dateStrPadded);
+      
+      let status: 'present' | 'absent' | 'no-class' | 'none' = 'none';
+      if (attendance) {
+        status = attendance.isPresent ? 'present' : 'absent';
+      } else if (!workingDays.includes(date.getDay())) {
+        status = 'no-class';
+      }
+      
+      days.push({ date: dateStrPadded, day, status });
+      
+      if (status === 'present') presentDays++;
+      else if (status === 'absent') absentDays++;
+      else if (status === 'no-class') noClassDays++;
+    }
+    
+    console.log('Build monthly data result:', { dateStr: `${numericYear}-${monthStr}-01`, daysWithStatus: days.filter(d => d.status !== 'none' && d.status !== 'no-class').length, presentDays, absentDays });
+    
+    const totalDays = presentDays + absentDays;
+    const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+    
+    return {
+      studentId,
+      studentName: student?.studentName || '',
+      year: numericYear,
+      month,
+      days,
+      totalDays,
+      presentDays,
+      absentDays,
+      noClassDays,
+      attendancePercentage
+    };
+  }
+
+  getStudentAttendanceSummary(studentId: number, startDate?: string, endDate?: string): Observable<StudentAttendanceSummary> {
+    return this.http.get<BatchAttendanceSummary[]>(`${this.API_URL}/attendance/batch/summary`).pipe(
+      map(data => {
+        const student = data.find(s => s.studentId === studentId);
+        if (!student) {
+          return {
+            studentId,
+            studentName: '',
+            misNo: '',
+            batchId: 0,
+            batchCode: '',
+            totalDays: 0,
+            presentDays: 0,
+            absentDays: 0,
+            attendancePercentage: 0
+          };
+        }
+        return {
+          studentId,
+          studentName: student.studentName,
+          misNo: student.misNo,
+          batchId: 0,
+          batchCode: '',
+          totalDays: student.totalDays,
+          presentDays: student.presentCount,
+          absentDays: student.absentCount,
+          attendancePercentage: student.attendancePercentage
+        };
+      }),
       catchError(error => {
-        this.isLoading.set(false);
         console.error('Error loading student attendance summary:', error);
         return throwError(() => error);
       })
@@ -375,6 +472,17 @@ export class AttendanceService {
   calculateAttendancePercentage(presentDays: number, totalDays: number): number {
     if (totalDays === 0) return 0;
     return Math.round((presentDays / totalDays) * 100);
+  }
+
+  private normalizeDate(dateStr: string): string {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parts[1].padStart(2, '0');
+      const day = parts[2].split('T')[0].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return dateStr;
   }
 
   isEligible(attendancePercentage: number): boolean {

@@ -1,14 +1,15 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceService, MonthlyAttendanceData } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
+import { CalendarComponent } from './calendar.component';
 
 @Component({
   selector: 'app-monthly-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CalendarComponent],
   templateUrl: './monthly-calendar.component.html',
   styleUrl: './monthly-calendar.component.scss'
 })
@@ -21,6 +22,16 @@ export class MonthlyCalendarComponent implements OnInit {
   batches = signal<Batch[]>([]);
   students = signal<Student[]>([]);
   monthlyData = signal<MonthlyAttendanceData | null>(null);
+
+  dayStatusMap = computed(() => {
+    const map = new Map<string, 'present' | 'absent' | 'no-class' | 'none'>();
+    if (this.monthlyData()) {
+      this.monthlyData()!.days.forEach(d => map.set(d.date, d.status));
+    }
+    return map;
+  });
+
+  workingDays = computed(() => this.attendanceService.settings().workingDays);
 
   constructor(
     private attendanceService: AttendanceService,
@@ -61,11 +72,13 @@ export class MonthlyCalendarComponent implements OnInit {
 
   loadMonthlyAttendance(): void {
     const studentId = this.selectedStudentId();
+    const batchId = this.selectedBatchId();
     const month = this.selectedMonth();
     const year = this.selectedYear();
+    const numericMonth = typeof month === 'string' ? parseInt(month, 10) : month;
 
-    if (studentId > 0) {
-      this.attendanceService.getMonthlyAttendance(studentId, year, month).subscribe({
+    if (studentId > 0 && batchId > 0) {
+      this.attendanceService.getMonthlyAttendanceFromBatch(studentId, batchId, year, numericMonth).subscribe({
         next: (data) => this.monthlyData.set(data)
       });
     }
@@ -73,7 +86,15 @@ export class MonthlyCalendarComponent implements OnInit {
 
   prevMonth(): void {
     const newMonth = this.selectedMonth() - 1;
-    if (newMonth < 0) {
+    if (typeof newMonth === 'string') {
+      const num = parseInt(newMonth, 10);
+      if (num <= 0) {
+        this.selectedMonth.set(11);
+        this.selectedYear.update(y => y - 1);
+      } else {
+        this.selectedMonth.set(num - 1);
+      }
+    } else if (newMonth < 0) {
       this.selectedMonth.set(11);
       this.selectedYear.update(y => y - 1);
     } else {
@@ -85,67 +106,20 @@ export class MonthlyCalendarComponent implements OnInit {
   }
 
   nextMonth(): void {
-    const newMonth = this.selectedMonth() + 1;
+    const currentMonth = this.selectedMonth();
+    const num = typeof currentMonth === 'string' ? parseInt(currentMonth, 10) : currentMonth;
+    const newMonth = num + 1;
+    
     if (newMonth > 11) {
       this.selectedMonth.set(0);
       this.selectedYear.update(y => y + 1);
     } else {
       this.selectedMonth.set(newMonth);
     }
+    
     if (this.selectedStudentId() > 0) {
       this.loadMonthlyAttendance();
     }
-  }
-
-  get calendarDays(): Date[] {
-    const year = this.selectedYear();
-    const month = this.selectedMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const days: Date[] = [];
-
-    for (let i = 0; i < firstDay.getDay(); i++) {
-      days.push(new Date(year, month, -(i)));
-    }
-
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-      days.push(new Date(year, month, day));
-    }
-
-    const remainingCells = 7 - (days.length % 7);
-    for (let i = 1; i < remainingCells; i++) {
-      days.push(new Date(year, month + 1, i));
-    }
-
-    return days;
-  }
-
-  getDayStatus(date: Date): 'present' | 'absent' | 'no-class' | 'none' {
-    if (!this.monthlyData()) return 'none';
-    
-    const dateStr = this.formatDateForCalendar(date);
-    const dayData = this.monthlyData()!.days.find(d => d.date === dateStr);
-    
-    if (!dayData) {
-      const dayOfWeek = date.getDay();
-      const workingDays = this.attendanceService.settings().workingDays;
-      if (!workingDays.includes(dayOfWeek)) return 'no-class';
-      return 'none';
-    }
-    
-    return dayData.status;
-  }
-
-  private formatDateForCalendar(date: Date): string {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  }
-
-  get currentMonthName(): string {
-    const date = new Date(this.selectedYear(), this.selectedMonth(), 1);
-    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
   }
 
   monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
