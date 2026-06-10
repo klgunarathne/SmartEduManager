@@ -142,7 +142,7 @@ export class AttendanceService {
 
   getAttendanceByDate(batchId: number, date: string): Observable<Attendance[]> {
     return this.getAttendanceByBatch(batchId).pipe(
-      map(data => data.filter(a => a.date === date)),
+      map(data => data.filter(a => a.date && a.date.startsWith(date))),
       catchError(error => {
         console.error('Error loading attendance by date:', error);
         return throwError(() => error);

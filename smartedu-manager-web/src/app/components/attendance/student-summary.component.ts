@@ -77,18 +77,25 @@ export class StudentSummaryComponent implements OnInit {
       this.studentService.getStudentsByBatch(batchId).subscribe({
         next: (data) => {
           this.students.set(data);
-          this.selectedStudentId.set(0);
-          this.summary.set(null);
-          this.attendanceHistory.set([]);
-          this.monthlyData.set(null);
-          this.batchAttendance.set([]);
+          if (data.length > 0) {
+            this.selectedStudentId.set(data[0].id);
+            this.loadStudentSummary();
+          } else {
+            this.selectedStudentId.set(0);
+            this.summary.set(null);
+            this.attendanceHistory.set([]);
+            this.monthlyData.set(null);
+            this.batchAttendance.set([]);
+          }
         }
       });
     } else {
       this.students.set([]);
+      this.selectedStudentId.set(0);
       this.summary.set(null);
       this.attendanceHistory.set([]);
       this.monthlyData.set(null);
+      this.batchAttendance.set([]);
     }
   }
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AttendanceService, BatchAttendanceSummary, StudentAttendanceSummary, Attendance } from '../../services/attendance.service';
+import { AttendanceService, BatchAttendanceSummary, Attendance } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
 import { Router } from '@angular/router';
@@ -15,11 +15,9 @@ import { ActivatedRoute } from '@angular/router';
   styleUrl: './reports.component.scss'
 })
 export class ReportsComponent implements OnInit {
-  reportType = signal<'daily' | 'monthly' | 'student' | 'batch'>('daily');
-  
+  reportType = signal<'monthly' | 'batch'>('monthly');
+
   selectedBatchId = signal(0);
-  selectedStudentId = signal(0);
-  selectedDate = signal(this.getTodayDate());
   selectedMonth = signal(new Date().getMonth());
   selectedYear = signal(new Date().getFullYear());
   monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -27,9 +25,9 @@ export class ReportsComponent implements OnInit {
   batches = signal<Batch[]>([]);
   students = signal<Student[]>([]);
 
-  dailyReport = signal<Attendance[]>([]);
+  monthlyGrid = signal<{ days: string[]; rows: { studentId: number; studentName: string; misNo: string; attendances: (boolean | null)[] }[] } | null>(null);
   monthlyReport = signal<BatchAttendanceSummary[]>([]);
-  studentReport = signal<StudentAttendanceSummary | null>(null);
+  batchReport = signal<BatchAttendanceSummary[]>([]);
 
   constructor(
     private attendanceService: AttendanceService,
@@ -43,49 +41,94 @@ export class ReportsComponent implements OnInit {
     this.loadBatches();
   }
 
-  private getTodayDate(): string {
-    return new Date().toISOString().split('T')[0];
-  }
-
   loadBatches(): void {
     this.batchService.getBatches().subscribe({
-      next: (data) => this.batches.set(data)
-    });
-  }
-
-  onBatchChange(): void {
-    const batchId = this.selectedBatchId();
-    if (batchId > 0) {
-      this.studentService.getStudentsByBatch(batchId).subscribe({
-        next: (data) => this.students.set(data)
-      });
-    }
-  }
-
-  generateDailyReport(): void {
-    const batchId = this.selectedBatchId();
-    const date = this.selectedDate();
-    
-    this.attendanceService.getDailyReport({ batchId, date }).subscribe({
-      next: (data) => this.dailyReport.set(data)
+      next: (data) => {
+        this.batches.set(data);
+        if (data.length > 0) {
+          const today = this.getTodayDate();
+          const current = data.find(b => b.startDate && b.endDate && b.startDate <= today && b.endDate >= today);
+          this.selectedBatchId.set(current ? current.batchId : data[0].batchId);
+          this.generateMonthlyReport();
+        }
+      }
     });
   }
 
   generateMonthlyReport(): void {
     const batchId = this.selectedBatchId();
-    const month = this.selectedMonth();
+    const month = this.selectedMonth() + 1;
     const year = this.selectedYear();
-    
-    this.attendanceService.getMonthlyReport({ batchId, month, year }).subscribe({
-      next: (data) => this.monthlyReport.set(data)
+    const monthStr = String(month).padStart(2, '0');
+
+    this.studentService.getStudentsByBatch(batchId).subscribe({
+      next: (students) => {
+        this.students.set(students);
+
+        this.attendanceService.getAttendanceByBatch(batchId).subscribe({
+          next: (allRecords) => {
+            const normalized = allRecords.map(r => ({ ...r, date: this.normalizeDate(r.date) }));
+            const monthRecords = normalized.filter(r => r.date.startsWith(`${year}-${monthStr}`));
+
+            const daysInMonth = new Date(year, month - 1, 0).getDate();
+            const workingDays = this.attendanceService.settings().workingDays;
+
+            const days: string[] = [];
+            for (let d = 1; d <= daysInMonth; d++) {
+              const date = new Date(year, month - 1, d);
+              const dayOfWeek = date.getDay();
+              const dayStr = `${year}-${monthStr}-${String(d).padStart(2, '0')}`;
+              if (workingDays.includes(dayOfWeek) || monthRecords.some(r => r.date === dayStr)) {
+                days.push(dayStr);
+              }
+            }
+
+            const rowMap = new Map<number, { studentName: string; misNo: string; fill: (boolean | null)[] }>();
+            monthRecords.forEach(r => {
+              const idx = days.indexOf(r.date);
+              if (!rowMap.has(r.studentId)) {
+                rowMap.set(r.studentId, {
+                  studentName: r.studentName,
+                  misNo: r.misNo,
+                  fill: days.map(() => null)
+                });
+              }
+              if (idx !== -1) {
+                rowMap.get(r.studentId)!.fill[idx] = r.isPresent;
+              }
+            });
+
+            const rows = students.map(s => {
+              const base = rowMap.get(s.id);
+              return {
+                studentId: s.id,
+                studentName: base ? base.studentName : s.nameWithInitials,
+                misNo: base ? base.misNo : s.misNo,
+                attendances: base
+                  ? base.fill
+                  : days.map(() => null)
+              };
+            });
+
+            this.monthlyGrid.set({ days, rows });
+            this.monthlyReport.set([]);
+          }
+        });
+      }
     });
   }
 
-  generateStudentReport(): void {
-    const studentId = this.selectedStudentId();
-    
-    this.attendanceService.getStudentReport({ studentId }).subscribe({
-      next: (data) => this.studentReport.set(data)
+  generateBatchReport(): void {
+    const batchId = this.selectedBatchId();
+    const startDate = '2000-01-01';
+    const endDate = '2030-12-31';
+
+    this.attendanceService.getBatchAttendanceSummary(batchId, startDate, endDate).subscribe({
+      next: (data) => {
+        console.log('Batch report data:', data);
+        this.batchReport.set(data);
+      },
+      error: (err) => console.error('Batch report error:', err)
     });
   }
 
@@ -95,6 +138,10 @@ export class ReportsComponent implements OnInit {
 
   printReport(): void {
     window.print();
+  }
+
+  calcPercent(present: number, total: number): number {
+    return total > 0 ? Math.round((present / total) * 100) : 0;
   }
 
   exportPdf(): void {
@@ -109,7 +156,20 @@ export class ReportsComponent implements OnInit {
     return this.attendanceService.isLoading() || this.batchService.isLoading() || this.studentService.isLoading();
   }
 
-  get todayDate(): string {
-    return this.getTodayDate();
+  private getTodayDate(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
+
+  private normalizeDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parts[1].padStart(2, '0');
+      const day = parts[2].split('T')[0].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return dateStr;
   }
 }

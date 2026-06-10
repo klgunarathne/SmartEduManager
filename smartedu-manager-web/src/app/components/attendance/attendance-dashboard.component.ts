@@ -37,7 +37,20 @@ export class AttendanceDashboardComponent implements OnInit {
   }
 
   private getTodayDate(): string {
-    return new Date().toISOString().split('T')[0];
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
+
+  private normalizeDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parts[1].padStart(2, '0');
+      const day = parts[2].split('T')[0].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return dateStr;
   }
 
   formatDate(dateStr: string): string {
@@ -47,7 +60,15 @@ export class AttendanceDashboardComponent implements OnInit {
 
   loadBatches(): void {
     this.batchService.getBatches().subscribe({
-      next: (data) => this.batches.set(data)
+      next: (data) => {
+        this.batches.set(data);
+        const today = this.todayDate();
+        const currentBatch = data.find(b => b.startDate <= today && b.endDate >= today);
+        if (currentBatch) {
+          this.selectedBatchId.set(currentBatch.batchId);
+          this.loadDashboardStats();
+        }
+      }
     });
   }
 
@@ -66,20 +87,21 @@ export class AttendanceDashboardComponent implements OnInit {
 
   loadTodayStats(): void {
     const batchId = this.selectedBatchId();
-    this.attendanceService.getAttendanceByDate(batchId, this.todayDate()).subscribe({
-      next: (data) => {
-        const total = data.length;
-        const present = data.filter(a => a.isPresent).length;
-        const absent = total - present;
-        this.totalStudents.set(total);
-        this.presentToday.set(present);
-        this.absentToday.set(absent);
-        this.todayPercentage.set(this.attendanceService.calculateAttendancePercentage(present, total));
-      }
-    });
-    
+    const today = this.todayDate();
     this.studentService.getStudentsByBatch(batchId).subscribe({
-      next: (data) => this.totalStudents.set(data.length)
+      next: (students) => {
+        this.totalStudents.set(students.length);
+        this.attendanceService.getAttendanceByBatch(batchId).subscribe({
+          next: (allRecords) => {
+            const todaysRecords = allRecords.filter(a => this.normalizeDate(a.date) === today);
+            const present = todaysRecords.filter(a => a.isPresent).length;
+            const absent = students.length - present;
+            this.presentToday.set(present);
+            this.absentToday.set(absent);
+            this.todayPercentage.set(this.attendanceService.calculateAttendancePercentage(present, students.length));
+          }
+        });
+      }
     });
   }
 
@@ -96,9 +118,11 @@ export class AttendanceDashboardComponent implements OnInit {
 
   loadRecentActivities(): void {
     const batchId = this.selectedBatchId();
+    const today = this.todayDate();
     this.attendanceService.getAttendanceByBatch(batchId).subscribe({
       next: (data) => {
-        this.recentActivities.set(data.slice(-10).reverse());
+        const todaysRecords = data.filter(r => this.normalizeDate(r.date) === today);
+        this.recentActivities.set(todaysRecords.slice(-10).reverse());
       }
     });
   }
