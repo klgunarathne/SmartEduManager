@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceService, CourseCompletionReport } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
+import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-course-completion',
@@ -20,7 +22,9 @@ export class CourseCompletionComponent implements OnInit {
 
   constructor(
     public attendanceService: AttendanceService,
-    private batchService: BatchService
+    private batchService: BatchService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -40,6 +44,10 @@ export class CourseCompletionComponent implements OnInit {
     this.attendanceService.generateCourseCompletionReport(batchId).subscribe({
       next: (data) => this.report.set(data)
     });
+  }
+
+  goBack(): void {
+    this.router.navigate(['../'], { relativeTo: this.route });
   }
 
   isEligible(percentage: number): boolean {

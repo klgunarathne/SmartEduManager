@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AttendanceService, BatchAttendanceSummary } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
+import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-batch-summary',
@@ -25,7 +27,9 @@ export class BatchSummaryComponent implements OnInit {
 
   constructor(
     public attendanceService: AttendanceService,
-    private batchService: BatchService
+    private batchService: BatchService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -87,6 +91,10 @@ export class BatchSummaryComponent implements OnInit {
       this.sortDirection.set('asc');
     }
     this.applyFilterAndSort();
+  }
+
+  goBack(): void {
+    this.router.navigate(['../'], { relativeTo: this.route });
   }
 
   get paginatedData(): BatchAttendanceSummary[] {

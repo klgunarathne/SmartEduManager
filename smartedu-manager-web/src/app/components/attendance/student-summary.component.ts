@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AttendanceService, StudentAttendanceSummary, Attendance, MonthlyAttendanceData } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CalendarComponent } from './calendar.component';
 
 @Component({
@@ -41,11 +42,17 @@ export class StudentSummaryComponent implements OnInit {
   constructor(
     public attendanceService: AttendanceService,
     private batchService: BatchService,
-    private studentService: StudentService
+    private studentService: StudentService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.loadBatches();
+  }
+
+  goBack(): void {
+    this.router.navigate(['/instructor/attendance']);
   }
 
   private getTodayDate(): string {

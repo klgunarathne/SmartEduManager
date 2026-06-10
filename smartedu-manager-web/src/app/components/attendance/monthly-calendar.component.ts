@@ -5,6 +5,7 @@ import { AttendanceService, MonthlyAttendanceData } from '../../services/attenda
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
 import { CalendarComponent } from './calendar.component';
+import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-monthly-calendar',
@@ -36,7 +37,9 @@ export class MonthlyCalendarComponent implements OnInit {
   constructor(
     private attendanceService: AttendanceService,
     private batchService: BatchService,
-    private studentService: StudentService
+    private studentService: StudentService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -85,44 +88,40 @@ export class MonthlyCalendarComponent implements OnInit {
   }
 
   prevMonth(): void {
-    const newMonth = this.selectedMonth() - 1;
-    if (typeof newMonth === 'string') {
-      const num = parseInt(newMonth, 10);
-      if (num <= 0) {
-        this.selectedMonth.set(11);
-        this.selectedYear.update(y => y - 1);
-      } else {
-        this.selectedMonth.set(num - 1);
-      }
-    } else if (newMonth < 0) {
+    const month = this.selectedMonth();
+    const numericMonth = typeof month === 'string' ? parseInt(month, 10) : month;
+    const newMonth = numericMonth - 1;
+    if (newMonth < 0) {
       this.selectedMonth.set(11);
       this.selectedYear.update(y => y - 1);
     } else {
       this.selectedMonth.set(newMonth);
     }
-    if (this.selectedStudentId() > 0) {
-      this.loadMonthlyAttendance();
-    }
+    this.loadMonthlyAttendance();
   }
 
   nextMonth(): void {
     const currentMonth = this.selectedMonth();
     const num = typeof currentMonth === 'string' ? parseInt(currentMonth, 10) : currentMonth;
     const newMonth = num + 1;
-    
+
     if (newMonth > 11) {
       this.selectedMonth.set(0);
       this.selectedYear.update(y => y + 1);
     } else {
       this.selectedMonth.set(newMonth);
     }
-    
+
     if (this.selectedStudentId() > 0) {
       this.loadMonthlyAttendance();
     }
   }
 
   monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  goBack(): void {
+    this.router.navigate(['../'], { relativeTo: this.route });
+  }
 
   get isLoading(): boolean {
     return this.attendanceService.isLoading() || this.batchService.isLoading() || this.studentService.isLoading();

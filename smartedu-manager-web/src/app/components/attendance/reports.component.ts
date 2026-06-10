@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { AttendanceService, BatchAttendanceSummary, StudentAttendanceSummary, Attendance } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
+import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-reports',
@@ -32,7 +34,9 @@ export class ReportsComponent implements OnInit {
   constructor(
     private attendanceService: AttendanceService,
     private batchService: BatchService,
-    private studentService: StudentService
+    private studentService: StudentService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -83,6 +87,10 @@ export class ReportsComponent implements OnInit {
     this.attendanceService.getStudentReport({ studentId }).subscribe({
       next: (data) => this.studentReport.set(data)
     });
+  }
+
+  goBack(): void {
+    this.router.navigate(['../'], { relativeTo: this.route });
   }
 
   printReport(): void {

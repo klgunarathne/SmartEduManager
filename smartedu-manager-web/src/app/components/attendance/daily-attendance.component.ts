@@ -5,6 +5,7 @@ import { AttendanceService, Attendance } from '../../services/attendance.service
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
 import { ToastService } from '../../services/toast.service';
+import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-daily-attendance',
@@ -27,10 +28,16 @@ export class DailyAttendanceComponent implements OnInit {
   constructor(
     private attendanceService: AttendanceService,
     private batchService: BatchService,
-    private studentService: StudentService
+    private studentService: StudentService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   private toast = inject(ToastService);
+
+  goBack(): void {
+    this.router.navigate(['/instructor/attendance']);
+  }
 
   ngOnInit(): void {
     this.loadBatches();

@@ -81,38 +81,6 @@ export const routes: Routes = [
       {
         path: 'users',
         loadComponent: () => import('./components/user-manager/user-manager').then(m => m.UserManagerComponent)
-      },
-      {
-        path: 'attendance',
-        component: AttendanceDashboardComponent
-      },
-      {
-        path: 'attendance/daily',
-        component: DailyAttendanceComponent
-      },
-      {
-        path: 'attendance/calendar',
-        component: MonthlyCalendarComponent
-      },
-      {
-        path: 'attendance/summary',
-        component: StudentSummaryComponent
-      },
-      {
-        path: 'attendance/batch-summary',
-        component: BatchSummaryComponent
-      },
-      {
-        path: 'attendance/reports',
-        component: ReportsComponent
-      },
-      {
-        path: 'attendance/course-completion',
-        component: CourseCompletionComponent
-      },
-      {
-        path: 'attendance/settings',
-        component: SettingsComponent
       }
     ]
   },
@@ -156,23 +124,43 @@ export const routes: Routes = [
       },
       {
         path: 'attendance',
-        component: AttendanceDashboardComponent
+        component: AttendanceDashboardComponent,
+        data: { breadcrumb: 'Attendance' }
       },
       {
         path: 'attendance/daily',
-        component: DailyAttendanceComponent
+        component: DailyAttendanceComponent,
+        data: { breadcrumb: 'Daily Attendance' }
       },
       {
         path: 'attendance/calendar',
-        component: MonthlyCalendarComponent
+        component: MonthlyCalendarComponent,
+        data: { breadcrumb: 'Monthly Calendar' }
       },
       {
         path: 'attendance/summary',
-        component: StudentSummaryComponent
+        component: StudentSummaryComponent,
+        data: { breadcrumb: 'Student Summary' }
       },
       {
         path: 'attendance/batch-summary',
-        component: BatchSummaryComponent
+        component: BatchSummaryComponent,
+        data: { breadcrumb: 'Batch Summary' }
+      },
+      {
+        path: 'attendance/reports',
+        component: ReportsComponent,
+        data: { breadcrumb: 'Reports' }
+      },
+      {
+        path: 'attendance/course-completion',
+        component: CourseCompletionComponent,
+        data: { breadcrumb: 'Course Completion' }
+      },
+      {
+        path: 'attendance/settings',
+        component: SettingsComponent,
+        data: { breadcrumb: 'Settings' }
       }
     ]
   },

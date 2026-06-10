@@ -1,7 +1,6 @@
 <div class="page-container">
-  <!-- Header -->
   <div class="page-header">
-    <div class="header-left">
+    <div>
       <h2>Monthly Attendance Calendar</h2>
       <p>View monthly attendance for all students in a batch</p>
     </div>
@@ -22,11 +21,11 @@
 
       <div class="filter-group">
         <label>Month</label>
-<select [(ngModel)]="selectedMonth">
-           @for (m of [0,1,2,3,4,5,6,7,8,9,10,11]; track m) {
-             <option [value]="+m">{{ monthNames[m] }}</option>
-           }
-         </select>
+        <select [(ngModel)]="selectedMonth">
+          @for (m of [0,1,2,3,4,5,6,7,8,9,10,11]; track m) {
+            <option [value]="m">{{ monthNames[m] }}</option>
+          }
+        </select>
       </div>
 
       <div class="filter-group">
