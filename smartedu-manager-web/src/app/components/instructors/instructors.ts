@@ -6,6 +6,8 @@ import { CourseService, Course } from '../../services/course.service';
 import { NcsService, NCS, CreateNCS } from '../../services/ncs.service';
 import { ModulesService, Module, CreateModule } from '../../services/modules.service';
 import { AuthService } from '../../services/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-instructors',
@@ -15,17 +17,20 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './instructors.scss'
 })
 export class InstructorsComponent implements OnInit {
-  activeTab = signal<'instructors' | 'ncs' | 'modules'>('instructors');
-  
+  activeTab = signal<'instructors' | 'ncs' | 'modules' | 'tasks'>('instructors');
+
   showInstructorModal = signal(false);
   instructorModalMode = signal<'add' | 'edit'>('add');
-  
+
   showNCSModal = signal(false);
   ncsModalMode = signal<'add' | 'edit'>('add');
-  
+
   showModuleModal = signal(false);
   moduleModalMode = signal<'add' | 'edit'>('add');
-  
+
+  showTaskModal = signal(false);
+  taskModalMode = signal<'add' | 'edit'>('add');
+
   searchTerm = signal('');
   currentPage = signal(1);
   pageSize = 10;
@@ -34,6 +39,10 @@ export class InstructorsComponent implements OnInit {
   selectedNCS: CreateNCS = this.getEmptyNCS();
   selectedModule: CreateModule = this.getEmptyModule();
   selectedNCSForModules: NCS | null = null;
+  selectedTask: any = this.getEmptyTask();
+
+  tasks = signal<any[]>([]);
+  selectedModuleForTasks = signal<number>(0);
 
   get isInstructor(): boolean {
     return this.authService.isInstructor();
@@ -44,14 +53,22 @@ export class InstructorsComponent implements OnInit {
     private courseService: CourseService,
     private ncsService: NcsService,
     private modulesService: ModulesService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
-    this.loadInstructors();
+    if (this.isInstructor) {
+      this.activeTab.set('ncs');
+      this.loadNCS();
+      this.loadModules();
+    } else {
+      this.loadInstructors();
+      this.loadNCS();
+      this.loadModules();
+    }
     this.loadCourses();
-    this.loadNCS();
-    this.loadModules();
+    this.loadTasks();
   }
 
   private loadInstructors(): void {
@@ -70,6 +87,12 @@ export class InstructorsComponent implements OnInit {
     this.modulesService.getModules().subscribe();
   }
 
+  private loadTasks(): void {
+    this.http.get<any[]>(`${environment.apiUrl}/moduletasks`).subscribe({
+      next: (data) => this.tasks.set(data)
+    });
+  }
+
   private getEmptyInstructor(): CreateInstructor {
     return { epfNo: '', fullName: '', nic: '', email: '', phone: '' };
   }
@@ -82,7 +105,11 @@ export class InstructorsComponent implements OnInit {
     return { moduleNo: '', moduleName: '', theoryHours: 0, practicalHours: 0, ncsId: 0 };
   }
 
-  setTab(tab: 'instructors' | 'ncs' | 'modules'): void {
+  private getEmptyTask(): any {
+    return { taskNo: '', taskName: '', moduleId: 0 };
+  }
+
+  setTab(tab: 'instructors' | 'ncs' | 'modules' | 'tasks'): void {
     this.activeTab.set(tab);
     this.currentPage.set(1);
     this.searchTerm.set('');
@@ -213,7 +240,7 @@ export class InstructorsComponent implements OnInit {
       alert('Please select an NCS');
       return;
     }
-    
+
     if (this.moduleModalMode() === 'add') {
       this.modulesService.createModule(this.selectedModule).subscribe({
         next: () => this.closeModuleModal(),
@@ -239,6 +266,50 @@ export class InstructorsComponent implements OnInit {
     }
   }
 
+  openAddTaskModal(): void {
+    this.selectedTask = this.getEmptyTask();
+    this.taskModalMode.set('add');
+    this.showTaskModal.set(true);
+  }
+
+  openEditTaskModal(task: any): void {
+    this.selectedTask = { ...task };
+    this.taskModalMode.set('edit');
+    this.showTaskModal.set(true);
+  }
+
+  closeTaskModal(): void {
+    this.showTaskModal.set(false);
+    this.selectedTask = this.getEmptyTask();
+  }
+
+  saveTask(): void {
+    if (!this.selectedTask.taskNo.trim() || !this.selectedTask.taskName.trim() || this.selectedTask.moduleId === 0) {
+      alert('Please fill all fields and select a module');
+      return;
+    }
+
+    const isEdit = this.taskModalMode() === 'edit';
+    const url = `${environment.apiUrl}/moduletasks${isEdit ? '/' + this.selectedTask.id : ''}`;
+    const method = isEdit ? 'put' : 'post';
+
+    this.http[method](url, this.selectedTask, { responseType: 'text' }).subscribe({
+      next: () => {
+        this.closeTaskModal();
+        this.loadTasks();
+      },
+      error: () => alert('Failed to save task')
+    });
+  }
+
+  deleteTask(task: any): void {
+    if (!confirm(`Delete task "${task.taskNo} - ${task.taskName}"?`)) return;
+    this.http.delete(`${environment.apiUrl}/moduletasks/${task.id}`, { responseType: 'text' }).subscribe({
+      next: () => this.loadTasks(),
+      error: () => alert('Failed to delete task')
+    });
+  }
+
   get instructors(): Instructor[] {
     return this.instructorService.instructors();
   }
@@ -255,6 +326,15 @@ export class InstructorsComponent implements OnInit {
     return this.modulesService.modules();
   }
 
+  get filteredTasks(): any[] {
+    const term = this.searchTerm().toLowerCase();
+    if (!term) return this.tasks();
+    return this.tasks().filter(t =>
+      t.taskNo?.toLowerCase().includes(term) ||
+      t.taskName?.toLowerCase().includes(term)
+    );
+  }
+
   get isLoading(): boolean {
     return this.instructorService.isLoading() || this.ncsService.isLoading() || this.modulesService.isLoading();
   }
@@ -262,7 +342,7 @@ export class InstructorsComponent implements OnInit {
   get filteredInstructors(): Instructor[] {
     const term = this.searchTerm().toLowerCase();
     if (!term) return this.instructors;
-    return this.instructors.filter(i => 
+    return this.instructors.filter(i =>
       i.fullName?.toLowerCase().includes(term) ||
       i.epfNo?.toLowerCase().includes(term) ||
       i.email?.toLowerCase().includes(term) ||
@@ -273,7 +353,7 @@ export class InstructorsComponent implements OnInit {
   get filteredNCS(): NCS[] {
     const term = this.searchTerm().toLowerCase();
     if (!term) return this.ncsList;
-    return this.ncsList.filter(n => 
+    return this.ncsList.filter(n =>
       n.name?.toLowerCase().includes(term) ||
       n.version?.toLowerCase().includes(term) ||
       n.courseName?.toLowerCase().includes(term)
@@ -283,7 +363,7 @@ export class InstructorsComponent implements OnInit {
   get filteredModules(): Module[] {
     const term = this.searchTerm().toLowerCase();
     if (!term) return this.modules;
-    return this.modules.filter(m => 
+    return this.modules.filter(m =>
       m.moduleName?.toLowerCase().includes(term) ||
       m.moduleNo?.toLowerCase().includes(term)
     );
@@ -304,9 +384,15 @@ export class InstructorsComponent implements OnInit {
     return this.filteredModules.slice(start, start + this.pageSize);
   }
 
+  get paginatedTasks(): any[] {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return this.filteredTasks.slice(start, start + this.pageSize);
+  }
+
   totalPagesCount(): number {
     const items = this.activeTab() === 'instructors' ? this.filteredInstructors :
-                  this.activeTab() === 'ncs' ? this.filteredNCS : this.filteredModules;
+                  this.activeTab() === 'ncs' ? this.filteredNCS :
+                  this.activeTab() === 'tasks' ? this.filteredTasks : this.filteredModules;
     return Math.ceil(items.length / this.pageSize);
   }
 
@@ -342,5 +428,10 @@ export class InstructorsComponent implements OnInit {
   getModuleNCSName(ncsId: number): string {
     const ncs = this.ncsList.find(n => n.id === ncsId);
     return ncs?.name || 'Unknown NCS';
+  }
+
+  getModuleName(moduleId: number): string {
+    const module = this.modules.find(m => m.id === moduleId);
+    return module?.moduleName || 'Unknown Module';
   }
 }

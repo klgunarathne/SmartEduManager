@@ -10,24 +10,30 @@
   <!-- Tabs -->
   <div class="tabs-container">
     @if (!isInstructor) {
-      <button 
-        class="tab-btn" 
+      <button
+        class="tab-btn"
         [class.active]="activeTab() === 'instructors'"
         (click)="setTab('instructors')">
         <i class="fas fa-chalkboard-teacher"></i> Instructors
       </button>
     }
-    <button 
-      class="tab-btn" 
+    <button
+      class="tab-btn"
       [class.active]="activeTab() === 'ncs'"
       (click)="setTab('ncs')">
       <i class="fas fa-book"></i> NCS
     </button>
-    <button 
-      class="tab-btn" 
+    <button
+      class="tab-btn"
       [class.active]="activeTab() === 'modules'"
       (click)="setTab('modules')">
       <i class="fas fa-layer-group"></i> Modules
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'tasks'"
+      (click)="setTab('tasks')">
+      <i class="fas fa-tasks"></i> Tasks
     </button>
   </div>
 
@@ -35,7 +41,7 @@
   <div class="filters-section">
     <div class="search-box">
       <i class="fas fa-search"></i>
-      <input type="text" [placeholder]="activeTab() === 'instructors' ? 'Search instructors...' : activeTab() === 'ncs' ? 'Search NCS...' : 'Search modules...'" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
+      <input type="text" [placeholder]="activeTab() === 'instructors' ? 'Search instructors...' : activeTab() === 'ncs' ? 'Search NCS...' : activeTab() === 'tasks' ? 'Search tasks...' : 'Search modules...'" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
     </div>
     @if (activeTab() === 'instructors') {
       <span class="filter-info">{{ filteredInstructors.length }} instructors found</span>
@@ -45,6 +51,9 @@
     }
     @if (activeTab() === 'modules') {
       <span class="filter-info">{{ filteredModules.length }} modules found</span>
+    }
+    @if (activeTab() === 'tasks') {
+      <span class="filter-info">{{ filteredTasks.length }} tasks found</span>
     }
     @if (activeTab() === 'instructors') {
       <button class="btn btn-primary" (click)="openAddInstructorModal()">
@@ -59,6 +68,11 @@
     @if (activeTab() === 'modules') {
       <button class="btn btn-primary" (click)="openAddModuleModal()">
         <i class="fas fa-plus"></i> Add Module
+      </button>
+    }
+    @if (activeTab() === 'tasks') {
+      <button class="btn btn-primary" (click)="openAddTaskModal()">
+        <i class="fas fa-plus"></i> Add Task
       </button>
     }
   </div>
@@ -270,6 +284,69 @@
       }
     </div>
   }
+
+  <!-- Tasks Table -->
+  @if (activeTab() === 'tasks') {
+    <div class="table-card">
+      @if (isLoading) {
+        <div class="loading-overlay">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>Loading tasks...</span>
+        </div>
+      }
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Task No</th>
+              <th>Task Name</th>
+              <th>Module</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (task of paginatedTasks; track task.id) {
+              <tr>
+                <td><span class="badge badge-info">{{ task.taskNo }}</span></td>
+                <td>{{ task.taskName }}</td>
+                <td>{{ getModuleName(task.moduleId) }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="action-btn edit" (click)="openEditTaskModal(task)" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn delete" (click)="deleteTask(task)" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty-state">
+                  <i class="fas fa-tasks"></i>
+                  <p>No tasks found</p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPagesCount() > 1) {
+        <div class="pagination">
+          <button class="page-btn" (click)="prevPage()" [disabled]="currentPage() === 1">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span class="page-info">Page {{ currentPage() }} of {{ totalPagesCount() }}</span>
+          <button class="page-btn" (click)="nextPage()" [disabled]="currentPage() === totalPagesCount()">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </div>
+  }
 </div>
 
 <!-- Instructor Modal -->
@@ -282,7 +359,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <div class="modal-body">
         <form (ngSubmit)="saveInstructor()">
           <div class="form-row">
@@ -295,22 +372,22 @@
               <input type="text" [(ngModel)]="selectedInstructor.epfNo" name="epfNo" required>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label>NIC</label>
             <input type="text" [(ngModel)]="selectedInstructor.nic" name="nic" required>
           </div>
-          
+
           <div class="form-group">
             <label>Email</label>
             <input type="email" [(ngModel)]="selectedInstructor.email" name="email" required>
           </div>
-          
+
           <div class="form-group">
             <label>Phone</label>
             <input type="text" [(ngModel)]="selectedInstructor.phone" name="phone" required>
           </div>
-          
+
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" (click)="closeInstructorModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">
@@ -333,7 +410,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <div class="modal-body">
         <form (ngSubmit)="saveNCS()">
           <div class="form-row">
@@ -346,7 +423,7 @@
               <input type="text" [(ngModel)]="selectedNCS.name" name="name" required>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label>Course</label>
             <select [(ngModel)]="selectedNCS.courseId" name="courseId" required>
@@ -356,12 +433,12 @@
               }
             </select>
           </div>
-          
+
           <div class="form-group">
             <label>Updated Date</label>
             <input type="date" [(ngModel)]="selectedNCS.updatedDate" name="updatedDate" required>
           </div>
-          
+
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" (click)="closeNCSModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">
@@ -384,7 +461,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      
+
       <div class="modal-body">
         <form (ngSubmit)="saveModule()">
           <div class="form-row">
@@ -397,7 +474,7 @@
               <input type="text" [(ngModel)]="selectedModule.moduleName" name="moduleName" required>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label>NCS</label>
             <select [(ngModel)]="selectedModule.ncsId" name="ncsId" required>
@@ -407,7 +484,7 @@
               }
             </select>
           </div>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label>Theory Hours</label>
@@ -418,11 +495,57 @@
               <input type="number" [(ngModel)]="selectedModule.practicalHours" name="practicalHours" min="0" required>
             </div>
           </div>
-          
+
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" (click)="closeModuleModal()">Cancel</button>
             <button type="submit" class="btn btn-primary">
               {{ moduleModalMode() === 'add' ? 'Create Module' : 'Update Module' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Task Modal -->
+@if (showTaskModal()) {
+  <div class="modal-overlay" (click)="closeTaskModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ taskModalMode() === 'add' ? 'Add New Task' : 'Edit Task' }}</h3>
+        <button class="close-btn" (click)="closeTaskModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form (ngSubmit)="saveTask()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Task No</label>
+              <input type="text" [(ngModel)]="selectedTask.taskNo" name="taskNo" placeholder="e.g., T001" required>
+            </div>
+            <div class="form-group">
+              <label>Task Name</label>
+              <input type="text" [(ngModel)]="selectedTask.taskName" name="taskName" placeholder="e.g., Install Software" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Module</label>
+            <select [(ngModel)]="selectedTask.moduleId" name="moduleId" required>
+              <option [value]="0" disabled>Select a module</option>
+              @for (module of modules; track module.id) {
+                <option [value]="module.id">{{ module.moduleNo }} - {{ module.moduleName }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeTaskModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              {{ taskModalMode() === 'add' ? 'Create Task' : 'Update Task' }}
             </button>
           </div>
         </form>
