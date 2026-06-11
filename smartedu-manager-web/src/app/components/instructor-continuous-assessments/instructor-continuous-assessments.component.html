@@ -1,0 +1,118 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Continuous Assessments</h2>
+      <p>Mark student competencies (C / NYC) per module task</p>
+    </div>
+  </div>
+
+  <!-- Batch & Module Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Batch</label>
+        <select [ngModel]="selectedBatchId()" (ngModelChange)="selectedBatchId.set($event); onBatchChange()">
+          <option [value]="0">Select Batch</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Module</label>
+        <select [ngModel]="selectedModuleId()" (ngModelChange)="onModuleFilterChange($event)">
+          <option [value]="0">All Modules</option>
+          @for (task of getGroupedTasks(); track task.moduleId) {
+            <option [value]="task.moduleId">{{ task.moduleNo }} - {{ task.moduleName }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <i class="fas fa-check-circle"></i> {{ successMessage() }}
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i> {{ errorMessage() }}
+    </div>
+  }
+
+  @if (selectedBatchId() > 0 && students().length > 0) {
+    <div class="table-card">
+      <div class="table-wrapper">
+        <table class="data-table assessments-grid">
+          <thead>
+            <tr>
+              <th class="sticky-col" style="min-width: 160px;">Student</th>
+              <th class="sticky-col" style="min-width: 90px;">MIS No</th>
+              @for (group of getGroupedTasks(); track group.moduleId) {
+                <th [attr.colspan]="group.tasks.length" class="module-header">
+                  {{ group.moduleNo }} - {{ group.moduleName }}
+                </th>
+              }
+            </tr>
+            <tr>
+              <th class="sticky-col"></th>
+              <th class="sticky-col"></th>
+              @for (group of getGroupedTasks(); track group.moduleId) {
+                @for (task of group.tasks; track task.id) {
+                  <th class="task-header">{{ task.taskNo }}</th>
+                }
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (student of students(); track student.id) {
+              <tr>
+                <td class="sticky-col student-name">{{ student.nameWithInitials }}</td>
+                <td class="sticky-col">{{ student.misNo }}</td>
+                @for (group of getGroupedTasks(); track group.moduleId) {
+                  @for (task of group.tasks; track task.id) {
+                    <td>
+                      <div class="mark-selector">
+                        <button
+                          type="button"
+                          class="mark-btn competent"
+                          [class.active]="getMark(student.id, task.id)?.assessmentMark === 'C'"
+                          (click)="setMark(student.id, task.id, 'C')"
+                          [disabled]="isLoading()"
+                          title="Competent"
+                        >C</button>
+                        <button
+                          type="button"
+                          class="mark-btn nyc"
+                          [class.active]="getMark(student.id, task.id)?.assessmentMark === 'NYC'"
+                          (click)="setMark(student.id, task.id, 'NYC')"
+                          [disabled]="isLoading()"
+                          title="Not Yet Competent"
+                        >NYC</button>
+                      </div>
+                    </td>
+                  }
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (selectedBatchId() > 0 && students().length === 0) {
+    <div class="empty-state-card">
+      <i class="fas fa-user-graduate"></i>
+      <p>No students in this batch</p>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Saving...</span>
+    </div>
+  }
+</div>

@@ -328,8 +328,13 @@ export class InstructorsComponent implements OnInit {
 
   get filteredTasks(): any[] {
     const term = this.searchTerm().toLowerCase();
-    if (!term) return this.tasks();
-    return this.tasks().filter(t =>
+    const moduleId = Number(this.selectedModuleForTasks());
+    let list = this.tasks();
+    if (moduleId > 0) {
+      list = list.filter(t => Number(t.moduleId) === moduleId);
+    }
+    if (!term) return list;
+    return list.filter(t =>
       t.taskNo?.toLowerCase().includes(term) ||
       t.taskName?.toLowerCase().includes(term)
     );
@@ -433,5 +438,10 @@ export class InstructorsComponent implements OnInit {
   getModuleName(moduleId: number): string {
     const module = this.modules.find(m => m.id === moduleId);
     return module?.moduleName || 'Unknown Module';
+  }
+
+  onModuleFilterChange(value: string): void {
+    this.selectedModuleForTasks.set(Number(value));
+    this.searchTerm.set('');
   }
 }

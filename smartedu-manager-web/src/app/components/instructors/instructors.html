@@ -52,9 +52,21 @@
     @if (activeTab() === 'modules') {
       <span class="filter-info">{{ filteredModules.length }} modules found</span>
     }
-    @if (activeTab() === 'tasks') {
-      <span class="filter-info">{{ filteredTasks.length }} tasks found</span>
-    }
+  @if (activeTab() === 'tasks') {
+    <span class="filter-info">{{ filteredTasks.length }} tasks found</span>
+    <button class="btn btn-primary" (click)="openAddTaskModal()">
+      <i class="fas fa-plus"></i> Add Task
+    </button>
+      <div class="filter-group" style="min-width: 220px;">
+        <label>Filter by Module</label>
+        <select [ngModel]="selectedModuleForTasks()" (ngModelChange)="onModuleFilterChange($event)">
+          <option [value]="0">All Modules</option>
+          @for (module of modules; track module.id) {
+            <option [value]="module.id">{{ module.moduleNo }} - {{ module.moduleName }}</option>
+          }
+        </select>
+      </div>
+  }
     @if (activeTab() === 'instructors') {
       <button class="btn btn-primary" (click)="openAddInstructorModal()">
         <i class="fas fa-plus"></i> Add Instructor
@@ -250,6 +262,9 @@
                 <td>{{ module.practicalHours }} hrs</td>
                 <td>
                   <div class="action-buttons">
+                    <button class="action-btn view" (click)="setTab('tasks'); selectedModuleForTasks.set(module.id); searchTerm.set('')" title="View Tasks">
+                      <i class="fas fa-tasks"></i>
+                    </button>
                     <button class="action-btn edit" (click)="openEditModuleModal(module)" title="Edit">
                       <i class="fas fa-edit"></i>
                     </button>
