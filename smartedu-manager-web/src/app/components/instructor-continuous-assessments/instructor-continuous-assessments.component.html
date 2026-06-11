@@ -22,8 +22,8 @@
         <label>Module</label>
         <select [ngModel]="selectedModuleId()" (ngModelChange)="onModuleFilterChange($event)">
           <option [value]="0">All Modules</option>
-          @for (task of getGroupedTasks(); track task.moduleId) {
-            <option [value]="task.moduleId">{{ task.moduleNo }} - {{ task.moduleName }}</option>
+          @for (group of getGroupedTasksForFilter(); track group.moduleId) {
+            <option [value]="group.moduleId">{{ group.moduleNo }} - {{ group.moduleName }}</option>
           }
         </select>
       </div>

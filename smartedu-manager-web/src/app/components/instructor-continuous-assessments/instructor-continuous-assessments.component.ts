@@ -176,7 +176,42 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     return this.tasks().filter(t => t.moduleId === modId);
   }
 
+  get allGroupedTasks(): { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }[] {
+    const groups = new Map<number, { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }>();
+    this.tasks().forEach(t => {
+      const key = t.moduleId;
+      if (!groups.has(key)) {
+        groups.set(key, { moduleId: t.moduleId, moduleName: t.moduleName || 'Unknown', moduleNo: t.moduleNo || '', tasks: [] });
+      }
+      groups.get(key)!.tasks.push(t);
+    });
+    return Array.from(groups.values());
+  }
+
+  getGroupedTasksForFilter(): { moduleId: number; moduleName: string; moduleNo: string }[] {
+    return this.allGroupedTasks.map(g => ({ moduleId: g.moduleId, moduleName: g.moduleName, moduleNo: g.moduleNo }));
+  }
+
   getGroupedTasks(): { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }[] {
+    const tasks = this.getFilteredTasks();
+    const groups = new Map<number, { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }>();
+    tasks.forEach(t => {
+      const key = t.moduleId;
+      if (!groups.has(key)) {
+        groups.set(key, { moduleId: t.moduleId, moduleName: t.moduleName || 'Unknown', moduleNo: t.moduleNo || '', tasks: [] });
+      }
+      groups.get(key)!.tasks.push(t);
+    });
+    return Array.from(groups.values());
+  }
+      groups.get(key)!.tasks.push(t);
+    });
+    return Array.from(groups.values());
+  }
+
+  getGroupedTasksForFilter(): { moduleId: number; moduleName: string; moduleNo: string }[] {
+    return this.allGroupedTasks.map(g => ({ moduleId: g.moduleId, moduleName: g.moduleName, moduleNo: g.moduleNo }));
+  }
     const tasks = this.getFilteredTasks();
     const groups = new Map<number, { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }>();
     tasks.forEach(t => {
