@@ -1,8 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { ToastService } from '../../services/toast.service';
 
 interface ModuleTask {
   id: number;
@@ -11,6 +12,7 @@ interface ModuleTask {
   moduleId: number;
   moduleName?: string;
   moduleNo?: string;
+  originalAssessmentDate?: string;
 }
 
 interface AssessmentRecord {
@@ -46,6 +48,7 @@ interface Batch {
 })
 export class InstructorContinuousAssessmentsComponent implements OnInit {
   private readonly API_URL = environment.apiUrl;
+  private toast = inject(ToastService);
 
   batches = signal<Batch[]>([]);
   selectedBatchId = signal(0);
@@ -55,8 +58,8 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
   selectedModuleId = signal(0);
 
   isLoading = signal(false);
-  successMessage = signal('');
-  errorMessage = signal('');
+
+  originalDateInput = signal<{ [taskId: number]: string }>({});
 
   constructor(private http: HttpClient) {}
 
@@ -112,7 +115,8 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
               return {
                 ...t,
                 moduleName: mod?.moduleName || 'Unknown',
-                moduleNo: mod?.moduleNo || ''
+                moduleNo: mod?.moduleNo || '',
+                originalAssessmentDate: t.originalAssessmentDate || undefined
               };
             });
             this.tasks.set(enriched);
@@ -138,36 +142,83 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
   setMark(studentId: number, taskId: number, mark: string): void {
     this.isLoading.set(true);
     const existing = this.getMark(studentId, taskId);
+    const task = this.tasks().find(t => t.id === taskId);
+    const assessmentDate = existing?.assessmentDate || task?.originalAssessmentDate || this.getTodayDate();
 
     if (existing) {
       this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
         assessmentMark: mark,
-        assessmentDate: existing.assessmentDate,
+        assessmentDate: assessmentDate,
         assessorNotes: existing.assessorNotes
       }, { responseType: 'text' }).subscribe({
         next: () => {
           this.assessments.update(list => list.map(a =>
-            a.id === existing.id ? { ...a, assessmentMark: mark } : a
+            a.id === existing.id ? { ...a, assessmentMark: mark, assessmentDate } : a
           ));
           this.isLoading.set(false);
-          this.showSuccess('Assessment updated');
+          this.toast.success('Assessment updated');
         },
-        error: () => { this.isLoading.set(false); this.showError('Failed to update'); }
+        error: () => { this.isLoading.set(false); this.toast.error('Failed to update assessment'); }
       });
     } else {
-      this.http.post<AssessmentRecord>(`${this.API_URL}/continuousassessments/student/${studentId}/task/${taskId}`, {
+      this.http.post<AssessmentRecord>(`${this.API_URL}/continuousassessments`, {
+        studentId,
+        moduleTaskId: taskId,
         assessmentMark: mark,
-        assessmentDate: this.getTodayDate(),
+        assessmentDate: assessmentDate,
         assessorNotes: ''
       }).subscribe({
-        next: (res) => {
+        next: (res: AssessmentRecord) => {
           this.assessments.update(list => [...list, res]);
           this.isLoading.set(false);
-          this.showSuccess('Assessment saved');
+          this.toast.success('Assessment saved');
         },
-        error: () => { this.isLoading.set(false); this.showError('Failed to save'); }
+        error: () => { this.isLoading.set(false); this.toast.error('Failed to save assessment'); }
       });
     }
+  }
+
+  setOriginalDate(taskId: number): void {
+    const dateStr = this.originalDateInput()[taskId];
+    if (!dateStr) { this.toast.error('Please select a date'); return; }
+
+    this.isLoading.set(true);
+    this.http.put(`${this.API_URL}/moduletasks/${taskId}/original-date`, {
+      originalAssessmentDate: dateStr
+    }, { responseType: 'text' }).subscribe({
+      next: () => {
+        this.tasks.update(list => list.map(t =>
+          t.id === taskId ? { ...t, originalAssessmentDate: dateStr } : t
+        ));
+
+        this.assessments.update(list => list.map(a => {
+          if (a.moduleTaskId === taskId) {
+            return { ...a, assessmentDate: dateStr };
+          }
+          return a;
+        }));
+
+        this.isLoading.set(false);
+        this.toast.success('Original date set for all students');
+      },
+      error: () => { this.isLoading.set(false); this.toast.error('Failed to set original date'); }
+    });
+  }
+
+  clearOriginalDate(taskId: number): void {
+    this.isLoading.set(true);
+    this.http.put(`${this.API_URL}/moduletasks/${taskId}/original-date`, {
+      originalAssessmentDate: null
+    }, { responseType: 'text' }).subscribe({
+      next: () => {
+        this.tasks.update(list => list.map(t =>
+          t.id === taskId ? { ...t, originalAssessmentDate: undefined } : t
+        ));
+        this.isLoading.set(false);
+        this.toast.success('Original date cleared');
+      },
+      error: () => { this.isLoading.set(false); this.toast.error('Failed to clear original date'); }
+    });
   }
 
   getFilteredTasks(): ModuleTask[] {
@@ -176,7 +227,7 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     return this.tasks().filter(t => t.moduleId === modId);
   }
 
-  get allGroupedTasks(): { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }[] {
+  getAllGroupedTasks(): { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }[] {
     const groups = new Map<number, { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }>();
     this.tasks().forEach(t => {
       const key = t.moduleId;
@@ -189,29 +240,10 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
   }
 
   getGroupedTasksForFilter(): { moduleId: number; moduleName: string; moduleNo: string }[] {
-    return this.allGroupedTasks.map(g => ({ moduleId: g.moduleId, moduleName: g.moduleName, moduleNo: g.moduleNo }));
+    return this.getAllGroupedTasks().map(g => ({ moduleId: g.moduleId, moduleName: g.moduleName, moduleNo: g.moduleNo }));
   }
 
   getGroupedTasks(): { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }[] {
-    const tasks = this.getFilteredTasks();
-    const groups = new Map<number, { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }>();
-    tasks.forEach(t => {
-      const key = t.moduleId;
-      if (!groups.has(key)) {
-        groups.set(key, { moduleId: t.moduleId, moduleName: t.moduleName || 'Unknown', moduleNo: t.moduleNo || '', tasks: [] });
-      }
-      groups.get(key)!.tasks.push(t);
-    });
-    return Array.from(groups.values());
-  }
-      groups.get(key)!.tasks.push(t);
-    });
-    return Array.from(groups.values());
-  }
-
-  getGroupedTasksForFilter(): { moduleId: number; moduleName: string; moduleNo: string }[] {
-    return this.allGroupedTasks.map(g => ({ moduleId: g.moduleId, moduleName: g.moduleName, moduleNo: g.moduleNo }));
-  }
     const tasks = this.getFilteredTasks();
     const groups = new Map<number, { moduleId: number; moduleName: string; moduleNo: string; tasks: ModuleTask[] }>();
     tasks.forEach(t => {
@@ -228,14 +260,8 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     this.selectedModuleId.set(Number(value));
   }
 
-  private showSuccess(msg: string): void {
-    this.successMessage.set(msg);
-    setTimeout(() => this.successMessage.set(''), 2500);
-  }
-
-  private showError(msg: string): void {
-    this.errorMessage.set(msg);
-    setTimeout(() => this.errorMessage.set(''), 3000);
+  onOriginalDateInput(taskId: number, value: string): void {
+    this.originalDateInput.update(current => ({ ...current, [taskId]: value }));
   }
 
   private getTodayDate(): string {
