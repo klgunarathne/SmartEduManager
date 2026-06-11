@@ -48,7 +48,6 @@
           <thead>
             <tr>
               <th class="sticky-col" style="min-width: 160px;">Student</th>
-              <th class="sticky-col" style="min-width: 90px;">MIS No</th>
               @for (group of getGroupedTasks(); track group.moduleId) {
                 <th [attr.colspan]="group.tasks.length" class="module-header">
                   {{ group.moduleNo }} - {{ group.moduleName }}
@@ -56,7 +55,6 @@
               }
             </tr>
             <tr>
-              <th class="sticky-col"></th>
               <th class="sticky-col"></th>
               @for (group of getGroupedTasks(); track group.moduleId) {
                 @for (task of group.tasks; track task.id) {
@@ -69,7 +67,6 @@
             @for (student of students(); track student.id) {
               <tr>
                 <td class="sticky-col student-name">{{ student.nameWithInitials }}</td>
-                <td class="sticky-col">{{ student.misNo }}</td>
                 @for (group of getGroupedTasks(); track group.moduleId) {
                   @for (task of group.tasks; track task.id) {
                     <td>

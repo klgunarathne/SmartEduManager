@@ -112,11 +112,6 @@
     background: white;
     z-index: 1;
     min-width: 160px;
-
-    &:nth-child(2) {
-      left: 160px;
-      min-width: 90px;
-    }
   }
 
   .module-header {
@@ -124,17 +119,24 @@
     color: #4338ca;
     font-size: 11px;
     padding: 8px 4px;
+    position: sticky;
+    top: 0;
+    z-index: 4;
   }
 
   .task-header {
     font-size: 10px;
     padding: 6px 4px;
     color: #6366f1;
+    position: sticky;
+    top: 32px;
+    z-index: 3;
+    background: #f8fafc;
   }
 
   thead .sticky-col {
     background: #f8fafc;
-    z-index: 3;
+    z-index: 5;
   }
 
   tbody tr:hover .sticky-col {
@@ -153,21 +155,22 @@
 
 .mark-selector {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   justify-content: center;
 }
 
 .mark-btn {
-  width: 42px;
-  height: 32px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 12px;
+  width: 28px;
+  height: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   background: white;
   color: #94a3b8;
+  padding: 0;
 
   &:hover:not(:disabled) {
     border-color: #6366f1;
