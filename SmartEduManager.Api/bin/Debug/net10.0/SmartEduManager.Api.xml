@@ -196,6 +196,18 @@
         <member name="M:SmartEduManager.Api.Migrations.CreateAttendancesTable.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Migrations.AddCompetencyAndOriginalDates">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCompetencyAndOriginalDates.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCompetencyAndOriginalDates.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.AddCompetencyAndOriginalDates.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:Program">
             <summary>
             Auto-generated public partial Program class for top-level statement apps.

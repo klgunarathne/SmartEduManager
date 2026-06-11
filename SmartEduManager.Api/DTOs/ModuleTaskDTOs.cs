@@ -7,6 +7,7 @@ public class ModuleTaskDto
     public string TaskName { get; set; } = string.Empty;
     public int ModuleId { get; set; }
     public string ModuleNo { get; set; } = string.Empty;
+    public string? OriginalAssessmentDate { get; set; }
 }
 
 public class CreateModuleTaskDto
@@ -21,4 +22,10 @@ public class UpdateModuleTaskDto
     public string? TaskNo { get; set; }
     public string? TaskName { get; set; }
     public int? ModuleId { get; set; }
+    public DateTime? OriginalAssessmentDate { get; set; }
+}
+
+public class OriginalDateUpdateDto
+{
+    public DateTime? OriginalAssessmentDate { get; set; }
 }

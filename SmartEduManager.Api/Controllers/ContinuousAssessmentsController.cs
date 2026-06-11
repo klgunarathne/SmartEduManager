@@ -250,6 +250,7 @@ public class ContinuousAssessmentsController : ControllerBase
                     ModuleTaskId = moduleTaskId,
                     AssessmentMark = updateDto.AssessmentMark,
                     AssessmentDate = updateDto.AssessmentDate,
+                    CompetencyDate = updateDto.AssessmentMark == "C" ? (updateDto.CompetencyDate ?? updateDto.AssessmentDate) : null,
                     AssessorNotes = updateDto.AssessorNotes
                 };
 
@@ -264,6 +265,18 @@ public class ContinuousAssessmentsController : ControllerBase
 
             // Update existing assessment
             _mapper.Map(updateDto, assessment);
+            
+            // If setting to 'C' and no competency date provided, use assessment date
+            if (assessment.AssessmentMark == "C" && assessment.CompetencyDate == null)
+            {
+                assessment.CompetencyDate = assessment.AssessmentDate;
+            }
+            // If setting to 'NYC', clear competency date
+            else if (assessment.AssessmentMark == "NYC")
+            {
+                assessment.CompetencyDate = null;
+            }
+            
             _repository.Update(assessment);
             await _repository.SaveChangesAsync();
 

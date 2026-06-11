@@ -7,6 +7,7 @@ public class ContinuousAssessment
     public int ModuleTaskId { get; set; }
     public string AssessmentMark { get; set; } = string.Empty; // "C" for Competent, "NYC" for Not Yet Competent
     public DateTime? AssessmentDate { get; set; }
+    public DateTime? CompetencyDate { get; set; } // Date when competency was achieved (for 'C' status)
     public string? AssessorNotes { get; set; }
 
     // Navigation properties

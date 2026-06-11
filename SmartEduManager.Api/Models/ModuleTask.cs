@@ -13,5 +13,7 @@ namespace SmartEduManager.Api.Models
 
         public int ModuleId { get; set; }
         public Modules Module { get; set; } = null!;
+
+        public DateTime? OriginalAssessmentDate { get; set; }
     }
 }

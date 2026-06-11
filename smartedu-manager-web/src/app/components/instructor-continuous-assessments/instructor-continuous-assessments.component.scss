@@ -227,3 +227,46 @@
     align-items: stretch;
   }
 }
+
+.date-input-small {
+  width: 100px;
+  padding: 4px 6px;
+  font-size: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.btn-set-date {
+  margin-top: 2px;
+  padding: 2px 6px;
+  font-size: 10px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  &:hover:not(:disabled) { background: #4f46e5; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.original-date-header {
+  min-width: 120px;
+}
+
+.task-header-date {
+  padding: 2px 4px;
+  font-size: 10px;
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 4;
+}
+
+.competency-date-input {
+  width: 110px;
+  padding: 3px 5px;
+  font-size: 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  margin-top: 4px;
+}

@@ -7,6 +7,7 @@ public class ContinuousAssessmentDto
     public int ModuleTaskId { get; set; }
     public string AssessmentMark { get; set; } = string.Empty;
     public DateTime? AssessmentDate { get; set; }
+    public DateTime? CompetencyDate { get; set; }
     public string? AssessorNotes { get; set; }
 
     // Additional properties for display purposes
@@ -21,6 +22,7 @@ public class CreateContinuousAssessmentDto
     public int ModuleTaskId { get; set; }
     public string AssessmentMark { get; set; } = string.Empty;
     public DateTime? AssessmentDate { get; set; }
+    public DateTime? CompetencyDate { get; set; }
     public string? AssessorNotes { get; set; }
 }
 
@@ -28,6 +30,7 @@ public class UpdateContinuousAssessmentDto
 {
     public string AssessmentMark { get; set; } = string.Empty;
     public DateTime? AssessmentDate { get; set; }
+    public DateTime? CompetencyDate { get; set; }
     public string? AssessorNotes { get; set; }
 }
 
@@ -47,5 +50,6 @@ public class AssessmentTaskDto
     public string ModuleName { get; set; } = string.Empty;
     public string? AssessmentMark { get; set; }
     public DateTime? AssessmentDate { get; set; }
+    public DateTime? CompetencyDate { get; set; }
     public string? AssessorNotes { get; set; }
 }

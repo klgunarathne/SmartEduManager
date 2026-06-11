@@ -44,6 +44,29 @@
               }
             </tr>
             <tr>
+              <th class="sticky-col original-date-header">Original Date</th>
+              @for (group of getGroupedTasks(); track group.moduleId) {
+                @for (task of group.tasks; track task.id) {
+                  <th class="task-header-date">
+                    <input
+                      type="date"
+                      [ngModel]="task.originalAssessmentDate"
+                      (ngModelChange)="onOriginalDateInput(task.id, $event)"
+                      class="date-input-small"
+                      title="Set original assessment date for all students"
+                    />
+                    <button
+                      type="button"
+                      class="btn-set-date"
+                      (click)="setOriginalDate(task.id)"
+                      [disabled]="isLoading()"
+                      title="Apply to all students"
+                    >Set</button>
+                  </th>
+                }
+              }
+            </tr>
+            <tr>
               <th class="sticky-col"></th>
               @for (group of getGroupedTasks(); track group.moduleId) {
                 @for (task of group.tasks; track task.id) {
@@ -77,6 +100,15 @@
                           title="Not Yet Competent"
                         >NYC</button>
                       </div>
+                      @if (getMark(student.id, task.id)?.assessmentMark === 'C') {
+                        <input
+                          type="date"
+                          [ngModel]="getMark(student.id, task.id)?.competencyDate"
+                          (ngModelChange)="setCompetencyDate(student.id, task.id, $event)"
+                          class="competency-date-input"
+                          title="Override competency date for this student"
+                        />
+                      }
                     </td>
                   }
                 }

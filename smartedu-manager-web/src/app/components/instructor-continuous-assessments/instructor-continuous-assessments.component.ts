@@ -21,6 +21,7 @@ interface AssessmentRecord {
   moduleTaskId: number;
   assessmentMark: string;
   assessmentDate: string;
+  competencyDate: string | null;
   assessorNotes: string;
 }
 
@@ -144,16 +145,18 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     const existing = this.getMark(studentId, taskId);
     const task = this.tasks().find(t => t.id === taskId);
     const assessmentDate = existing?.assessmentDate || task?.originalAssessmentDate || this.getTodayDate();
+    const competencyDate = mark === 'C' ? (existing?.competencyDate || task?.originalAssessmentDate || assessmentDate) : null;
 
     if (existing) {
       this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
         assessmentMark: mark,
         assessmentDate: assessmentDate,
+        competencyDate: competencyDate,
         assessorNotes: existing.assessorNotes
       }, { responseType: 'text' }).subscribe({
         next: () => {
           this.assessments.update(list => list.map(a =>
-            a.id === existing.id ? { ...a, assessmentMark: mark, assessmentDate } : a
+            a.id === existing.id ? { ...a, assessmentMark: mark, assessmentDate, competencyDate } : a
           ));
           this.isLoading.set(false);
           this.toast.success('Assessment updated');
@@ -166,6 +169,7 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         moduleTaskId: taskId,
         assessmentMark: mark,
         assessmentDate: assessmentDate,
+        competencyDate: competencyDate,
         assessorNotes: ''
       }).subscribe({
         next: (res: AssessmentRecord) => {
@@ -176,6 +180,32 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         error: () => { this.isLoading.set(false); this.toast.error('Failed to save assessment'); }
       });
     }
+  }
+
+  setCompetencyDate(studentId: number, taskId: number, competencyDate: string): void {
+    this.isLoading.set(true);
+    const existing = this.getMark(studentId, taskId);
+    if (!existing) {
+      this.isLoading.set(false);
+      this.toast.error('No assessment record found');
+      return;
+    }
+
+    this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
+      assessmentMark: existing.assessmentMark,
+      assessmentDate: existing.assessmentDate,
+      competencyDate: competencyDate,
+      assessorNotes: existing.assessorNotes
+    }, { responseType: 'text' }).subscribe({
+      next: () => {
+        this.assessments.update(list => list.map(a =>
+          a.id === existing.id ? { ...a, competencyDate } : a
+        ));
+        this.isLoading.set(false);
+        this.toast.success('Competency date updated');
+      },
+      error: () => { this.isLoading.set(false); this.toast.error('Failed to update competency date'); }
+    });
   }
 
   setOriginalDate(taskId: number): void {
@@ -192,8 +222,8 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         ));
 
         this.assessments.update(list => list.map(a => {
-          if (a.moduleTaskId === taskId) {
-            return { ...a, assessmentDate: dateStr };
+          if (a.moduleTaskId === taskId && a.assessmentMark === 'C' && !a.competencyDate) {
+            return { ...a, competencyDate: dateStr };
           }
           return a;
         }));

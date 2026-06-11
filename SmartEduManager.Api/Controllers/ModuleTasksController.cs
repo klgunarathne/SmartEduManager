@@ -1,6 +1,8 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Repositories.Interfaces;
@@ -15,12 +17,14 @@ public class ModuleTasksController : ControllerBase
     private readonly IModuleTaskRepository _repository;
     private readonly IMapper _mapper;
     private readonly ILogger<ModuleTasksController> _logger;
+    private readonly AppDbContext _context;
 
-    public ModuleTasksController(IModuleTaskRepository repository, IMapper mapper, ILogger<ModuleTasksController> logger)
+    public ModuleTasksController(IModuleTaskRepository repository, IMapper mapper, ILogger<ModuleTasksController> logger, AppDbContext context)
     {
         _repository = repository;
         _mapper = mapper;
         _logger = logger;
+        _context = context;
     }
 
     [HttpGet]
@@ -162,6 +166,53 @@ public class ModuleTasksController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error deleting module task with id {id}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPut("{id}/original-date")]
+    [Authorize(Roles = "Admin,Instructor")]
+    public async Task<IActionResult> SetOriginalAssessmentDate(int id, [FromBody] OriginalDateUpdateDto updateDto)
+    {
+        try
+        {
+            var task = await _context.ModuleTasks
+                .Include(t => t.Module)
+                .ThenInclude(m => m.NCS)
+                .ThenInclude(n => n.Course)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (task == null)
+            {
+                _logger.LogWarning($"Module task with id {id} not found");
+                return NotFound("Module task not found");
+            }
+
+            task.OriginalAssessmentDate = updateDto.OriginalAssessmentDate;
+
+            var courseId = task.Module.NCS.CourseId;
+
+            var existingAssessments = await _context.ContinuousAssessments
+                .Where(ca => ca.ModuleTaskId == id)
+                .ToListAsync();
+
+            // Get students from the course that own assessments for this task
+            foreach (var assessment in existingAssessments)
+            {
+                if (assessment.CompetencyDate == null)
+                {
+                    assessment.CompetencyDate = updateDto.OriginalAssessmentDate;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Set original assessment date for module task {id}");
+            return Ok("Original assessment date updated successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error setting original assessment date for module task {id}");
             return StatusCode(500, "Internal server error");
         }
     }

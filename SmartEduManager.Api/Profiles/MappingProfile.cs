@@ -81,7 +81,8 @@ public class MappingProfile : Profile
 
         // ModuleTask mapping
         CreateMap<ModuleTask, ModuleTaskDto>()
-            .ForMember(dest => dest.ModuleNo, opt => opt.MapFrom(src => src.Module.ModuleNo));
+            .ForMember(dest => dest.ModuleNo, opt => opt.MapFrom(src => src.Module.ModuleNo))
+            .ForMember(dest => dest.OriginalAssessmentDate, opt => opt.MapFrom(src => src.OriginalAssessmentDate.HasValue ? src.OriginalAssessmentDate.Value.ToString("yyyy-MM-dd") : null));
         CreateMap<CreateModuleTaskDto, ModuleTask>();
         CreateMap<UpdateModuleTaskDto, ModuleTask>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
