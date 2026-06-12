@@ -129,7 +129,12 @@ export const routes: Routes = [
       {
         path: 'continuous-assessments',
         loadComponent: () => import('./components/instructor-continuous-assessments/instructor-continuous-assessments.component').then(m => m.InstructorContinuousAssessmentsComponent),
-        data: { breadcrumb: 'Continuous Assessments' }
+        data: { breadcrumb: 'Continuous Assessment' }
+      },
+      {
+        path: 'continuous-assessments/reports',
+        loadComponent: () => import('./components/continuous-assessments-reports/continuous-assessments-reports.component').then(m => m.ContinuousAssessmentsReportsComponent),
+        data: { breadcrumb: 'CA Reports' }
       },
       {
         path: 'ncs',

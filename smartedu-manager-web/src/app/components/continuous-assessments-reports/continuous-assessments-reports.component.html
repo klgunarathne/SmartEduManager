@@ -1,0 +1,108 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Continuous Assessments Report</h2>
+      <p>View student competency status by module</p>
+    </div>
+  </div>
+
+  <!-- Batch & Module Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Batch</label>
+        <select [ngModel]="selectedBatchId()" (ngModelChange)="selectedBatchId.set($event); onBatchChange()">
+          <option [value]="0">Select Batch</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Module</label>
+        <select [ngModel]="selectedModuleId()" (ngModelChange)="selectedModuleId.set($event); onModuleChange()">
+          <option [value]="null">Select Module</option>
+          @for (module of modules(); track module.id) {
+            <option [value]="module.id">{{ module.moduleNo }} - {{ module.moduleName }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <button class="btn-generate" (click)="generateReport()" [disabled]="isLoading()">
+          Generate Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading report...</span>
+    </div>
+  }
+
+  @if (reportData()) {
+    <div class="report-card">
+      <div class="report-header">
+        <h3>{{ reportData()!.moduleNo }} - {{ reportData()!.moduleName }}</h3>
+        <button class="btn-print" (click)="printReport()">
+          <i class="fas fa-print"></i> Print
+        </button>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table report-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Student</th>
+              <th>MIS No</th>
+              @for (task of reportData()!.tasks; track task.id) {
+                <th>{{ task.taskNo }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (student of reportData()!.students; track student.studentId) {
+              <tr>
+                <td class="sticky-col student-name">{{ student.studentName }}</td>
+                <td>{{ student.misNo }}</td>
+                @for (task of reportData()!.tasks; track task.id) {
+                  <td>
+                    @if (hasAssessment(student.studentId, task.id)) {
+                      <span class="mark-badge" [style.background-color]="getMarkColor(getAssessmentMark(student.studentId, task.id))">
+                        {{ getAssessmentMark(student.studentId, task.id) }}
+                      </span>
+                      @if (getCompetencyDate(student.studentId, task.id)) {
+                        <div class="competency-date">{{ getCompetencyDate(student.studentId, task.id) | date:'shortDate' }}</div>
+                      }
+                    }
+                    @if (!hasAssessment(student.studentId, task.id)) {
+                      <span class="no-mark">-</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-section">
+        <div class="summary-cards">
+          @for (student of reportData()!.students; track student.studentId) {
+            <div class="summary-card">
+              <div class="summary-name">{{ student.studentName }}</div>
+              <div class="summary-stats">
+                <span class="stat competent">{{ getCCount(student.studentId) }} C</span>
+                <span class="stat nyc">{{ getNYCCount(student.studentId) }} NYC</span>
+                <span class="stat total">{{ reportData()!.tasks.length }} Total</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

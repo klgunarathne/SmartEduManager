@@ -196,12 +196,16 @@ public class ModuleTasksController : ControllerBase
                 .Where(ca => ca.ModuleTaskId == id)
                 .ToListAsync();
 
-            // Get students from the course that own assessments for this task
+            // Update all existing assessments for this task
             foreach (var assessment in existingAssessments)
             {
-                if (assessment.CompetencyDate == null)
+                if (updateDto.OriginalAssessmentDate.HasValue)
                 {
-                    assessment.CompetencyDate = updateDto.OriginalAssessmentDate;
+                    assessment.CompetencyDate = updateDto.OriginalAssessmentDate.Value;
+                }
+                else
+                {
+                    assessment.CompetencyDate = null;
                 }
             }
 

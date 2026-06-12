@@ -141,6 +141,14 @@ interface Breadcrumb {
                 </a>
               </li>
               <li class="nav-item">
+                <a routerLink="/instructor/continuous-assessments/reports" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-chart-bar"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>CA Reports</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
                 <a routerLink="/instructor/attendance" routerLinkActive="active" class="nav-link">
                   <i class="fas fa-calendar-check"></i>
                   @if (!sidebarCollapsed()) {

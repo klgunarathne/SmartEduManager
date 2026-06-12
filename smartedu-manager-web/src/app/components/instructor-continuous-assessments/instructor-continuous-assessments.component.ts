@@ -204,7 +204,10 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         this.isLoading.set(false);
         this.toast.success('Competency date updated');
       },
-      error: () => { this.isLoading.set(false); this.toast.error('Failed to update competency date'); }
+      error: () => { 
+        this.isLoading.set(false); 
+        this.toast.error('Failed to update competency date'); 
+      }
     });
   }
 
@@ -222,7 +225,7 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         ));
 
         this.assessments.update(list => list.map(a => {
-          if (a.moduleTaskId === taskId && a.assessmentMark === 'C' && !a.competencyDate) {
+          if (a.moduleTaskId === taskId) {
             return { ...a, competencyDate: dateStr };
           }
           return a;
@@ -231,7 +234,10 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         this.isLoading.set(false);
         this.toast.success('Original date set for all students');
       },
-      error: () => { this.isLoading.set(false); this.toast.error('Failed to set original date'); }
+      error: () => { 
+        this.isLoading.set(false); 
+        this.toast.error('Failed to set original date'); 
+      }
     });
   }
 
@@ -244,10 +250,21 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         this.tasks.update(list => list.map(t =>
           t.id === taskId ? { ...t, originalAssessmentDate: undefined } : t
         ));
+
+        this.assessments.update(list => list.map(a => {
+          if (a.moduleTaskId === taskId) {
+            return { ...a, competencyDate: null };
+          }
+          return a;
+        }));
+
         this.isLoading.set(false);
         this.toast.success('Original date cleared');
       },
-      error: () => { this.isLoading.set(false); this.toast.error('Failed to clear original date'); }
+      error: () => { 
+        this.isLoading.set(false); 
+        this.toast.error('Failed to clear original date'); 
+      }
     });
   }
 
