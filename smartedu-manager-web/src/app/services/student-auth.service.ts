@@ -21,6 +21,15 @@ export interface GenerateCredentialsDto {
   sendEmail?: boolean;
 }
 
+export interface DeleteUsersDto {
+  usernames: string[];
+}
+
+export interface DeleteUsersResponse {
+  deletedCount: number;
+  errors: string[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -31,6 +40,24 @@ export class StudentAuthService {
     return this.http.post<StudentCredentials[]>(`${this.API_URL}/students/generate-credentials`, dto).pipe(
       catchError(error => {
         console.error('Error generating credentials:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  deleteUsers(usernames: string[]): Observable<DeleteUsersResponse> {
+    return this.http.post<DeleteUsersResponse>(`${this.API_URL}/students/delete-users-by-usernames`, { usernames }).pipe(
+      catchError(error => {
+        console.error('Error deleting users:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  checkUserExists(usernames: string[]): Observable<boolean[]> {
+    return this.http.post<boolean[]>(`${this.API_URL}/students/check-users-exist`, { usernames }).pipe(
+      catchError(error => {
+        console.error('Error checking users:', error);
         return throwError(() => error);
       })
     );

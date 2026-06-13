@@ -274,6 +274,38 @@ public class StudentsController : ControllerBase
         }
     }
 
+    [HttpPost("delete-users-by-usernames")]
+    [Authorize(Roles = "Admin,Instructor")]
+    public async Task<IActionResult> DeleteUsersByUsernames([FromBody] DeleteUsersDto dto)
+    {
+        try
+        {
+            var deletedCount = 0;
+            var errors = new List<string>();
+
+            foreach (var username in dto.Usernames)
+            {
+                var user = await _userManager.FindByNameAsync(username);
+                if (user != null)
+                {
+                    var result = await _userManager.DeleteAsync(user);
+                    if (result.Succeeded)
+                        deletedCount++;
+                    else
+                        errors.Add($"Failed to delete {username}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+
+            _logger.LogInformation($"Deleted {deletedCount} users");
+            return Ok(new { DeletedCount = deletedCount, Errors = errors });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting users");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     private string GenerateRandomPassword()
     {
         string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -294,5 +326,26 @@ public class StudentsController : ControllerBase
         }
         
         return new string(passwordChars.OrderBy(_ => random.Next()).ToArray());
+    }
+
+    [HttpPost("check-users-exist")]
+    [Authorize(Roles = "Admin,Instructor")]
+    public async Task<IActionResult> CheckUsersExist([FromBody] CheckUsersDto dto)
+    {
+        try
+        {
+            var results = new List<bool>();
+            foreach (var username in dto.Usernames)
+            {
+                var user = await _userManager.FindByNameAsync(username);
+                results.Add(user != null);
+            }
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking users");
+            return StatusCode(500, "Internal server error");
+        }
     }
 }

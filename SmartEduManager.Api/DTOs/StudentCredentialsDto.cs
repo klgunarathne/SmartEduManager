@@ -17,5 +17,15 @@ public class GenerateCredentialsDto
     public string? DefaultPassword { get; set; }
     public bool GenerateRandomPassword { get; set; } = true;
     public bool SendEmail { get; set; } = false;
-    public string? UsernamePrefix { get; set; } // Optional prefix for username (e.g., "STU-")
+    public string? UsernamePrefix { get; set; }
+}
+
+public class DeleteUsersDto
+{
+    public List<string> Usernames { get; set; } = new();
+}
+
+public class CheckUsersDto
+{
+    public List<string> Usernames { get; set; } = new();
 }
