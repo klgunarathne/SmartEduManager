@@ -6,7 +6,6 @@ import { InstructorService, Instructor } from '../../services/instructor.service
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 
 interface BatchStudent {
   id: number;
@@ -279,20 +278,11 @@ export class InstructorDashboardComponent implements OnInit {
           return;
         }
 
-        const sortedBatches = [...batches].sort((a, b) => {
-          const dateA = new Date(a.startDate).getTime();
-          const dateB = new Date(b.startDate).getTime();
-          return dateB - dateA;
-        });
+        const today = this.getTodayDate();
+        const currentBatch = batches.find(b => b.startDate && b.endDate && b.startDate <= today && b.endDate >= today) || batches[0];
 
-        const currentBatch = sortedBatches[0];
-        const studentRequests = batches.map(batch => this.studentService.getStudentsByBatch(batch.batchId));
-
-        forkJoin(studentRequests).subscribe({
-          next: (studentsByBatch) => {
-            const currentStudents = studentsByBatch[0] ?? [];
-            const totalStudents = studentsByBatch.reduce((total, students) => total + students.length, 0);
-
+        this.studentService.getStudentsByBatch(currentBatch.batchId).subscribe({
+          next: (currentStudents) => {
             this.allStudents = currentStudents.map(s => ({
               id: s.id,
               name: s.nameWithInitials,
@@ -305,7 +295,7 @@ export class InstructorDashboardComponent implements OnInit {
             this.filteredStudents = [...this.allStudents];
 
             this.stats.set({
-              totalStudents,
+              totalStudents: currentStudents.length,
               totalBatches: batches.length,
               activeBatch: currentBatch.batchCode,
               activeStudents: currentStudents.length
@@ -354,6 +344,11 @@ export class InstructorDashboardComponent implements OnInit {
     ];
     const index = name?.charCodeAt(0) || 0;
     return colors[index % colors.length];
+  }
+
+  private getTodayDate(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }
 
   constructor(
