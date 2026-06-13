@@ -145,10 +145,15 @@
     left: 0;
     background: white;
     z-index: 2;
-    min-width: 160px;
     text-align: left;
 
     &:first-child { z-index: 3; }
+  }
+
+  .sn-col {
+    min-width: 40px;
+    max-width: 50px;
+    text-align: center;
   }
 
   tbody tr:hover .sticky-col {

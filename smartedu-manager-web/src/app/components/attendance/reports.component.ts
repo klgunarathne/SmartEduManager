@@ -6,6 +6,7 @@ import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
 import { Router } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
+import { ExportService } from '../../services/export.service';
 
 @Component({
   selector: 'app-reports',
@@ -34,7 +35,8 @@ export class ReportsComponent implements OnInit {
     private batchService: BatchService,
     private studentService: StudentService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private exportService: ExportService
   ) {}
 
   ngOnInit(): void {
@@ -172,11 +174,100 @@ export class ReportsComponent implements OnInit {
   }
 
   exportPdf(): void {
-    console.log('Exporting PDF...');
+    if (this.reportType() === 'monthly') {
+      const grid = this.monthlyGrid();
+      if (!grid || grid.rows.length === 0) return;
+
+      const title = 'Monthly Attendance Report';
+      const dayHeaders = grid.days.map(d => d.split('-')[2]);
+      const headers = ['SN', 'Student', ...dayHeaders, 'Total', 'Present', 'Absent', '%'];
+      const rows = grid.rows.map((row, index) => {
+        const total = row.attendances.filter(a => a === true || a === false).length;
+        const present = row.attendances.filter(a => a === true).length;
+        const absent = row.attendances.filter(a => a === false).length;
+        const dayValues = row.attendances.map(a => a === true ? 1 : a === false ? 0 : '');
+        return [index + 1, row.studentName, ...dayValues, total, present, absent, `${this.calcPercent(present, total)}%`];
+      });
+
+      const avgTotal = this.getAverageTotal();
+      const avgPresent = this.getAveragePresent();
+      const avgAbsent = avgTotal - avgPresent;
+      const avgPercent = `${this.getAveragePercentage()}%`;
+      const emptyDays = grid.days.map(() => '');
+      rows.push(['', 'Average', ...emptyDays, avgTotal, avgPresent, avgAbsent, avgPercent]);
+
+      this.exportService.exportPdf({ title, headers, rows, orientation: 'landscape' });
+    } else if (this.reportType() === 'batch') {
+      if (this.batchReport().length === 0) return;
+
+      const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
+      const title = batch ? `${batch.batchCode} - Batch Attendance Summary` : 'Batch Attendance Summary';
+      const headers = ['SN', 'Student', 'MIS No', 'Total Days', 'Present', 'Absent', 'Percentage', 'Status'];
+      const rows = this.batchReport().map((record, index) => ({
+        SN: index + 1,
+        Student: record.studentName,
+        'MIS No': record.misNo,
+        'Total Days': record.totalDays,
+        Present: record.presentCount,
+        Absent: record.absentCount,
+        Percentage: `${record.attendancePercentage}%`,
+        Status: record.attendancePercentage >= 75 ? 'Eligible' : 'Not Eligible'
+      }));
+
+      this.exportService.exportPdf({ title, headers, rows });
+    }
   }
 
   exportExcel(): void {
-    console.log('Exporting Excel...');
+    if (this.reportType() === 'monthly') {
+      const grid = this.monthlyGrid();
+      if (!grid || grid.rows.length === 0) return;
+
+      const title = 'Monthly Attendance Report';
+      const dayHeaders = grid.days.map(d => d.split('-')[2]);
+      const headers = ['SN', 'Student', ...dayHeaders, 'Total', 'Present', 'Absent', '%'];
+      const rows = grid.rows.map((row, index) => {
+        const total = row.attendances.filter(a => a === true || a === false).length;
+        const present = row.attendances.filter(a => a === true).length;
+        const absent = row.attendances.filter(a => a === false).length;
+        const dayValues = row.attendances.map(a => a === true ? 1 : a === false ? 0 : '');
+        const rowObj: Record<string, any> = { SN: index + 1, Student: row.studentName };
+        dayHeaders.forEach((day, i) => rowObj[day] = dayValues[i]);
+        rowObj['Total'] = total;
+        rowObj['Present'] = present;
+        rowObj['Absent'] = absent;
+        rowObj['%'] = `${this.calcPercent(present, total)}%`;
+        return rowObj;
+      });
+
+      const avgRow: Record<string, any> = { SN: '', Student: 'Average' };
+      dayHeaders.forEach((day) => avgRow[day] = '');
+      avgRow['Total'] = this.getAverageTotal();
+      avgRow['Present'] = this.getAveragePresent();
+      avgRow['Absent'] = avgRow['Total'] - avgRow['Present'];
+      avgRow['%'] = `${this.getAveragePercentage()}%`;
+      rows.push(avgRow);
+
+      this.exportService.exportExcel({ title, headers, rows });
+    } else if (this.reportType() === 'batch') {
+      if (this.batchReport().length === 0) return;
+
+      const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
+      const title = batch ? `${batch.batchCode} - Batch Attendance Summary` : 'Batch Attendance Summary';
+      const headers = ['SN', 'Student', 'MIS No', 'Total Days', 'Present', 'Absent', 'Percentage', 'Status'];
+      const rows = this.batchReport().map((record, index) => ({
+        SN: index + 1,
+        Student: record.studentName,
+        'MIS No': record.misNo,
+        'Total Days': record.totalDays,
+        Present: record.presentCount,
+        Absent: record.absentCount,
+        Percentage: `${record.attendancePercentage}%`,
+        Status: record.attendancePercentage >= 75 ? 'Eligible' : 'Not Eligible'
+      }));
+
+      this.exportService.exportExcel({ title, headers, rows });
+    }
   }
 
   get isLoading(): boolean {

@@ -5,6 +5,7 @@ import { AttendanceService, Attendance } from '../../services/attendance.service
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
 import { ToastService } from '../../services/toast.service';
+import { ExportService } from '../../services/export.service';
 import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
@@ -30,7 +31,8 @@ export class DailyAttendanceComponent implements OnInit {
     private batchService: BatchService,
     private studentService: StudentService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private exportService: ExportService
   ) {}
 
   private toast = inject(ToastService);
@@ -199,7 +201,7 @@ export class DailyAttendanceComponent implements OnInit {
     }, 500);
   }
 
-  get formattedDate(): string {
+   get formattedDate(): string {
     const date = new Date(this.selectedDate());
     return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
@@ -230,5 +232,45 @@ export class DailyAttendanceComponent implements OnInit {
 
   get todayDate(): string {
     return this.getTodayDate();
+  }
+
+  exportToPdf(): void {
+    if (!this.selectedBatchId()) return;
+
+    const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
+    const title = batch ? `${batch.batchCode} - Daily Attendance` : 'Daily Attendance';
+
+    const headers = ['SN', 'Student', 'MIS No', 'Status'];
+    const rows = this.students().map((student, index) => {
+      const status = this.getAttendanceStatus(student.id);
+      return {
+        SN: index + 1,
+        Student: student.nameWithInitials,
+        'MIS No': student.misNo,
+        Status: status === 'present' ? 'Present' : status === 'absent' ? 'Absent' : 'Not Marked'
+      };
+    });
+
+    this.exportService.exportPdf({ title, headers, rows });
+  }
+
+  exportToExcel(): void {
+    if (!this.selectedBatchId()) return;
+
+    const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
+    const title = batch ? `${batch.batchCode} - Daily Attendance` : 'Daily Attendance';
+
+    const headers = ['SN', 'Student', 'MIS No', 'Status'];
+    const rows = this.students().map((student, index) => {
+      const status = this.getAttendanceStatus(student.id);
+      return {
+        SN: index + 1,
+        Student: student.nameWithInitials,
+        'MIS No': student.misNo,
+        Status: status === 'present' ? 'Present' : status === 'absent' ? 'Absent' : 'Not Marked'
+      };
+    });
+
+    this.exportService.exportExcel({ title, headers, rows });
   }
 }

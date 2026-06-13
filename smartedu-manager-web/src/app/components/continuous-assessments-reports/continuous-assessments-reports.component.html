@@ -67,15 +67,17 @@
           <table class="data-table assessments-grid">
             <thead>
               <tr>
-                <th class="sticky-col" style="min-width: 200px;">Student</th>
+                <th class="sticky-col sn-col">SN</th>
+                <th class="sticky-col" style="min-width: 160px;">Student</th>
                 @for (task of reportData()!.tasks; track task.id) {
                   <th class="task-header">{{ task.taskNo }}</th>
                 }
               </tr>
             </thead>
             <tbody>
-              @for (student of reportData()!.students; track student.id) {
+              @for (student of reportData()!.students; track student.id; let i = $index) {
                 <tr>
+                  <td class="sn-col">{{ i + 1 }}</td>
                   <td class="sticky-col student-name">{{ student.nameWithInitials }}</td>
                   @for (task of reportData()!.tasks; track task.id) {
                     <td>

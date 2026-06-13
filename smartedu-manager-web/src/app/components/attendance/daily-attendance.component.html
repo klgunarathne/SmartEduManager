@@ -54,6 +54,14 @@
         <span class="stat present"><i class="fas fa-user-check"></i> {{ presentCount }} Present</span>
         <span class="stat absent"><i class="fas fa-user-times"></i> {{ absentCount }} Absent</span>
         <span class="stat total"><i class="fas fa-users"></i> {{ students().length }} Total</span>
+        <div class="export-buttons">
+          <button class="btn btn-sm btn-pdf" (click)="exportToPdf()" [disabled]="students().length === 0">
+            <i class="fas fa-file-pdf"></i> PDF
+          </button>
+          <button class="btn btn-sm btn-excel" (click)="exportToExcel()" [disabled]="students().length === 0">
+            <i class="fas fa-file-excel"></i> Excel
+          </button>
+        </div>
       </div>
     </div>
 
@@ -90,12 +98,13 @@
           </div>
         }
         
-        @for (student of filteredStudents(); track student.id) {
+        @for (student of filteredStudents(); track student.id; let i = $index) {
           <div class="student-item">
-            <div class="student-info">
-              <span class="student-name">{{ student.nameWithInitials }}</span>
-              <span class="mis-badge">{{ student.misNo }}</span>
-            </div>
+           <div class="student-info">
+             <span class="student-sn">{{ i + 1 }}</span>
+             <span class="student-name">{{ student.nameWithInitials }}</span>
+             <span class="mis-badge">{{ student.misNo }}</span>
+           </div>
             <div class="student-actions">
               <button 
                 type="button"

@@ -79,7 +79,8 @@
           <table class="data-table monthly-grid">
             <thead>
               <tr>
-                <th class="sticky-col">Student</th>
+                <th class="sticky-col sn-col">SN</th>
+                <th class="sticky-col" style="min-width: 160px;">Student</th>
                 @for (day of monthlyGrid()!.days; track day) {
                   <th>{{ day.split('-')[2] }}</th>
                 }
@@ -90,8 +91,9 @@
               </tr>
             </thead>
             <tbody>
-              @for (row of monthlyGrid()!.rows; track row.studentId) {
+              @for (row of monthlyGrid()!.rows; track row.studentId; let i = $index) {
                 <tr>
+                  <td class="sn-col">{{ i + 1 }}</td>
                   <td class="sticky-col">{{ row.studentName }}</td>
                   @for (status of row.attendances; track $index) {
                     <td [class.present]="status === true" [class.absent]="status === false" [class.none]="status === null">
@@ -164,6 +166,7 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th>SN</th>
                 <th>Student</th>
                 <th>MIS No</th>
                 <th>Total Days</th>
@@ -174,8 +177,9 @@
               </tr>
             </thead>
             <tbody>
-              @for (record of batchReport(); track record.studentId) {
+              @for (record of batchReport(); track record.studentId; let i = $index) {
                 <tr [class.low-attendance]="record.attendancePercentage < 75">
+                  <td>{{ i + 1 }}</td>
                   <td>{{ record.studentName }}</td>
                   <td><span class="mis-badge">{{ record.misNo }}</span></td>
                   <td>{{ record.totalDays }}</td>

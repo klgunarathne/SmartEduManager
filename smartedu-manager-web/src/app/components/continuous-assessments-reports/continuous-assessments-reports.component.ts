@@ -222,8 +222,8 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
     const data = this.reportData();
     if (!data) return;
 
-    const rows = data.students.map((student) => {
-      const row: Record<string, string | number | null | undefined> = { Student: student.nameWithInitials };
+    const rows = data.students.map((student, index) => {
+      const row: Record<string, string | number | null | undefined> = { SN: index + 1, Student: student.nameWithInitials };
       data.tasks.forEach((task) => {
         const assessment = data.results.find(
           (r) => r.studentId === student.id && r.moduleTaskId === task.id
@@ -237,7 +237,7 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
 
     this.exportService.exportPdf({
       title: `${data.moduleNo} - ${data.moduleName} - ${this.getSelectedBatchCode()}`,
-      headers: ['Student', ...data.tasks.map((task) => `Task ${task.taskNo}`)],
+      headers: ['SN', 'Student', ...data.tasks.map((task) => `Task ${task.taskNo}`)],
       rows
     });
   }
@@ -246,8 +246,8 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
     const data = this.reportData();
     if (!data) return;
 
-    const rows = data.students.map((student) => {
-      const row: Record<string, string | number | null | undefined> = { Student: student.nameWithInitials };
+    const rows = data.students.map((student, index) => {
+      const row: Record<string, string | number | null | undefined> = { SN: index + 1, Student: student.nameWithInitials };
       data.tasks.forEach((task) => {
         const assessment = data.results.find(
           (r) => r.studentId === student.id && r.moduleTaskId === task.id
@@ -261,7 +261,7 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
 
     this.exportService.exportExcel({
       title: `${data.moduleNo} - ${data.moduleName} - ${this.getSelectedBatchCode()}`,
-      headers: ['Student', ...data.tasks.map((task) => `Task ${task.taskNo}`)],
+      headers: ['SN', 'Student', ...data.tasks.map((task) => `Task ${task.taskNo}`)],
       rows
     });
   }
