@@ -400,7 +400,8 @@ export class LoginComponent {
         } else if (this.authService.isInstructor()) {
           this.router.navigate(['/instructor/dashboard']);
         } else if (this.authService.isStudent()) {
-          this.router.navigate(['/student/dashboard']);
+          this.errorMessage.set('Student dashboard is not available');
+          this.isLoading.set(false);
         } else {
           this.router.navigate(['/admin/dashboard']);
         }

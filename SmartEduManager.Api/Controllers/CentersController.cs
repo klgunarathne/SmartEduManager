@@ -24,7 +24,6 @@ public class CentersController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetCenters()
     {
         try
@@ -43,12 +42,11 @@ public class CentersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetCenter(int id)
     {
         try
         {
-            var center = await _repository.GetByIdAsync(id);
+            var center = await _repository.GetCenterWithDistrictAsync(id);
 
             if (center == null)
             {

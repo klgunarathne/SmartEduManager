@@ -24,7 +24,6 @@ public class ModulesController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetModules()
     {
         try
@@ -38,12 +37,11 @@ public class ModulesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving modules");
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, "Internal server error");
         }
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetModule(int id)
     {
         try
@@ -67,7 +65,6 @@ public class ModulesController : ControllerBase
     }
 
     [HttpGet("ncs/{ncsId}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetModulesByNCSId(int ncsId)
     {
         try

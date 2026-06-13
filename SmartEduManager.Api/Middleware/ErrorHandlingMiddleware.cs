@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -11,11 +11,13 @@ public class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
+    private readonly IHostEnvironment _environment;
 
-    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IHostEnvironment environment)
     {
         _next = next;
         _logger = logger;
+        _environment = environment;
     }
 
     public async Task Invoke(HttpContext context)
@@ -45,8 +47,7 @@ public class ErrorHandlingMiddleware
 
         var response = new
         {
-            message = exception.Message,
-            details = exception.InnerException?.Message,
+            message = _environment.IsDevelopment() ? exception.Message : "An unexpected error occurred.",
             statusCode = statusCode,
             timestamp = DateTime.UtcNow
         };

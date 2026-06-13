@@ -24,7 +24,6 @@ public class CourseInstructorsController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetCourseInstructors()
     {
         try
@@ -43,7 +42,6 @@ public class CourseInstructorsController : ControllerBase
     }
 
     [HttpGet("{courseId}/{instructorId}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetCourseInstructor(int courseId, int instructorId)
     {
         try

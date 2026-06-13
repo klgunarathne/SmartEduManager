@@ -5,6 +5,7 @@ import { StudentService, Student, CreateStudentDto, UpdateStudentDto, STUDENT_FI
 import { BatchService, Batch } from '../../services/batch.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
+import { concatMap, finalize, from } from 'rxjs';
 
 @Component({
   selector: 'app-instructor-students',
@@ -859,43 +860,40 @@ export class InstructorStudentsComponent implements OnInit {
     let failed = 0;
     let processed = 0;
 
-    const processNext = (index: number) => {
-      if (index >= data.length) {
-        this.importing.set(false);
-        this.importComplete.set(true);
-        this.importSuccess.set(success);
-        this.importFailed.set(failed);
-        this.loadStudents();
-        if (failed === 0) {
-          this.toast.success(`Successfully imported ${success} students`);
-        } else {
-          this.toast.warning(`Imported ${success} students, ${failed} failed`);
-        }
-        return;
-      }
-
-      const row = data[index];
-      const studentData = this.mapRowToStudent(row, mapping, batchId);
-      
-      this.studentService.createStudent(studentData).subscribe({
+    from(data)
+      .pipe(
+        concatMap(row => {
+          const studentData = this.mapRowToStudent(row, mapping, batchId);
+          return this.studentService.createStudent(studentData).pipe(
+            finalize(() => {
+              processed++;
+              this.importProgress.set((processed / data.length) * 100);
+            })
+          );
+        }),
+        finalize(() => {
+          this.importing.set(false);
+          this.importComplete.set(true);
+          this.importSuccess.set(success);
+          this.importFailed.set(failed);
+          this.loadStudents();
+          if (failed === 0) {
+            this.toast.success(`Successfully imported ${success} students`);
+          } else {
+            this.toast.warning(`Imported ${success} students, ${failed} failed`);
+          }
+        })
+      )
+      .subscribe({
         next: () => {
           success++;
-          processed++;
-          this.importProgress.set((processed / data.length) * 100);
           this.importSuccess.set(success);
-          setTimeout(() => processNext(index + 1), 50);
         },
         error: () => {
           failed++;
-          processed++;
-          this.importProgress.set((processed / data.length) * 100);
           this.importFailed.set(failed);
-          setTimeout(() => processNext(index + 1), 50);
         }
       });
-    };
-
-    processNext(0);
   }
 
   mapRowToStudent(row: CsvStudentRow, mapping: CsvMapping, batchId: number): CreateStudentDto {

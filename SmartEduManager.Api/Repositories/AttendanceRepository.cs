@@ -43,7 +43,7 @@ public class AttendanceRepository : Repository<Attendance>, IAttendanceRepositor
         return await _dbSet
             .Include(a => a.Student)
             .Include(a => a.Batch)
-            .FirstOrDefaultAsync(a => a.StudentId == studentId && a.Date.Date == date.Date);
+            .FirstOrDefaultAsync(a => a.StudentId == studentId && a.Date >= date.Date && a.Date < date.Date.AddDays(1));
     }
 
     public async Task<IEnumerable<object>> GetBatchAttendanceSummaryAsync(int batchId, DateTime startDate, DateTime endDate)

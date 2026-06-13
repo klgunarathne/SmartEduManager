@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using SmartEduManager.Api.Helpers;
 using SmartEduManager.Api.Models;
 
@@ -6,13 +8,16 @@ namespace SmartEduManager.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Admin")]
 public class ImagesController : ControllerBase
 {
     private readonly ImageUploadHelper _imageUploadHelper;
+    private readonly ILogger<ImagesController> _logger;
 
-    public ImagesController(ImageUploadHelper imageUploadHelper)
+    public ImagesController(ImageUploadHelper imageUploadHelper, ILogger<ImagesController> logger)
     {
         _imageUploadHelper = imageUploadHelper;
+        _logger = logger;
     }
 
     [HttpPost("upload")]
@@ -36,11 +41,13 @@ public class ImagesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogWarning(ex, "Invalid image upload request");
+            return BadRequest("Invalid image upload request");
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Error uploading image: {ex.Message}");
+            _logger.LogError(ex, "Error uploading image");
+            return StatusCode(500, "Error uploading image");
         }
     }
 
@@ -65,7 +72,8 @@ public class ImagesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Error deleting image: {ex.Message}");
+            _logger.LogError(ex, "Error deleting image");
+            return StatusCode(500, "Error deleting image");
         }
     }
 }

@@ -20,6 +20,15 @@ public class NCSRepository : Repository<NCS>, INCSRepository
             .ToListAsync();
     }
 
+    public async Task<NCS?> GetNCSWithCourseAndModulesAsync(int id)
+    {
+        return await _context.NCS
+            .Include(n => n.Course)
+            .Include(n => n.Modules)
+            .ThenInclude(m => m.Tasks)
+            .FirstOrDefaultAsync(n => n.Id == id);
+    }
+
     public async Task<IEnumerable<NCS>> GetNCSByCourseIdAsync(int courseId)
     {
         return await _context.NCS

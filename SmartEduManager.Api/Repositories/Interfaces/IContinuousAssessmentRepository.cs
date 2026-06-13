@@ -6,6 +6,7 @@ public interface IContinuousAssessmentRepository : IRepository<ContinuousAssessm
 {
     Task<IEnumerable<ContinuousAssessment>> GetAssessmentsByStudentAsync(int studentId);
     Task<IEnumerable<ContinuousAssessment>> GetAssessmentsByModuleTaskAsync(int moduleTaskId);
+    Task<ContinuousAssessment?> GetAssessmentWithRelationsAsync(int id);
     Task<ContinuousAssessment?> GetAssessmentByStudentAndTaskAsync(int studentId, int moduleTaskId);
     Task<IEnumerable<ContinuousAssessment>> GetAssessmentsByBatchAsync(int batchId);
     Task<IEnumerable<ContinuousAssessment>> GetAssessmentsByCourseAsync(int courseId);

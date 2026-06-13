@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -35,6 +35,7 @@ export class BatchService {
 
   batches = signal<Batch[]>([]);
   isLoading = signal(false);
+  currentBatchId = signal<number>(0);
 
   constructor(private http: HttpClient) {}
 
@@ -43,6 +44,7 @@ export class BatchService {
     return this.http.get<Batch[]>(`${this.API_URL}/batches`).pipe(
       tap(data => {
         this.batches.set(data);
+        this.currentBatchId.set(this.computeCurrentBatchId(data));
         this.isLoading.set(false);
       }),
       catchError(error => {
@@ -51,6 +53,26 @@ export class BatchService {
         return throwError(() => error);
       })
     );
+  }
+
+  private computeCurrentBatchId(batches: Batch[]): number {
+    if (!batches || batches.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const activeBatches = batches.filter(b => {
+      const start = new Date(b.startDate);
+      const end = new Date(b.endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      return today >= start && today <= end;
+    });
+
+    const pool = activeBatches.length > 0 ? activeBatches : batches;
+    pool.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+
+    return pool[0]?.batchId ?? 0;
   }
 
   getBatch(id: number): Observable<Batch> {

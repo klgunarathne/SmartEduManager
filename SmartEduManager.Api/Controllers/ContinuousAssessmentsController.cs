@@ -111,7 +111,7 @@ public class ContinuousAssessmentsController : ControllerBase
     {
         try
         {
-            var assessment = await _repository.GetByIdAsync(id);
+            var assessment = await _repository.GetAssessmentWithRelationsAsync(id);
             if (assessment == null)
             {
                 _logger.LogWarning($"Continuous assessment with id {id} not found");

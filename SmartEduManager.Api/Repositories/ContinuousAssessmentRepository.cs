@@ -7,7 +7,7 @@ namespace SmartEduManager.Api.Repositories;
 
 public class ContinuousAssessmentRepository : Repository<ContinuousAssessment>, IContinuousAssessmentRepository
 {
-    private readonly AppDbContext _context;
+    private readonly new AppDbContext _context;
 
     public ContinuousAssessmentRepository(AppDbContext context) : base(context)
     {
@@ -18,6 +18,7 @@ public class ContinuousAssessmentRepository : Repository<ContinuousAssessment>, 
     {
         return await _context.ContinuousAssessments
             .Where(ca => ca.StudentId == studentId)
+            .Include(ca => ca.Student)
             .Include(ca => ca.ModuleTask)
             .ThenInclude(mt => mt.Module)
             .ToListAsync();
@@ -28,6 +29,8 @@ public class ContinuousAssessmentRepository : Repository<ContinuousAssessment>, 
         return await _context.ContinuousAssessments
             .Where(ca => ca.ModuleTaskId == moduleTaskId)
             .Include(ca => ca.Student)
+            .Include(ca => ca.ModuleTask)
+            .ThenInclude(mt => mt.Module)
             .ToListAsync();
     }
 
@@ -35,6 +38,15 @@ public class ContinuousAssessmentRepository : Repository<ContinuousAssessment>, 
     {
         return await _context.ContinuousAssessments
             .FirstOrDefaultAsync(ca => ca.StudentId == studentId && ca.ModuleTaskId == moduleTaskId);
+    }
+
+    public async Task<ContinuousAssessment?> GetAssessmentWithRelationsAsync(int id)
+    {
+        return await _context.ContinuousAssessments
+            .Include(ca => ca.Student)
+            .Include(ca => ca.ModuleTask)
+            .ThenInclude(mt => mt.Module)
+            .FirstOrDefaultAsync(ca => ca.Id == id);
     }
 
     public async Task<IEnumerable<ContinuousAssessment>> GetAssessmentsByBatchAsync(int batchId)

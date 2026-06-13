@@ -133,7 +133,7 @@ interface Breadcrumb {
                 </a>
               </li>
               <li class="nav-item">
-                <a routerLink="/instructor/continuous-assessments" routerLinkActive="active" class="nav-link">
+                <a routerLink="/instructor/continuous-assessments" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
                   <i class="fas fa-clipboard-list"></i>
                   @if (!sidebarCollapsed()) {
                     <span>Continuous Assessments</span>

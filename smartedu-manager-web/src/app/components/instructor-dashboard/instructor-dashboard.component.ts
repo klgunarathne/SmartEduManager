@@ -6,6 +6,7 @@ import { InstructorService, Instructor } from '../../services/instructor.service
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 interface BatchStudent {
   id: number;
@@ -285,17 +286,14 @@ export class InstructorDashboardComponent implements OnInit {
         });
 
         const currentBatch = sortedBatches[0];
-        
-        this.stats.set({
-          totalStudents: 45,
-          totalBatches: batches.length,
-          activeBatch: currentBatch.batchCode,
-          activeStudents: 0
-        });
+        const studentRequests = batches.map(batch => this.studentService.getStudentsByBatch(batch.batchId));
 
-        this.studentService.getStudentsByBatch(currentBatch.batchId).subscribe({
-          next: (students) => {
-            this.allStudents = students.map(s => ({
+        forkJoin(studentRequests).subscribe({
+          next: (studentsByBatch) => {
+            const currentStudents = studentsByBatch[0] ?? [];
+            const totalStudents = studentsByBatch.reduce((total, students) => total + students.length, 0);
+
+            this.allStudents = currentStudents.map(s => ({
               id: s.id,
               name: s.nameWithInitials,
               nicNo: s.nicNo,
@@ -305,11 +303,13 @@ export class InstructorDashboardComponent implements OnInit {
               status: 'active' as const
             }));
             this.filteredStudents = [...this.allStudents];
-            
-            this.stats.update(s => ({
-              ...s,
-              activeStudents: students.length
-            }));
+
+            this.stats.set({
+              totalStudents,
+              totalBatches: batches.length,
+              activeBatch: currentBatch.batchCode,
+              activeStudents: currentStudents.length
+            });
             this.isLoading.set(false);
           },
           error: (error) => {

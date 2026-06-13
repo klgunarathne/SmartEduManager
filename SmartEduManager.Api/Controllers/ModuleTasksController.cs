@@ -28,7 +28,6 @@ public class ModuleTasksController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetModuleTasks()
     {
         try
@@ -42,12 +41,11 @@ public class ModuleTasksController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving module tasks");
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, "Internal server error");
         }
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetModuleTask(int id)
     {
         try
@@ -71,7 +69,6 @@ public class ModuleTasksController : ControllerBase
     }
 
     [HttpGet("module/{moduleId}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetModuleTasksByModuleId(int moduleId)
     {
         try
@@ -196,16 +193,11 @@ public class ModuleTasksController : ControllerBase
                 .Where(ca => ca.ModuleTaskId == id)
                 .ToListAsync();
 
-            // Update all existing assessments for this task
             foreach (var assessment in existingAssessments)
             {
-                if (updateDto.OriginalAssessmentDate.HasValue)
+                if (assessment.AssessmentMark == "C")
                 {
-                    assessment.CompetencyDate = updateDto.OriginalAssessmentDate.Value;
-                }
-                else
-                {
-                    assessment.CompetencyDate = null;
+                    assessment.CompetencyDate = updateDto.OriginalAssessmentDate;
                 }
             }
 

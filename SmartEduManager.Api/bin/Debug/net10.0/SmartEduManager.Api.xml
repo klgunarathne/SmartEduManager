@@ -208,6 +208,18 @@
         <member name="M:SmartEduManager.Api.Migrations.AddCompetencyAndOriginalDates.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Migrations.SecurityAndRefreshTokenFixes">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.SecurityAndRefreshTokenFixes.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.SecurityAndRefreshTokenFixes.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Migrations.SecurityAndRefreshTokenFixes.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:Program">
             <summary>
             Auto-generated public partial Program class for top-level statement apps.

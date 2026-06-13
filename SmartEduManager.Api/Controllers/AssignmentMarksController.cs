@@ -79,7 +79,7 @@ public class AssignmentMarksController : ControllerBase
     {
         try
         {
-            var assignmentMarks = await _repository.GetByIdAsync(id);
+            var assignmentMarks = await _repository.GetAssignmentMarksWithRelationsAsync(id);
             if (assignmentMarks == null)
             {
                 _logger.LogWarning($"Assignment marks with id {id} not found");
@@ -135,7 +135,7 @@ public class AssignmentMarksController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var assignmentMarks = await _repository.GetByIdAsync(id);
+            var assignmentMarks = await _repository.GetAssignmentMarksWithRelationsAsync(id);
             if (assignmentMarks == null)
             {
                 _logger.LogWarning($"Assignment marks with id {id} not found");
@@ -206,7 +206,7 @@ public class AssignmentMarksController : ControllerBase
     {
         try
         {
-            var assignmentMarks = await _repository.GetByIdAsync(id);
+            var assignmentMarks = await _repository.GetAssignmentMarksWithRelationsAsync(id);
             if (assignmentMarks == null)
             {
                 _logger.LogWarning($"Assignment marks with id {id} not found");

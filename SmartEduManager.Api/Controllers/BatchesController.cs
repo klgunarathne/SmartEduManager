@@ -24,7 +24,6 @@ public class BatchesController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetBatches()
     {
         try
@@ -43,7 +42,6 @@ public class BatchesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetBatch(int id)
     {
         try

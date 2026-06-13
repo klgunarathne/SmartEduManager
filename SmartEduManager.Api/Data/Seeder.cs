@@ -18,11 +18,10 @@ public static class Seeder
                 var context = services.GetRequiredService<AppDbContext>();
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
                 var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+                var logger = services.GetRequiredService<ILogger<Program>>();
 
-                // Ensure database is created
-                context.Database.EnsureCreated();
+                await context.Database.MigrateAsync();
 
-                // Seed roles
                 var roles = new[] { "Admin", "Instructor", "User" };
                 foreach (var role in roles)
                 {
@@ -32,30 +31,38 @@ public static class Seeder
                     }
                 }
 
-                // Seed admin user
                 var adminEmail = "admin@smartedumanager.com";
-                var adminUser = await userManager.FindByEmailAsync(adminEmail);
-                if (adminUser == null)
-                {
-                    var user = new ApplicationUser
-                    {
-                        FirstName = "Admin",
-                        LastName = "User",
-                        UserName = adminEmail,
-                        Email = adminEmail,
-                        EmailConfirmed = true,
-                        Address = "Administrator Office",
-                        DateOfBirth = new DateTime(1980, 1, 1)
-                    };
+                var adminPassword = app.Configuration["Seeder:AdminPassword"]
+                    ?? Environment.GetEnvironmentVariable("SMARTEDU_SEED_ADMIN_PASSWORD");
 
-                    var result = await userManager.CreateAsync(user, "Admin@123");
-                    if (result.Succeeded)
+                if (string.IsNullOrWhiteSpace(adminPassword))
+                {
+                    logger.LogWarning("Admin seed user skipped. Set SMARTEDU_SEED_ADMIN_PASSWORD or Seeder:AdminPassword to create it.");
+                }
+                else
+                {
+                    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+                    if (adminUser == null)
                     {
-                        await userManager.AddToRoleAsync(user, "Admin");
+                        var user = new ApplicationUser
+                        {
+                            FirstName = "Admin",
+                            LastName = "User",
+                            UserName = adminEmail,
+                            Email = adminEmail,
+                            EmailConfirmed = true,
+                            Address = "Administrator Office",
+                            DateOfBirth = new DateTime(1980, 1, 1)
+                        };
+
+                        var result = await userManager.CreateAsync(user, adminPassword);
+                        if (result.Succeeded)
+                        {
+                            await userManager.AddToRoleAsync(user, "Admin");
+                        }
                     }
                 }
 
-                // Seed districts
                 if (!context.Districts.Any())
                 {
                     var districts = new[]
@@ -70,7 +77,6 @@ public static class Seeder
                     await context.SaveChangesAsync();
                 }
 
-                // Seed centers
                 if (!context.Centers.Any())
                 {
                     var districts = await context.Districts.ToListAsync();
@@ -84,7 +90,6 @@ public static class Seeder
                     await context.SaveChangesAsync();
                 }
 
-                // Seed courses
                 if (!context.Courses.Any())
                 {
                     var centers = await context.Centers.ToListAsync();
@@ -99,7 +104,6 @@ public static class Seeder
                     await context.SaveChangesAsync();
                 }
 
-                // Seed instructors
                 if (!context.Instructors.Any())
                 {
                     var instructors = new[]
@@ -112,7 +116,6 @@ public static class Seeder
                     await context.SaveChangesAsync();
                 }
 
-                // Seed NCS
                 if (!context.NCS.Any())
                 {
                     var courses = await context.Courses.ToListAsync();
@@ -130,6 +133,7 @@ public static class Seeder
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
                 logger.LogError(ex, "An error occurred while seeding the database.");
+                throw;
             }
         }
     }

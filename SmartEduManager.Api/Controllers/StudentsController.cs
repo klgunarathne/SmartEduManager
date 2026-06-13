@@ -65,7 +65,7 @@ public class StudentsController : ControllerBase
     {
         try
         {
-            var student = await _repository.GetByIdAsync(id);
+            var student = await _repository.GetStudentWithBatchAndCourseAsync(id);
 
             if (student == null)
             {
@@ -115,7 +115,7 @@ public class StudentsController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var student = await _repository.GetByIdAsync(id);
+            var student = await _repository.GetStudentWithBatchAndCourseAsync(id);
             if (student == null)
             {
                 _logger.LogWarning($"Student with id {id} not found");
@@ -142,7 +142,7 @@ public class StudentsController : ControllerBase
     {
         try
         {
-            var student = await _repository.GetByIdAsync(id);
+            var student = await _repository.GetStudentWithBatchAndCourseAsync(id);
             if (student == null)
             {
                 _logger.LogWarning($"Student with id {id} not found");

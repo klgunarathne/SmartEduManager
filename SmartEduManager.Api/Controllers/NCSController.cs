@@ -24,7 +24,6 @@ public class NCSController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetNCS()
     {
         try
@@ -38,17 +37,16 @@ public class NCSController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving NCS records");
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, "Internal server error");
         }
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetNCS(int id)
     {
         try
         {
-            var ncs = await _repository.GetByIdAsync(id);
+            var ncs = await _repository.GetNCSWithCourseAndModulesAsync(id);
 
             if (ncs == null)
             {
@@ -67,7 +65,6 @@ public class NCSController : ControllerBase
     }
 
     [HttpGet("course/{courseId}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetNCSByCourseId(int courseId)
     {
         try

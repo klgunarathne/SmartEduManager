@@ -2,9 +2,11 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Repositories.Interfaces;
+using System.Globalization;
 
 namespace SmartEduManager.Api.Controllers;
 
@@ -16,12 +18,14 @@ public class AttendanceController : ControllerBase
     private readonly IAttendanceRepository _repository;
     private readonly IMapper _mapper;
     private readonly ILogger<AttendanceController> _logger;
+    private readonly AppDbContext _context;
 
-    public AttendanceController(IAttendanceRepository repository, IMapper mapper, ILogger<AttendanceController> logger)
+    public AttendanceController(IAttendanceRepository repository, IMapper mapper, ILogger<AttendanceController> logger, AppDbContext context)
     {
         _repository = repository;
         _mapper = mapper;
         _logger = logger;
+        _context = context;
     }
 
     [HttpGet("batch/{batchId}")]
@@ -65,7 +69,16 @@ public class AttendanceController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var studentBelongsToBatch = await _context.Students
+                .AnyAsync(s => s.StudentId == createDto.StudentId && s.BatchId == createDto.BatchId);
+
+            if (!studentBelongsToBatch)
+            {
+                return BadRequest("Student does not belong to the selected batch");
+            }
+
             var attendance = _mapper.Map<Attendance>(createDto);
+            attendance.Date = createDto.Date.Date;
             await _repository.AddAsync(attendance);
             await _repository.SaveChangesAsync();
 
@@ -94,7 +107,16 @@ public class AttendanceController : ControllerBase
                 return NotFound("Attendance record not found");
             }
 
-            _mapper.Map(updateDto, attendance);
+            if (updateDto.IsPresent.HasValue)
+            {
+                attendance.IsPresent = updateDto.IsPresent.Value;
+            }
+
+            if (updateDto.Remarks is not null)
+            {
+                attendance.Remarks = updateDto.Remarks;
+            }
+
             _repository.Update(attendance);
             await _repository.SaveChangesAsync();
 
@@ -155,9 +177,14 @@ public class AttendanceController : ControllerBase
     {
         try
         {
+            if (!DateTime.TryParse(date, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedDate))
+            {
+                return BadRequest("Invalid date format");
+            }
+
             var attendance = await _repository.GetAttendanceByStudentAndDateAsync(
                 studentId, 
-                DateTime.Parse(date)
+                parsedDate
             );
             if (attendance == null || attendance.BatchId != batchId)
             {
@@ -182,9 +209,20 @@ public class AttendanceController : ControllerBase
     {
         try
         {
+            if (!DateTime.TryParse(date, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsedDate))
+            {
+                return BadRequest("Invalid date format");
+            }
+
+            var attendanceDate = parsedDate.Date;
             var attendance = await _repository.GetAll()
-                .Where(a => a.Date.Date == DateTime.Parse(date).Date && a.BatchId == batchId)
+                .Where(a => a.Date >= attendanceDate && a.Date < attendanceDate.AddDays(1) && a.BatchId == batchId)
                 .ToListAsync();
+
+            if (attendance.Count == 0)
+            {
+                return NotFound("Attendance records not found");
+            }
             
             foreach (var a in attendance)
             {
@@ -210,7 +248,12 @@ public class AttendanceController : ControllerBase
             var attendance = await _repository.GetAll()
                 .Where(a => a.BatchId == batchId)
                 .ToListAsync();
-            
+
+            if (attendance.Count == 0)
+            {
+                return NotFound("Attendance records not found");
+            }
+
             foreach (var a in attendance)
             {
                 _repository.Delete(a);

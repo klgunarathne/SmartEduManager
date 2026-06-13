@@ -26,11 +26,22 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
       public DbSet<ContinuousAssessment> ContinuousAssessments { get; set; } = null!;
 public DbSet<Assignment> Assignments { get; set; } = null!;
        public DbSet<AssignmentMarks> AssignmentMarks { get; set; } = null!;
-       public DbSet<Attendance> Attendances { get; set; } = null!;
 
      protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.Entity<Attendance>().ToTable("Attendances");
+
+        builder.Entity<RefreshToken>()
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<RefreshToken>()
+            .HasIndex(t => t.Token)
+            .IsUnique();
 
         // Configure relationships
         builder.Entity<Center>()

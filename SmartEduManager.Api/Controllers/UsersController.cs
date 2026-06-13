@@ -10,7 +10,7 @@ namespace SmartEduManager.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class UsersController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -254,7 +254,13 @@ public class UsersController : ControllerBase
             return NotFound();
         }
 
-        var result = await _userManager.AddToRoleAsync(user, role.Name);
+        var roleName = role.Name;
+        if (string.IsNullOrWhiteSpace(roleName))
+        {
+            return NotFound();
+        }
+
+        var result = await _userManager.AddToRoleAsync(user, roleName);
         if (!result.Succeeded)
         {
             return BadRequest(result.Errors);
@@ -278,7 +284,13 @@ public class UsersController : ControllerBase
             return NotFound();
         }
 
-        var result = await _userManager.RemoveFromRoleAsync(user, role.Name);
+        var roleName = role.Name;
+        if (string.IsNullOrWhiteSpace(roleName))
+        {
+            return NotFound();
+        }
+
+        var result = await _userManager.RemoveFromRoleAsync(user, roleName);
         if (!result.Succeeded)
         {
             return BadRequest(result.Errors);

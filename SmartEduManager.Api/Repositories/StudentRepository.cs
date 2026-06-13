@@ -7,7 +7,7 @@ namespace SmartEduManager.Api.Repositories;
 
 public class StudentRepository : Repository<Student>, IStudentRepository
 {
-    private readonly AppDbContext _context;
+    private readonly new AppDbContext _context;
 
     public StudentRepository(AppDbContext context) : base(context)
     {
@@ -20,6 +20,14 @@ public class StudentRepository : Repository<Student>, IStudentRepository
             .Include(s => s.Batch)
             .ThenInclude(b => b.Course)
             .ToListAsync();
+    }
+
+    public async Task<Student?> GetStudentWithBatchAndCourseAsync(int id)
+    {
+        return await _context.Students
+            .Include(s => s.Batch)
+            .ThenInclude(b => b.Course)
+            .FirstOrDefaultAsync(s => s.StudentId == id);
     }
 
     public async Task DeleteStudentWithRelationsAsync(int id)

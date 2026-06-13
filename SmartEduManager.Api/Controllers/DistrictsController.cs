@@ -24,7 +24,6 @@ public class DistrictsController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetDistricts()
     {
         try
@@ -43,7 +42,6 @@ public class DistrictsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetDistrict(int id)
     {
         try

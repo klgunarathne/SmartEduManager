@@ -49,7 +49,14 @@ export class DailyAttendanceComponent implements OnInit {
 
   loadBatches(): void {
     this.batchService.getBatches().subscribe({
-      next: (data) => this.batches.set(data)
+      next: (data) => {
+        this.batches.set(data);
+        const currentBatchId = this.batchService.currentBatchId();
+        if (currentBatchId > 0) {
+          this.selectedBatchId.set(currentBatchId);
+          this.loadStudentsForBatch();
+        }
+      }
     });
   }
 
@@ -127,8 +134,9 @@ export class DailyAttendanceComponent implements OnInit {
   toggleAttendance(studentId: number): void {
     const current = this.attendanceMap().get(studentId);
     const newStatus: 'present' | 'absent' = current === 'present' ? 'absent' : 'present';
-    this.attendanceMap.set(new Map(this.attendanceMap()));
-    this.attendanceMap().set(studentId, newStatus);
+    const updated = new Map(this.attendanceMap());
+    updated.set(studentId, newStatus);
+    this.attendanceMap.set(updated);
   }
 
   markAll(isPresent: boolean): void {
@@ -205,7 +213,15 @@ export class DailyAttendanceComponent implements OnInit {
   }
 
   get hasChanges(): boolean {
-    return this.students().some(s => this.attendanceMap().has(s.id));
+    return this.students().some(s => {
+      const current = this.attendanceMap().get(s.id);
+      if (!current) {
+        return false;
+      }
+
+      const existing = this.attendanceRecords().find(r => r.studentId === s.id);
+      return existing?.isPresent !== (current === 'present');
+    });
   }
 
   get isLoading(): boolean {

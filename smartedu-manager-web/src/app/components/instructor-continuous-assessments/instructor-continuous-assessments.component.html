@@ -100,14 +100,24 @@
                           title="Not Yet Competent"
                         >NYC</button>
                       </div>
-                      @if (getMark(student.id, task.id)?.assessmentMark === 'C') {
+                      @if (getMark(student.id, task.id)) {
+                        @let mark = getMark(student.id, task.id)!;
                         <input
                           type="date"
-                          [ngModel]="getMark(student.id, task.id)?.competencyDate"
-                          (ngModelChange)="setCompetencyDate(student.id, task.id, $event)"
-                          class="competency-date-input"
-                          title="Override competency date for this student"
+                          [ngModel]="getAssessmentDateValue(mark.assessmentDate)"
+                          (ngModelChange)="setAssessmentDate(student.id, task.id, $event)"
+                          class="assessment-date-input"
+                          title="Assessment date"
                         />
+                        @if (mark.assessmentMark === 'C') {
+                          <input
+                            type="date"
+                            [ngModel]="mark.competencyDate"
+                            (ngModelChange)="setCompetencyDate(student.id, task.id, $event)"
+                            class="competency-date-input"
+                            title="Override competency date for this student"
+                          />
+                        }
                       }
                     </td>
                   }

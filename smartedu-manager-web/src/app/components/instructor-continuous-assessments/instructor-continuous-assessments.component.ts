@@ -144,19 +144,25 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     this.isLoading.set(true);
     const existing = this.getMark(studentId, taskId);
     const task = this.tasks().find(t => t.id === taskId);
-    const assessmentDate = existing?.assessmentDate || task?.originalAssessmentDate || this.getTodayDate();
-    const competencyDate = mark === 'C' ? (existing?.competencyDate || task?.originalAssessmentDate || assessmentDate) : null;
 
     if (existing) {
-      this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
+      const payload: any = {
         assessmentMark: mark,
-        assessmentDate: assessmentDate,
-        competencyDate: competencyDate,
+        assessmentDate: existing.assessmentDate,
+        competencyDate: existing.competencyDate,
         assessorNotes: existing.assessorNotes
-      }, { responseType: 'text' }).subscribe({
+      };
+
+      if (mark === 'C' && !existing.competencyDate) {
+        payload.competencyDate = existing.assessmentDate;
+      } else if (mark === 'NYC') {
+        payload.competencyDate = null;
+      }
+
+      this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, payload, { responseType: 'text' }).subscribe({
         next: () => {
           this.assessments.update(list => list.map(a =>
-            a.id === existing.id ? { ...a, assessmentMark: mark, assessmentDate, competencyDate } : a
+            a.id === existing.id ? { ...a, assessmentMark: mark, competencyDate: payload.competencyDate } : a
           ));
           this.isLoading.set(false);
           this.toast.success('Assessment updated');
@@ -164,12 +170,15 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
         error: () => { this.isLoading.set(false); this.toast.error('Failed to update assessment'); }
       });
     } else {
+      const assessmentDate = task?.originalAssessmentDate || this.getTodayDate();
+      const competencyDate = mark === 'C' ? assessmentDate : null;
+
       this.http.post<AssessmentRecord>(`${this.API_URL}/continuousassessments`, {
         studentId,
         moduleTaskId: taskId,
         assessmentMark: mark,
-        assessmentDate: assessmentDate,
-        competencyDate: competencyDate,
+        assessmentDate,
+        competencyDate,
         assessorNotes: ''
       }).subscribe({
         next: (res: AssessmentRecord) => {
@@ -194,19 +203,48 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
       assessmentMark: existing.assessmentMark,
       assessmentDate: existing.assessmentDate,
-      competencyDate: competencyDate,
+      competencyDate: competencyDate ? new Date(competencyDate).toISOString() : null,
       assessorNotes: existing.assessorNotes
     }, { responseType: 'text' }).subscribe({
       next: () => {
         this.assessments.update(list => list.map(a =>
-          a.id === existing.id ? { ...a, competencyDate } : a
+          a.id === existing.id ? { ...a, competencyDate: competencyDate ? new Date(competencyDate).toISOString() : null } : a
         ));
         this.isLoading.set(false);
         this.toast.success('Competency date updated');
       },
-      error: () => { 
-        this.isLoading.set(false); 
-        this.toast.error('Failed to update competency date'); 
+      error: () => {
+        this.isLoading.set(false);
+        this.toast.error('Failed to update competency date');
+      }
+    });
+  }
+
+  setAssessmentDate(studentId: number, taskId: number, assessmentDate: string): void {
+    this.isLoading.set(true);
+    const existing = this.getMark(studentId, taskId);
+    if (!existing) {
+      this.isLoading.set(false);
+      this.toast.error('No assessment record found');
+      return;
+    }
+
+    this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
+      assessmentMark: existing.assessmentMark,
+      assessmentDate: new Date(assessmentDate).toISOString(),
+      competencyDate: existing.competencyDate,
+      assessorNotes: existing.assessorNotes
+    }, { responseType: 'text' }).subscribe({
+      next: () => {
+        this.assessments.update(list => list.map(a =>
+          a.id === existing.id ? { ...a, assessmentDate: new Date(assessmentDate).toISOString() } : a
+        ));
+        this.isLoading.set(false);
+        this.toast.success('Assessment date updated');
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.toast.error('Failed to update assessment date');
       }
     });
   }
@@ -314,5 +352,11 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
   private getTodayDate(): string {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
+
+  getAssessmentDateValue(assessmentDate: string | undefined): string {
+    if (!assessmentDate) return '';
+    const parts = assessmentDate.split('T');
+    return parts[0] ?? assessmentDate;
   }
 }

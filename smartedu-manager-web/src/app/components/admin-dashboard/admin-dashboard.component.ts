@@ -3,7 +3,11 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService, UserDto } from '../../services/auth.service';
 import { InstructorService, Instructor } from '../../services/instructor.service';
+import { StudentService } from '../../services/student.service';
+import { CourseService } from '../../services/course.service';
+import { CenterService } from '../../services/center.service';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 interface StatCard {
   title: string;
@@ -18,6 +22,15 @@ interface QuickAction {
   title: string;
   icon: string;
   route: string;
+  color: string;
+}
+
+interface Activity {
+  id: number;
+  user: string;
+  action: string;
+  time: string;
+  icon: string;
   color: string;
 }
 
@@ -140,7 +153,7 @@ interface QuickAction {
             <p>Here's what's happening with your education center today.</p>
           </div>
           <div class="welcome-actions">
-            <button class="btn btn-primary">
+            <button class="btn btn-primary" (click)="router.navigate(['/admin/students'])">
               <i class="fas fa-plus"></i>
               Add New Student
             </button>
@@ -189,20 +202,24 @@ interface QuickAction {
               <h3>Recent Activity</h3>
             </div>
             <div class="card-body">
-              <div class="activity-list">
-                @for (activity of recentActivities; track activity.id) {
-                  <div class="activity-item">
-                    <div class="activity-icon" [style.background]="activity.color">
-                      <i [class]="activity.icon"></i>
+              @if (recentActivities().length > 0) {
+                <div class="activity-list">
+                  @for (activity of recentActivities(); track activity.id) {
+                    <div class="activity-item">
+                      <div class="activity-icon" [style.background]="activity.color">
+                        <i [class]="activity.icon"></i>
+                      </div>
+                      <div class="activity-content">
+                        <span class="activity-user">{{ activity.user }}</span>
+                        <span class="activity-action">{{ activity.action }}</span>
+                      </div>
+                      <span class="activity-time">{{ activity.time }}</span>
                     </div>
-                    <div class="activity-content">
-                      <span class="activity-user">{{ activity.user }}</span>
-                      <span class="activity-action">{{ activity.action }}</span>
-                    </div>
-                    <span class="activity-time">{{ activity.time }}</span>
-                  </div>
-                }
-              </div>
+                  }
+                </div>
+              } @else {
+                <p class="empty-state">No recent activity to display.</p>
+              }
             </div>
           </div>
         </div>
@@ -289,24 +306,50 @@ export class AdminDashboardComponent implements OnInit {
   ]);
 
   quickActions: QuickAction[] = [
-    { title: 'Add Student', icon: 'fas fa-user-plus', route: '/admin/students/add', color: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-    { title: 'Add Course', icon: 'fas fa-book-medical', route: '/admin/courses/add', color: 'linear-gradient(135deg, #10b981, #34d399)' },
-    { title: 'Create Batch', icon: 'fas fa-users-rectangle', route: '/admin/batches/add', color: 'linear-gradient(135deg, #f59e0b, #fbbf24)' },
-    { title: 'Add Instructor', icon: 'fas fa-user-tie', route: '/admin/instructors/add', color: 'linear-gradient(135deg, #ec4899, #f472b6)' }
+    { title: 'Add Student', icon: 'fas fa-user-plus', route: '/admin/students', color: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
+    { title: 'Add Course', icon: 'fas fa-book-medical', route: '/admin/courses', color: 'linear-gradient(135deg, #10b981, #34d399)' },
+    { title: 'Create Batch', icon: 'fas fa-users-rectangle', route: '/admin/batches', color: 'linear-gradient(135deg, #f59e0b, #fbbf24)' },
+    { title: 'Add Instructor', icon: 'fas fa-user-tie', route: '/admin/instructors', color: 'linear-gradient(135deg, #ec4899, #f472b6)' }
   ];
 
-  recentActivities = [
-    { id: 1, user: 'John Doe', action: 'registered for Web Development course', time: '5 min ago', icon: 'fas fa-user-plus', color: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
-    { id: 2, user: 'Sarah Smith', action: 'completed Assignment #24', time: '15 min ago', icon: 'fas fa-check-circle', color: 'linear-gradient(135deg, #10b981, #34d399)' },
-    { id: 3, user: 'Mike Johnson', action: 'submitted assignment for review', time: '1 hour ago', icon: 'fas fa-file-upload', color: 'linear-gradient(135deg, #f59e0b, #fbbf24)' },
-    { id: 4, user: 'Emily Brown', action: 'enrolled in Data Science batch', time: '2 hours ago', icon: 'fas fa-graduation-cap', color: 'linear-gradient(135deg, #ec4899, #f472b6)' }
-  ];
+  recentActivities = signal<Activity[]>([]);
 
   ngOnInit(): void {
     this.currentUser = this.authService.getUser();
     if (this.authService.isInstructor()) {
       this.loadInstructorData();
+    } else {
+      this.loadAdminStats();
     }
+  }
+
+  private loadAdminStats(): void {
+    this.studentService.getStudents().subscribe({
+      next: students => {
+        this.courseService.getCourses().subscribe({
+          next: courses => {
+            this.centerService.getCenters().subscribe({
+              next: centers => {
+                this.instructorService.getInstructors().subscribe({
+                  next: instructors => {
+                    this.stats.set([
+                      { title: 'Total Students', value: students.length.toString(), icon: 'fas fa-user-graduate', change: 'Live from API', changeType: 'neutral', color: 'linear-gradient(135deg, #6366f1, #8b5cf6)' },
+                      { title: 'Total Instructors', value: instructors.length.toString(), icon: 'fas fa-chalkboard-teacher', change: 'Live from API', changeType: 'neutral', color: 'linear-gradient(135deg, #10b981, #34d399)' },
+                      { title: 'Active Courses', value: courses.length.toString(), icon: 'fas fa-book-open', change: 'Live from API', changeType: 'neutral', color: 'linear-gradient(135deg, #f59e0b, #fbbf24)' },
+                      { title: 'Total Centers', value: centers.length.toString(), icon: 'fas fa-building', change: 'Live from API', changeType: 'neutral', color: 'linear-gradient(135deg, #ec4899, #f472b6)' }
+                    ]);
+                  },
+                  error: error => console.error('Error loading instructors:', error)
+                });
+              },
+              error: error => console.error('Error loading centers:', error)
+            });
+          },
+          error: error => console.error('Error loading courses:', error)
+        });
+      },
+      error: error => console.error('Error loading students:', error)
+    });
   }
 
   private loadInstructorData(): void {
@@ -348,6 +391,10 @@ export class AdminDashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private instructorService: InstructorService
+    private instructorService: InstructorService,
+    private studentService: StudentService,
+    private courseService: CourseService,
+    private centerService: CenterService,
+    public router: Router
   ) {}
 }

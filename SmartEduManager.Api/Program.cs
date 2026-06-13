@@ -35,9 +35,27 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase; // Use camelCase for JSON serialization
 });
 
+var jwtKey = builder.Configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("SMARTEDU_JWT_KEY");
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("SMARTEDU_JWT_KEY environment variable is required.");
+}
+
+var jwtKeyBytes = Encoding.UTF8.GetBytes(jwtKey);
+if (jwtKeyBytes.Length < 32)
+{
+    throw new InvalidOperationException("SMARTEDU_JWT_KEY must be at least 32 characters.");
+}
+
 // Configure EF Core and Identity
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? Environment.GetEnvironmentVariable("SMARTEDU_DB_CONNECTION_STRING")
+        ?? "Server=localhost;Database=SmartEduManager;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
+
+    options.UseSqlServer(connectionString);
+});
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -45,7 +63,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
     options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequiredLength = 6;
+     options.Password.RequiredLength = 12;
     options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<AppDbContext>()
@@ -68,7 +86,7 @@ builder.Services.AddAuthentication(options =>
          ValidateAudience = true,
          ValidAudience = builder.Configuration["Jwt:Audience"],
          ValidIssuer = builder.Configuration["Jwt:Issuer"],
-         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+         IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes),
          ValidateIssuerSigningKey = true,
          ValidateLifetime = true,
          ClockSkew = TimeSpan.Zero
@@ -93,7 +111,7 @@ builder.Services.AddScoped<ICourseInstructorRepository, CourseInstructorReposito
     builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 
 // Configure AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
 // Configure FluentValidation
 builder.Services.AddFluentValidationAutoValidation()

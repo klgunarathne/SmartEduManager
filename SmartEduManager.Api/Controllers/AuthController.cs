@@ -9,6 +9,7 @@ using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace SmartEduManager.Api.Controllers;
@@ -110,9 +111,9 @@ public class AuthController : ControllerBase
             var refreshToken = GenerateRefreshToken();
             var storedRefreshToken = new RefreshToken
             {
-                Token = refreshToken,
+                Token = HashRefreshToken(refreshToken),
                 UserId = user.Id,
-                Expires = token.ValidTo.AddDays(Convert.ToDouble(_configuration["Jwt:DurationInDays"])),
+                Expires = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:DurationInDays"])),
                 CreatedByIp = GetIpAddress()
             };
             _context.RefreshTokens.Add(storedRefreshToken);
@@ -144,12 +145,18 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var user = await _userManager.FindByEmailAsync(userEmail);
-            if (user == null)
+            var requestedUser = await _userManager.FindByEmailAsync(userEmail);
+            if (requestedUser == null)
                 return Unauthorized();
 
-            var userRoles = await _userManager.GetRolesAsync(user);
-            var userDto = _mapper.Map<UserDto>(user);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            if (!isAdmin && !string.Equals(requestedUser.Id, currentUserId, StringComparison.Ordinal))
+                return Forbid();
+
+            var userRoles = await _userManager.GetRolesAsync(requestedUser);
+            var userDto = _mapper.Map<UserDto>(requestedUser);
             userDto.Roles = userRoles;
 
             return Ok(userDto);
@@ -178,8 +185,9 @@ public class AuthController : ControllerBase
             if (user == null)
                 return BadRequest("Invalid token");
 
-            var storedRefreshToken = _context.RefreshTokens.FirstOrDefault(t => 
-                t.Token == refreshTokenDto.RefreshToken && t.UserId == user.Id && t.IsActive);
+            var refreshTokenHash = HashRefreshToken(refreshTokenDto.RefreshToken);
+            var storedRefreshToken = await _context.RefreshTokens.FirstOrDefaultAsync(t =>
+                t.Token == refreshTokenHash && t.UserId == user.Id && !t.IsRevoked && !t.IsUsed && t.Expires > DateTime.UtcNow);
 
             if (storedRefreshToken == null)
                 return BadRequest("Invalid refresh token");
@@ -213,7 +221,7 @@ public class AuthController : ControllerBase
             // Save new refresh token
             var newStoredRefreshToken = new RefreshToken
             {
-                Token = newRefreshToken,
+                Token = HashRefreshToken(newRefreshToken),
                 UserId = user.Id,
                 Expires = DateTime.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:DurationInDays"])),
                 CreatedByIp = GetIpAddress()
@@ -254,7 +262,21 @@ public class AuthController : ControllerBase
 
     private string GenerateRefreshToken()
     {
-        return Guid.NewGuid().ToString();
+        var tokenBytes = RandomNumberGenerator.GetBytes(32);
+        return Convert.ToBase64String(tokenBytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+    }
+
+    private string HashRefreshToken(string refreshToken)
+    {
+        using var sha256 = SHA256.Create();
+        var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(refreshToken));
+        return Convert.ToBase64String(hashBytes)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
     }
 
     private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)

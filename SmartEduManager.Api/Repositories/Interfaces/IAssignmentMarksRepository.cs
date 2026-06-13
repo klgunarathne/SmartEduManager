@@ -6,5 +6,6 @@ public interface IAssignmentMarksRepository : IRepository<AssignmentMarks>
 {
     Task<IEnumerable<AssignmentMarks>> GetAssignmentMarksByAssignmentAsync(int assignmentId);
     Task<IEnumerable<AssignmentMarks>> GetAssignmentMarksByStudentAsync(int studentId);
+    Task<AssignmentMarks?> GetAssignmentMarksWithRelationsAsync(int id);
     Task<AssignmentMarks?> GetAssignmentMarksByAssignmentAndStudentAsync(int assignmentId, int studentId);
 }

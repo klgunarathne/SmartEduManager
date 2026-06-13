@@ -36,7 +36,6 @@ public class UpdateAssignmentMarksDtoValidator : AbstractValidator<UpdateAssignm
             .When(x => x.Marks >= 0);
 
         RuleFor(x => x.AssignmentDate)
-            .LessThanOrEqualTo(DateTime.Now).WithMessage("Assignment date must be in the past")
-            .When(x => x.AssignmentDate != null);
+            .LessThanOrEqualTo(DateTime.Now).WithMessage("Assignment date must be in the past");
     }
 }

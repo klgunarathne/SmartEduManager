@@ -70,7 +70,7 @@ export const routes: Routes = [
       },
       {
         path: 'batches',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+        redirectTo: 'dashboard',
         data: { breadcrumb: 'Batches' }
       },
       {
@@ -80,12 +80,12 @@ export const routes: Routes = [
       },
       {
         path: 'assignments',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+        redirectTo: 'dashboard',
         data: { breadcrumb: 'Assignments' }
       },
       {
         path: 'reports',
-        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+        redirectTo: 'dashboard',
         data: { breadcrumb: 'Reports' }
       },
       {

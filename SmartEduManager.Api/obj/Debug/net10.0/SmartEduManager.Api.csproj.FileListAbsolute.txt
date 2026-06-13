@@ -1,7 +1,6 @@
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\SmartEduManager.Api.exe
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\SmartEduManager.Api.dll
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\AutoMapper.dll
-d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\FluentValidation.dll
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\FluentValidation.AspNetCore.dll
 d:\New folder (2)\SmartEduManager\SmartEduManager.Api\bin\Debug\net10.0\FluentValidation.DependencyInjectionExtensions.dll

@@ -1,49 +1,75 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, catchError, throwError, tap } from 'rxjs';
+import { Observable, catchError, switchMap, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
   const router = inject(Router);
-  const token = localStorage.getItem('auth_token');
-  
-  // Skip adding token for login request
-  if (req.url.includes('/auth/login')) {
+  const authService = inject(AuthService);
+
+  if (req.url.includes('/auth/login') || req.url.includes('/auth/refresh-token')) {
     return next(req);
   }
-  
-  // Validate token exists
-  if (!token) {
+
+  const token = authService.accessToken();
+  if (!token || authService.isTokenExpiredPublic(token)) {
+    const refreshToken = authService.refreshToken();
+    if (refreshToken) {
+      return authService.refreshAccessToken().pipe(
+        switchMap(() => {
+          const refreshedToken = authService.accessToken();
+          if (!refreshedToken) {
+            authService.clearAuthPublic();
+            router.navigate(['/login']);
+            return throwError(() => new Error('Authentication required'));
+          }
+          return next(addAuthorization(req, refreshedToken));
+        }),
+        catchError(() => {
+          authService.clearAuthPublic();
+          router.navigate(['/login']);
+          return throwError(() => new Error('Authentication required'));
+        })
+      );
+    }
+
+    authService.clearAuthPublic();
     router.navigate(['/login']);
-    return next(req);
+    return throwError(() => new Error('Authentication required'));
   }
-  
-  // Validate JWT format (should have 3 parts separated by dots)
-  const tokenParts = token.split('.');
-  if (tokenParts.length !== 3) {
-    console.error('Invalid JWT format, redirecting to login');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
-    router.navigate(['/login']);
-    return throwError(() => new Error('Invalid token'));
-  }
-  
-  // Clone request with authorization header
-  const authReq = req.clone({
+
+  const authReq = addAuthorization(req, token);
+
+  return next(authReq).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status !== 401) {
+        return throwError(() => error);
+      }
+
+      return authService.refreshAccessToken().pipe(
+        switchMap(() => {
+          const refreshedToken = authService.accessToken();
+          if (!refreshedToken) {
+            return throwError(() => error);
+          }
+
+          return next(addAuthorization(req, refreshedToken));
+        }),
+        catchError(refreshError => {
+          authService.clearAuthPublic();
+          router.navigate(['/login']);
+          return throwError(() => refreshError);
+        })
+      );
+    })
+  );
+};
+
+function addAuthorization(req: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
+  return req.clone({
     setHeaders: {
       Authorization: `Bearer ${token}`
     }
   });
-  
-  return next(authReq).pipe(
-    catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
-        // Token expired or invalid - clear auth and redirect
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
-        router.navigate(['/login']);
-      }
-      return throwError(() => error);
-    })
-  );
-};
+}

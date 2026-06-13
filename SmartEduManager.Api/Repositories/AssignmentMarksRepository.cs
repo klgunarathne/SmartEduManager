@@ -7,7 +7,7 @@ namespace SmartEduManager.Api.Repositories;
 
 public class AssignmentMarksRepository : Repository<AssignmentMarks>, IAssignmentMarksRepository
 {
-    private readonly AppDbContext _context;
+    private readonly new AppDbContext _context;
 
     public AssignmentMarksRepository(AppDbContext context) : base(context)
     {
@@ -19,6 +19,7 @@ public class AssignmentMarksRepository : Repository<AssignmentMarks>, IAssignmen
         return await _context.AssignmentMarks
             .Where(am => am.AssignmentId == assignmentId)
             .Include(am => am.Student)
+            .Include(am => am.Assignment)
             .ToListAsync();
     }
 
@@ -26,8 +27,17 @@ public class AssignmentMarksRepository : Repository<AssignmentMarks>, IAssignmen
     {
         return await _context.AssignmentMarks
             .Where(am => am.StudentId == studentId)
+            .Include(am => am.Student)
             .Include(am => am.Assignment)
             .ToListAsync();
+    }
+
+    public async Task<AssignmentMarks?> GetAssignmentMarksWithRelationsAsync(int id)
+    {
+        return await _context.AssignmentMarks
+            .Include(am => am.Student)
+            .Include(am => am.Assignment)
+            .FirstOrDefaultAsync(am => am.Id == id);
     }
 
     public async Task<AssignmentMarks?> GetAssignmentMarksByAssignmentAndStudentAsync(int assignmentId, int studentId)

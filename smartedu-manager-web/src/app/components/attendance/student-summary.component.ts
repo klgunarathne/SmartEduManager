@@ -67,7 +67,14 @@ export class StudentSummaryComponent implements OnInit {
 
   loadBatches(): void {
     this.batchService.getBatches().subscribe({
-      next: (data) => this.batches.set(data)
+      next: (data) => {
+        this.batches.set(data);
+        const currentBatchId = this.batchService.currentBatchId();
+        if (currentBatchId > 0) {
+          this.selectedBatchId.set(currentBatchId);
+          this.onBatchChange();
+        }
+      }
     });
   }
 

@@ -15,4 +15,11 @@ public class CenterRepository : Repository<Center>, ICenterRepository
     {
         return await _context.Centers.Include(c => c.District).ToListAsync();
     }
+
+    public async Task<Center?> GetCenterWithDistrictAsync(int id)
+    {
+        return await _context.Centers
+            .Include(c => c.District)
+            .FirstOrDefaultAsync(c => c.CenterId == id);
+    }
 }

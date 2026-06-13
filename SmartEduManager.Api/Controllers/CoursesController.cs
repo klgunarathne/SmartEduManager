@@ -24,7 +24,6 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet]
-    [AllowAnonymous]
     public async Task<IActionResult> GetCourses()
     {
         try
@@ -38,12 +37,11 @@ public class CoursesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving courses");
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, "Internal server error");
         }
     }
 
     [HttpGet("{id}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetCourse(int id)
     {
         try
