@@ -106,18 +106,9 @@
                           type="date"
                           [ngModel]="getAssessmentDateValue(mark.assessmentDate)"
                           (ngModelChange)="setAssessmentDate(student.id, task.id, $event)"
-                          class="assessment-date-input"
-                          title="Assessment date"
+                          class="competency-date-input"
+                          title="Assessment / Competency date"
                         />
-                        @if (mark.assessmentMark === 'C') {
-                          <input
-                            type="date"
-                            [ngModel]="mark.competencyDate"
-                            (ngModelChange)="setCompetencyDate(student.id, task.id, $event)"
-                            class="competency-date-input"
-                            title="Override competency date for this student"
-                          />
-                        }
                       }
                     </td>
                   }

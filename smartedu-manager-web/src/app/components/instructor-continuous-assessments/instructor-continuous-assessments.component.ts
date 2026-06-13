@@ -191,35 +191,6 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     }
   }
 
-  setCompetencyDate(studentId: number, taskId: number, competencyDate: string): void {
-    this.isLoading.set(true);
-    const existing = this.getMark(studentId, taskId);
-    if (!existing) {
-      this.isLoading.set(false);
-      this.toast.error('No assessment record found');
-      return;
-    }
-
-    this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
-      assessmentMark: existing.assessmentMark,
-      assessmentDate: existing.assessmentDate,
-      competencyDate: competencyDate ? new Date(competencyDate).toISOString() : null,
-      assessorNotes: existing.assessorNotes
-    }, { responseType: 'text' }).subscribe({
-      next: () => {
-        this.assessments.update(list => list.map(a =>
-          a.id === existing.id ? { ...a, competencyDate: competencyDate ? new Date(competencyDate).toISOString() : null } : a
-        ));
-        this.isLoading.set(false);
-        this.toast.success('Competency date updated');
-      },
-      error: () => {
-        this.isLoading.set(false);
-        this.toast.error('Failed to update competency date');
-      }
-    });
-  }
-
   setAssessmentDate(studentId: number, taskId: number, assessmentDate: string): void {
     this.isLoading.set(true);
     const existing = this.getMark(studentId, taskId);
@@ -229,22 +200,24 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
       return;
     }
 
-    this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, {
+    const payload: any = {
       assessmentMark: existing.assessmentMark,
       assessmentDate: new Date(assessmentDate).toISOString(),
-      competencyDate: existing.competencyDate,
+      competencyDate: existing.assessmentMark === 'C' ? new Date(assessmentDate).toISOString() : null,
       assessorNotes: existing.assessorNotes
-    }, { responseType: 'text' }).subscribe({
+    };
+
+    this.http.put(`${this.API_URL}/continuousassessments/${existing.id}`, payload, { responseType: 'text' }).subscribe({
       next: () => {
         this.assessments.update(list => list.map(a =>
-          a.id === existing.id ? { ...a, assessmentDate: new Date(assessmentDate).toISOString() } : a
+          a.id === existing.id ? { ...a, assessmentDate: payload.assessmentDate, competencyDate: payload.competencyDate } : a
         ));
         this.isLoading.set(false);
-        this.toast.success('Assessment date updated');
+        this.toast.success('Date updated');
       },
       error: () => {
         this.isLoading.set(false);
-        this.toast.error('Failed to update assessment date');
+        this.toast.error('Failed to update date');
       }
     });
   }
