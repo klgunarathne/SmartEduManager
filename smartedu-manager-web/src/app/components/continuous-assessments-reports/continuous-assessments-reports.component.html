@@ -2,7 +2,7 @@
   <div class="page-header">
     <div>
       <h2>Continuous Assessments Report</h2>
-      <p>View student competency status by module</p>
+      <p>View student assessment dates by module</p>
     </div>
   </div>
 
@@ -28,7 +28,7 @@
         </select>
       </div>
       <div class="filter-group">
-        <button class="btn-generate" (click)="generateReport()" [disabled]="isLoading()">
+        <button class="btn-generate" (click)="generateReport()" [disabled]="isLoading() || selectedModuleId() === null">
           Generate Report
         </button>
       </div>
@@ -51,58 +51,45 @@
         </button>
       </div>
 
-      <div class="table-wrapper">
-        <table class="data-table report-table">
-          <thead>
-            <tr>
-              <th class="sticky-col">Student</th>
-              <th>MIS No</th>
-              @for (task of reportData()!.tasks; track task.id) {
-                <th>{{ task.taskNo }}</th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (student of reportData()!.students; track student.studentId) {
+      @if (reportData()!.tasks.length === 0) {
+        <div class="empty-state">
+          <p>No tasks found for this module.</p>
+        </div>
+      } @else {
+        <div class="table-container table-scroll">
+          <table class="data-table monthly-grid">
+            <thead>
               <tr>
-                <td class="sticky-col student-name">{{ student.studentName }}</td>
-                <td>{{ student.misNo }}</td>
+                <th class="sticky-col">Student</th>
                 @for (task of reportData()!.tasks; track task.id) {
-                  <td>
-                    @if (hasAssessment(student.studentId, task.id)) {
-                      <span class="mark-badge" [style.background-color]="getMarkColor(getAssessmentMark(student.studentId, task.id))">
-                        {{ getAssessmentMark(student.studentId, task.id) }}
-                      </span>
-                      @if (getCompetencyDate(student.studentId, task.id)) {
-                        <div class="competency-date">{{ getCompetencyDate(student.studentId, task.id) | date:'shortDate' }}</div>
-                      }
-                    }
-                    @if (!hasAssessment(student.studentId, task.id)) {
-                      <span class="no-mark">-</span>
-                    }
-                  </td>
+                  <th>{{ task.taskNo }}</th>
                 }
               </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Summary -->
-      <div class="summary-section">
-        <div class="summary-cards">
-          @for (student of reportData()!.students; track student.studentId) {
-            <div class="summary-card">
-              <div class="summary-name">{{ student.studentName }}</div>
-              <div class="summary-stats">
-                <span class="stat competent">{{ getCCount(student.studentId) }} C</span>
-                <span class="stat nyc">{{ getNYCCount(student.studentId) }} NYC</span>
-                <span class="stat total">{{ reportData()!.tasks.length }} Total</span>
-              </div>
-            </div>
-          }
+            </thead>
+            <tbody>
+              @for (student of reportData()!.students; track student.id) {
+                <tr>
+                  <td class="sticky-col">{{ student.nameWithInitials }}</td>
+                  @for (task of reportData()!.tasks; track task.id) {
+                    <td>
+                      @if (hasAssessment(student.id, task.id)) {
+                        <div class="assessment-cell">
+                          <span class="mark-badge" [style.background-color]="getMarkColor(getAssessmentMark(student.id, task.id))">
+                            {{ getAssessmentMark(student.id, task.id) }}
+                          </span>
+                          <div class="assessment-date">{{ getFormattedDate(getAssessmentDate(student.id, task.id)) }}</div>
+                        </div>
+                      } @else {
+                        <span class="no-data">-</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
-      </div>
+      }
     </div>
   }
 </div>
