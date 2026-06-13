@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../services/toast.service';
+import { forkJoin } from 'rxjs';
 
 interface ModuleTask {
   id: number;
@@ -227,29 +228,60 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
     if (!dateStr) { this.toast.error('Please select a date'); return; }
 
     this.isLoading.set(true);
-    this.http.put(`${this.API_URL}/moduletasks/${taskId}/original-date`, {
-      originalAssessmentDate: dateStr
-    }, { responseType: 'text' }).subscribe({
-      next: () => {
-        this.tasks.update(list => list.map(t =>
-          t.id === taskId ? { ...t, originalAssessmentDate: dateStr } : t
-        ));
+    const isoDate = new Date(dateStr).toISOString();
+    const taskAssessments = this.assessments().filter(a => a.moduleTaskId === taskId);
+    
+    if (taskAssessments.length > 0) {
+      const updateObservables = taskAssessments.map(a => 
+        this.http.put(`${this.API_URL}/continuousassessments/${a.id}`, {
+          assessmentMark: a.assessmentMark,
+          assessmentDate: isoDate,
+          competencyDate: a.assessmentMark === 'C' ? isoDate : a.competencyDate,
+          assessorNotes: a.assessorNotes
+        }, { responseType: 'text' })
+      );
 
-        this.assessments.update(list => list.map(a => {
-          if (a.moduleTaskId === taskId) {
-            return { ...a, competencyDate: dateStr };
-          }
-          return a;
-        }));
+      forkJoin([
+        this.http.put(`${this.API_URL}/moduletasks/${taskId}/original-date`, { originalAssessmentDate: dateStr }, { responseType: 'text' }),
+        ...updateObservables
+      ]).subscribe({
+        next: () => {
+          this.tasks.update(list => list.map(t =>
+            t.id === taskId ? { ...t, originalAssessmentDate: dateStr } : t
+          ));
 
-        this.isLoading.set(false);
-        this.toast.success('Original date set for all students');
-      },
-      error: () => { 
-        this.isLoading.set(false); 
-        this.toast.error('Failed to set original date'); 
-      }
-    });
+          this.assessments.update(list => list.map(a => {
+            if (a.moduleTaskId === taskId) {
+              return { ...a, assessmentDate: isoDate, competencyDate: a.assessmentMark === 'C' ? isoDate : a.competencyDate };
+            }
+            return a;
+          }));
+
+          this.isLoading.set(false);
+          this.toast.success('Original date set for all students');
+        },
+        error: () => { 
+          this.isLoading.set(false); 
+          this.toast.error('Failed to set original date'); 
+        }
+      });
+    } else {
+      this.http.put(`${this.API_URL}/moduletasks/${taskId}/original-date`, {
+        originalAssessmentDate: dateStr
+      }, { responseType: 'text' }).subscribe({
+        next: () => {
+          this.tasks.update(list => list.map(t =>
+            t.id === taskId ? { ...t, originalAssessmentDate: dateStr } : t
+          ));
+          this.isLoading.set(false);
+          this.toast.success('Original date set');
+        },
+        error: () => { 
+          this.isLoading.set(false); 
+          this.toast.error('Failed to set original date'); 
+        }
+      });
+    }
   }
 
   clearOriginalDate(taskId: number): void {
@@ -264,7 +296,7 @@ export class InstructorContinuousAssessmentsComponent implements OnInit {
 
         this.assessments.update(list => list.map(a => {
           if (a.moduleTaskId === taskId) {
-            return { ...a, competencyDate: null };
+            return { ...a, assessmentDate: '', competencyDate: null };
           }
           return a;
         }));
