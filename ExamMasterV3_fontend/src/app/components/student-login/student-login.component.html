@@ -1,0 +1,54 @@
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+  <div class="card shadow" style="max-width: 400px; width: 100%;">
+    <div class="card-header bg-primary text-white text-center py-3">
+      <h4 class="mb-0">Student Exam Login</h4>
+    </div>
+    <div class="card-body p-4">
+      <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+        <div class="mb-3">
+          <label for="username" class="form-label">NIC No</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            id="username" 
+            [(ngModel)]="username" 
+            name="username" 
+            placeholder="Enter your NIC No"
+            required
+            [disabled]="isLoading()"
+          >
+        </div>
+        
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input 
+            type="password" 
+            class="form-control" 
+            id="password" 
+            [(ngModel)]="password" 
+            name="password" 
+            placeholder="Enter your password"
+            required
+            [disabled]="isLoading()"
+          >
+        </div>
+
+        <div *ngIf="error()" class="alert alert-danger" role="alert">
+          {{ error() }}
+        </div>
+
+        <button 
+          type="submit" 
+          class="btn btn-primary w-100"
+          [disabled]="isLoading()"
+        >
+          <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          {{ isLoading() ? 'Logging in...' : 'Login' }}
+        </button>
+      </form>
+    </div>
+    <div class="card-footer text-center text-muted py-2">
+      Enter your NIC No and password to access the exam
+    </div>
+  </div>
+</div>

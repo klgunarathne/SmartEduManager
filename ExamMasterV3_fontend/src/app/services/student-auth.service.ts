@@ -1,0 +1,93 @@
+import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap, catchError, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface StudentCredentials {
+  studentId: number;
+  studentName: string;
+  username: string;
+  password: string;
+  email: string;
+  status: string;
+}
+
+export interface GenerateCredentialsDto {
+  batchId?: number;
+  studentIds?: number[];
+  defaultPassword?: string;
+  generateRandomPassword?: boolean;
+  sendEmail?: boolean;
+}
+
+export interface StudentLoginDto {
+  username: string;
+  password: string;
+}
+
+export interface StudentUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  misNo?: string;
+  batchId?: number;
+  batchCode?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class StudentAuthService {
+  private readonly API_URL = environment.apiUrl;
+
+  studentUser = signal<StudentUser | null>(null);
+  isAuthenticated = signal(false);
+
+  constructor(private http: HttpClient) {}
+
+  generateCredentials(dto: GenerateCredentialsDto): Observable<StudentCredentials[]> {
+    return this.http.post<StudentCredentials[]>(`${this.API_URL}/students/generate-credentials`, dto).pipe(
+      catchError(error => {
+        console.error('Error generating credentials:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  login(credentials: StudentLoginDto): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/auth/login`, { email: credentials.username, password: credentials.password }).pipe(
+      tap(response => {
+        this.studentUser.set(response.user);
+        this.isAuthenticated.set(true);
+        localStorage.setItem('access_token', response.accessToken);
+        localStorage.setItem('student_user', JSON.stringify(response.user));
+      }),
+      catchError(error => {
+        console.error('Login error:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  logout(): void {
+    this.studentUser.set(null);
+    this.isAuthenticated.set(false);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('student_user');
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('access_token');
+  }
+
+  getStudentUser(): StudentUser | null {
+    if (!this.studentUser()) {
+      const stored = localStorage.getItem('student_user');
+      if (stored) {
+        this.studentUser.set(JSON.parse(stored));
+      }
+    }
+    return this.studentUser();
+  }
+}

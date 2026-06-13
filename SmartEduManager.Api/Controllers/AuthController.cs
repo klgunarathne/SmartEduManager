@@ -85,9 +85,9 @@ public class AuthController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var user = await _userManager.FindByEmailAsync(loginDto.Email);
+            var user = await _userManager.FindByNameAsync(loginDto.Email) ?? await _userManager.FindByEmailAsync(loginDto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, loginDto.Password))
-                return Unauthorized("Invalid email or password");
+                return Unauthorized("Invalid username or password");
 
             var userRoles = await _userManager.GetRolesAsync(user);
 

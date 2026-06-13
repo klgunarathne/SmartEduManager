@@ -92,102 +92,112 @@ export const routes: Routes = [
         path: 'users',
         loadComponent: () => import('./components/user-manager/user-manager').then(m => m.UserManagerComponent),
         data: { breadcrumb: 'User Manager' }
+      },
+      {
+        path: 'student-credentials',
+        loadComponent: () => import('./components/student-credentials/student-credentials.component').then(m => m.StudentCredentialsComponent),
+        data: { breadcrumb: 'Generate Credentials' }
       }
     ]
   },
-  {
-    path: 'instructor',
-    component: AdminLayoutComponent,
-    canActivate: [authGuard],
-    data: { breadcrumb: 'Instructor' },
-    children: [
-      {
-        path: '',
-        redirectTo: 'dashboard',
-        pathMatch: 'full'
+{
+        path: 'instructor',
+        component: AdminLayoutComponent,
+        canActivate: [authGuard],
+        data: { breadcrumb: 'Instructor' },
+        children: [
+          {
+            path: '',
+            redirectTo: 'dashboard',
+            pathMatch: 'full'
+          },
+          {
+            path: 'dashboard',
+            component: InstructorDashboardComponent,
+            data: { breadcrumb: 'Dashboard' }
+          },
+          {
+            path: 'batches',
+            loadComponent: () => import('./components/instructor-batches/instructor-batches.component').then(m => m.InstructorBatchesComponent),
+            data: { breadcrumb: 'Batches' }
+          },
+          {
+            path: 'students',
+            loadComponent: () => import('./components/instructor-students/instructor-students.component').then(m => m.InstructorStudentsComponent),
+            data: { breadcrumb: 'Students' }
+          },
+          {
+            path: 'student-credentials',
+            loadComponent: () => import('./components/student-credentials/student-credentials.component').then(m => m.StudentCredentialsComponent),
+            data: { breadcrumb: 'Generate Credentials' }
+          },
+          {
+            path: 'assignments',
+            loadComponent: () => import('./components/instructor-assignments/instructor-assignments.component').then(m => m.InstructorAssignmentsComponent),
+            data: { breadcrumb: 'Assignments' }
+          },
+          {
+            path: 'continuous-assessments',
+            loadComponent: () => import('./components/instructor-continuous-assessments/instructor-continuous-assessments.component').then(m => m.InstructorContinuousAssessmentsComponent),
+            data: { breadcrumb: 'Continuous Assessment' }
+          },
+          {
+            path: 'continuous-assessments/reports',
+            loadComponent: () => import('./components/continuous-assessments-reports/continuous-assessments-reports.component').then(m => m.ContinuousAssessmentsReportsComponent),
+            data: { breadcrumb: 'CA Reports' }
+          },
+          {
+            path: 'ncs',
+            loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
+            data: { breadcrumb: 'NCS & Modules' }
+          },
+          {
+            path: 'modules',
+            loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
+            data: { breadcrumb: 'Modules' }
+          },
+          {
+            path: 'attendance',
+            component: AttendanceDashboardComponent,
+            data: { breadcrumb: 'Attendance' }
+          },
+          {
+            path: 'attendance/daily',
+            component: DailyAttendanceComponent,
+            data: { breadcrumb: 'Daily Attendance' }
+          },
+          {
+            path: 'attendance/calendar',
+            component: MonthlyCalendarComponent,
+            data: { breadcrumb: 'Monthly Calendar' }
+          },
+          {
+            path: 'attendance/summary',
+            component: StudentSummaryComponent,
+            data: { breadcrumb: 'Student Summary' }
+          },
+          {
+            path: 'attendance/batch-summary',
+            component: BatchSummaryComponent,
+            data: { breadcrumb: 'Batch Summary' }
+          },
+          {
+            path: 'attendance/reports',
+            component: ReportsComponent,
+            data: { breadcrumb: 'Reports' }
+          },
+          {
+            path: 'attendance/course-completion',
+            component: CourseCompletionComponent,
+            data: { breadcrumb: 'Course Completion' }
+          },
+          {
+            path: 'attendance/settings',
+            component: SettingsComponent,
+            data: { breadcrumb: 'Settings' }
+          }
+        ]
       },
-      {
-        path: 'dashboard',
-        component: InstructorDashboardComponent,
-        data: { breadcrumb: 'Dashboard' }
-      },
-      {
-        path: 'batches',
-        loadComponent: () => import('./components/instructor-batches/instructor-batches.component').then(m => m.InstructorBatchesComponent),
-        data: { breadcrumb: 'Batches' }
-      },
-      {
-        path: 'students',
-        loadComponent: () => import('./components/instructor-students/instructor-students.component').then(m => m.InstructorStudentsComponent),
-        data: { breadcrumb: 'Students' }
-      },
-      {
-        path: 'assignments',
-        loadComponent: () => import('./components/instructor-assignments/instructor-assignments.component').then(m => m.InstructorAssignmentsComponent),
-        data: { breadcrumb: 'Assignments' }
-      },
-      {
-        path: 'continuous-assessments',
-        loadComponent: () => import('./components/instructor-continuous-assessments/instructor-continuous-assessments.component').then(m => m.InstructorContinuousAssessmentsComponent),
-        data: { breadcrumb: 'Continuous Assessment' }
-      },
-      {
-        path: 'continuous-assessments/reports',
-        loadComponent: () => import('./components/continuous-assessments-reports/continuous-assessments-reports.component').then(m => m.ContinuousAssessmentsReportsComponent),
-        data: { breadcrumb: 'CA Reports' }
-      },
-      {
-        path: 'ncs',
-        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
-        data: { breadcrumb: 'NCS & Modules' }
-      },
-      {
-        path: 'modules',
-        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
-        data: { breadcrumb: 'Modules' }
-      },
-      {
-        path: 'attendance',
-        component: AttendanceDashboardComponent,
-        data: { breadcrumb: 'Attendance' }
-      },
-      {
-        path: 'attendance/daily',
-        component: DailyAttendanceComponent,
-        data: { breadcrumb: 'Daily Attendance' }
-      },
-      {
-        path: 'attendance/calendar',
-        component: MonthlyCalendarComponent,
-        data: { breadcrumb: 'Monthly Calendar' }
-      },
-      {
-        path: 'attendance/summary',
-        component: StudentSummaryComponent,
-        data: { breadcrumb: 'Student Summary' }
-      },
-      {
-        path: 'attendance/batch-summary',
-        component: BatchSummaryComponent,
-        data: { breadcrumb: 'Batch Summary' }
-      },
-      {
-        path: 'attendance/reports',
-        component: ReportsComponent,
-        data: { breadcrumb: 'Reports' }
-      },
-      {
-        path: 'attendance/course-completion',
-        component: CourseCompletionComponent,
-        data: { breadcrumb: 'Course Completion' }
-      },
-      {
-        path: 'attendance/settings',
-        component: SettingsComponent,
-        data: { breadcrumb: 'Settings' }
-      }
-    ]
-  },
   {
     path: '**',
     redirectTo: 'login'

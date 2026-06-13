@@ -1,0 +1,62 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">ExamMaster</a>
+    <div class="navbar-nav ms-auto">
+      <span class="navbar-text me-3">
+        Welcome, {{ studentUser()?.firstName }} {{ studentUser()?.lastName }}
+      </span>
+      <button class="btn btn-outline-light btn-sm" (click)="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid py-4 bg-light min-vh-100">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="mb-0">Student Exam Dashboard</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <div class="card bg-info text-white">
+                <div class="card-body">
+                  <h6 class="card-title">MIS No</h6>
+                  <p class="card-text fs-5">{{ studentUser()?.misNo || 'N/A' }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-success text-white">
+                <div class="card-body">
+                  <h6 class="card-title">Batch</h6>
+                  <p class="card-text fs-5">{{ studentUser()?.batchCode || 'N/A' }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-warning text-dark">
+                <div class="card-body">
+                  <h6 class="card-title">Email</h6>
+                  <p class="card-text fs-6">{{ studentUser()?.email || 'N/A' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <div class="card-header">
+              <h6 class="mb-0">Available Exams</h6>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-info">
+                No exams available at the moment. Please check back later.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

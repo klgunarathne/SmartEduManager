@@ -124,7 +124,7 @@ public class BatchesController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+[HttpDelete("{id}")]
     [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> DeleteBatch(int id)
     {
@@ -146,6 +146,27 @@ public class BatchesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error deleting batch with id {id}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("active")]
+    public async Task<IActionResult> GetActiveBatches()
+    {
+        try
+        {
+            var batches = await _repository.GetBatchesWithCourseAsync();
+            var batchesDto = _mapper.Map<IEnumerable<BatchDto>>(batches);
+
+            var today = DateTime.Today;
+            var activeBatches = batchesDto.Where(b => b.StartDate <= today && b.EndDate >= today);
+
+            _logger.LogInformation($"Retrieved {activeBatches.Count()} active batches");
+            return Ok(activeBatches);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving active batches");
             return StatusCode(500, "Internal server error");
         }
     }

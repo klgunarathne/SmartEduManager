@@ -66,10 +66,18 @@ interface Breadcrumb {
                 </a>
               </li>
               <li class="nav-item">
-                <a routerLink="/admin/attendance" routerLinkActive="active" class="nav-link">
-                  <i class="fas fa-calendar-check"></i>
+                <a routerLink="/admin/students" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-user-graduate"></i>
                   @if (!sidebarCollapsed()) {
-                    <span>Attendance</span>
+                    <span>Students</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
+                <a routerLink="/admin/student-credentials" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-key"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>Generate Credentials</span>
                   }
                 </a>
               </li>
@@ -121,6 +129,14 @@ interface Breadcrumb {
                   <i class="fas fa-user-graduate"></i>
                   @if (!sidebarCollapsed()) {
                     <span>Students</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
+                <a routerLink="/instructor/student-credentials" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-key"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>Generate Credentials</span>
                   }
                 </a>
               </li>
