@@ -45,9 +45,17 @@
     <div class="report-card">
       <div class="report-header">
         <h3>{{ reportData()!.moduleNo }} - {{ reportData()!.moduleName }} - {{ getSelectedBatchCode() }}</h3>
+      <div class="report-header-actions">
+        <button class="btn-export-pdf" (click)="exportToPdf()" [disabled]="!reportData()">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+        <button class="btn-export-excel" (click)="exportToExcel()" [disabled]="!reportData()">
+          <i class="fas fa-file-excel"></i> Excel
+        </button>
         <button class="btn-print" (click)="printReport()">
           <i class="fas fa-print"></i> Print
         </button>
+      </div>
       </div>
 
       @if (reportData()!.tasks.length === 0) {

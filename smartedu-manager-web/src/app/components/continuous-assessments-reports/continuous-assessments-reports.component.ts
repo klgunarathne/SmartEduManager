@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../services/toast.service';
+import { ExportService } from '../../services/export.service';
 import { forkJoin } from 'rxjs';
 
 interface ModuleTask {
@@ -50,6 +51,7 @@ interface Batch {
 export class ContinuousAssessmentsReportsComponent implements OnInit {
   private readonly API_URL = environment.apiUrl;
   private toast = inject(ToastService);
+  private exportService = inject(ExportService);
 
   batches = signal<Batch[]>([]);
   selectedBatchId = signal(0);
@@ -214,6 +216,54 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
     if (mark === 'C') return '#16a34a';
     if (mark === 'NYC') return '#dc2626';
     return '#64748b';
+  }
+
+  exportToPdf(): void {
+    const data = this.reportData();
+    if (!data) return;
+
+    const rows = data.students.map((student) => {
+      const row: Record<string, string | number | null | undefined> = { Student: student.nameWithInitials };
+      data.tasks.forEach((task) => {
+        const assessment = data.results.find(
+          (r) => r.studentId === student.id && r.moduleTaskId === task.id
+        );
+        const mark = assessment?.assessmentMark || '';
+        const date = assessment ? this.getFormattedDate(assessment.assessmentDate) : '-';
+        row[`Task ${task.taskNo}`] = `${mark} ${date}`;
+      });
+      return row;
+    });
+
+    this.exportService.exportPdf({
+      title: `${data.moduleNo} - ${data.moduleName} - ${this.getSelectedBatchCode()}`,
+      headers: ['Student', ...data.tasks.map((task) => `Task ${task.taskNo}`)],
+      rows
+    });
+  }
+
+  exportToExcel(): void {
+    const data = this.reportData();
+    if (!data) return;
+
+    const rows = data.students.map((student) => {
+      const row: Record<string, string | number | null | undefined> = { Student: student.nameWithInitials };
+      data.tasks.forEach((task) => {
+        const assessment = data.results.find(
+          (r) => r.studentId === student.id && r.moduleTaskId === task.id
+        );
+        const mark = assessment?.assessmentMark || '';
+        const date = assessment ? this.getFormattedDate(assessment.assessmentDate) : '-';
+        row[`Task ${task.taskNo}`] = `${mark} ${date}`;
+      });
+      return row;
+    });
+
+    this.exportService.exportExcel({
+      title: `${data.moduleNo} - ${data.moduleName} - ${this.getSelectedBatchCode()}`,
+      headers: ['Student', ...data.tasks.map((task) => `Task ${task.taskNo}`)],
+      rows
+    });
   }
 
   private getTodayDate(): string {
