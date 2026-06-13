@@ -44,7 +44,7 @@
   @if (reportData() && selectedBatchId() > 0) {
     <div class="report-card">
       <div class="report-header">
-        <h3>{{ reportData()!.moduleNo }} - {{ reportData()!.moduleName }}</h3>
+        <h3>{{ reportData()!.moduleNo }} - {{ reportData()!.moduleName }} - {{ getSelectedBatchCode() }}</h3>
         <button class="btn-print" (click)="printReport()">
           <i class="fas fa-print"></i> Print
         </button>

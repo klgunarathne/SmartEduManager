@@ -193,6 +193,11 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
     return this.getAssessment(studentId, taskId)?.assessmentDate || null;
   }
 
+  getSelectedBatchCode(): string {
+    const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
+    return batch?.batchCode || '';
+  }
+
   getFormattedDate(date: string | null | undefined): string {
     if (!date) return '-';
     const parts = date.split('T')[0].split('-');
