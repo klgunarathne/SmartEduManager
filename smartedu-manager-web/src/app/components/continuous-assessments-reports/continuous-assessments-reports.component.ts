@@ -195,8 +195,14 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
 
   getFormattedDate(date: string | null | undefined): string {
     if (!date) return '-';
-    const parts = date.split('T');
-    return parts[0] || date;
+    const parts = date.split('T')[0].split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      const y = parts[0].slice(-2);
+      const m = String(Number(parts[1])).replace(/^0+/, '') || '0';
+      const d = String(Number(parts[2])).replace(/^0+/, '') || '0';
+      return `${y}/${m}/${d}`;
+    }
+    return date;
   }
 
   getMarkColor(mark: string | null | undefined): string {
