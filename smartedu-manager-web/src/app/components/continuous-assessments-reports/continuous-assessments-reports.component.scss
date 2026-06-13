@@ -97,7 +97,7 @@
   overflow-x: auto;
 }
 
-.monthly-grid {
+.data-table {
   width: 100%;
   border-collapse: collapse;
 
@@ -120,8 +120,18 @@
     left: 0;
     background: white;
     z-index: 2;
-    min-width: 180px;
+    min-width: 200px;
     text-align: left;
+
+    &:first-child { z-index: 3; }
+  }
+
+  tbody tr:hover .sticky-col {
+    background: #f8fafc;
+  }
+
+  tbody tr:hover {
+    background: #f8fafc;
   }
 }
 
@@ -144,6 +154,7 @@
 .assessment-date {
   font-size: 11px;
   color: #64748b;
+  margin-top: 2px;
 }
 
 .no-data {
@@ -151,10 +162,25 @@
   font-size: 14px;
 }
 
+.student-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
 .empty-state {
   padding: 40px;
   text-align: center;
   color: #64748b;
+}
+
+.empty-state-card {
+  text-align: center;
+  padding: 60px;
+  background: white;
+  border-radius: 16px;
+  color: #94a3b8;
+  i { font-size: 48px; margin-bottom: 12px; }
+  p { font-size: 14px; }
 }
 
 .loading-state {
@@ -167,6 +193,13 @@
   border-radius: 16px;
   i { font-size: 32px; color: #6366f1; }
   span { color: #64748b; font-size: 14px; }
+}
+
+.task-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6366f1;
+  min-width: 100px;
 }
 
 @media (max-width: 768px) {

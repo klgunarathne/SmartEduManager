@@ -2,9 +2,43 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../services/toast.service';
+import { forkJoin } from 'rxjs';
+
+interface ModuleTask {
+  id: number;
+  taskNo: string;
+  taskName: string;
+  moduleId: number;
+  moduleName?: string;
+  moduleNo?: string;
+}
+
+interface AssessmentRecord {
+  id: number;
+  studentId: number;
+  moduleTaskId: number;
+  assessmentMark: string;
+  assessmentDate: string;
+  competencyDate: string | null;
+  assessorNotes: string;
+}
+
+interface Student {
+  id: number;
+  misNo: string;
+  nameWithInitials: string;
+}
+
+interface Batch {
+  batchId: number;
+  batchCode: string;
+  courseId: number;
+  courseName: string;
+  startDate: string;
+  endDate: string;
+}
 
 @Component({
   selector: 'app-continuous-assessments-reports',
@@ -17,76 +51,91 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
   private readonly API_URL = environment.apiUrl;
   private toast = inject(ToastService);
 
-  batches = signal<any[]>([]);
+  batches = signal<Batch[]>([]);
   selectedBatchId = signal(0);
   modules = signal<any[]>([]);
   selectedModuleId = signal<number | null>(null);
-  reportData = signal<any | null>(null);
+  reportData = signal<{
+    moduleId: number;
+    moduleNo: string;
+    moduleName: string;
+    tasks: ModuleTask[];
+    students: Student[];
+    results: AssessmentRecord[];
+  } | null>(null);
   isLoading = signal(false);
+
+  private allModules: any[] = [];
+  private allTasks: any[] = [];
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.http.get<any[]>((`${this.API_URL}/batches`)).subscribe({
+    this.loadBatches();
+  }
+
+  loadBatches(): void {
+    this.http.get<any[]>(`${this.API_URL}/batches`).subscribe({
       next: (data) => {
         this.batches.set(data);
         if (data.length > 0) {
           const today = this.getTodayDate();
-          const current = data.find((b: any) => b.startDate && b.endDate && b.startDate <= today && b.endDate >= today);
+          const current = data.find(b => b.startDate && b.endDate && b.startDate <= today && b.endDate >= today);
           this.selectedBatchId.set(current ? current.batchId : data[0].batchId);
+          this.loadData();
         }
       }
     });
-
-    this.http.get<any[]>((`${this.API_URL}/modules`)).subscribe({
-      next: (data) => this.modules.set(data)
-    });
   }
 
-  generateReport(): void {
-    const batchId = this.selectedBatchId();
-    const moduleId = this.selectedModuleId();
-
-    if (!moduleId) {
-      this.toast.error('Please select a module');
-      return;
+  onBatchChange(): void {
+    this.reportData.set(null);
+    this.selectedModuleId.set(null);
+    if (this.selectedBatchId() > 0) {
+      this.loadData();
     }
+  }
 
+  onModuleChange(): void {
+    this.reportData.set(null);
+    if (this.selectedBatchId() > 0 && this.selectedModuleId() !== null) {
+      this.generateReport();
+    }
+  }
+
+  private loadData(): void {
     this.isLoading.set(true);
 
     forkJoin([
-      this.http.get<any[]>((`${this.API_URL}/modules`)),
-      this.http.get<any[]>((`${this.API_URL}/moduletasks`)),
-      this.http.get<any[]>((`${this.API_URL}/continuousassessments/batch/${batchId}`)),
-      this.http.get<any[]>((`${this.API_URL}/students/batch/${batchId}`))
+      this.http.get<any[]>(`${this.API_URL}/modules`),
+      this.http.get<any[]>(`${this.API_URL}/moduletasks`),
+      this.http.get<any[]>(`${this.API_URL}/continuousassessments/batch/${this.selectedBatchId()}`),
+      this.http.get<any[]>(`${this.API_URL}/students/batch/${this.selectedBatchId()}`)
     ]).subscribe({
-      next: ([allModules, allTasks, assessments, students]) => {
-        this.modules.set(allModules);
+      next: ([modulesData, tasksData, assessmentsData, studentsData]) => {
+        this.allModules = modulesData;
+        this.allTasks = tasksData;
+        this.modules.set(modulesData);
 
         const moduleMap = new Map<number, any>();
-        allModules.forEach((m: any) => moduleMap.set(m.id, m));
+        modulesData.forEach((m: any) => moduleMap.set(m.id, m));
 
-        const moduleTasks = allTasks
-          .filter((t: any) => {
-            const mid = t.moduleId !== undefined ? t.moduleId : t.module_id;
-            return Number(mid) === moduleId;
-          })
-          .map((t: any) => {
-            const mid = t.moduleId !== undefined ? t.moduleId : t.module_id;
-            const mod = moduleMap.get(Number(mid));
-            return {
-              id: t.id,
-              taskNo: t.taskNo !== undefined ? t.taskNo : t.task_no,
-              taskName: t.taskName !== undefined ? t.taskName : t.task_name,
-              moduleId: Number(mid),
-              moduleName: mod?.moduleName || 'Unknown',
-              moduleNo: mod?.moduleNo || ''
-            };
-          });
+        const enrichedTasks = tasksData.map((t: any) => {
+          const mid = t.moduleId !== undefined ? t.moduleId : t.module_id;
+          const mod = moduleMap.get(Number(mid));
+          return {
+            id: t.id,
+            taskNo: t.taskNo !== undefined ? t.taskNo : t.task_no,
+            taskName: t.taskName !== undefined ? t.taskName : t.task_name,
+            moduleId: Number(mid),
+            moduleName: mod?.moduleName || 'Unknown',
+            moduleNo: mod?.moduleNo || ''
+          };
+        });
 
-        const moduleInfo = allModules.find((m: any) => m.id === moduleId);
+        const moduleInfo = moduleMap.get(Number(this.selectedModuleId()));
 
-        const results = assessments.map((a: any) => ({
+        const normalizedAssessments = assessmentsData.map((a: any) => ({
           id: a.id,
           studentId: a.studentId !== undefined ? a.studentId : a.student_id,
           moduleTaskId: a.moduleTaskId !== undefined ? a.moduleTaskId : a.module_task_id,
@@ -96,17 +145,19 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
           assessorNotes: a.assessorNotes !== undefined ? a.assessorNotes : a.assessor_notes
         }));
 
+        const normalizedStudents = studentsData.map((s: any) => ({
+          id: s.studentId !== undefined ? s.studentId : (s.id !== undefined ? s.id : s.student_id),
+          misNo: s.misNo !== undefined ? s.misNo : s.mis_no,
+          nameWithInitials: s.nameWithInitials !== undefined ? s.nameWithInitials : s.name
+        }));
+
         this.reportData.set({
-          moduleId: moduleId ?? 0,
+          moduleId: moduleInfo?.id || 0,
           moduleNo: moduleInfo?.moduleNo || '',
           moduleName: moduleInfo?.moduleName || '',
-          tasks: moduleTasks,
-          students: students.map((s: any) => ({
-            id: s.studentId !== undefined ? s.studentId : (s.id !== undefined ? s.id : s.student_id),
-            misNo: s.misNo !== undefined ? s.misNo : s.mis_no,
-            nameWithInitials: s.nameWithInitials !== undefined ? s.nameWithInitials : s.name
-          })),
-          results
+          tasks: moduleInfo ? enrichedTasks.filter(t => t.moduleId === moduleInfo.id) : enrichedTasks,
+          students: normalizedStudents,
+          results: normalizedAssessments
         });
         this.isLoading.set(false);
       },
@@ -114,47 +165,44 @@ export class ContinuousAssessmentsReportsComponent implements OnInit {
     });
   }
 
-  onBatchChange(): void {
-    this.reportData.set(null);
-  }
-
-  onModuleChange(): void {
-    this.reportData.set(null);
+  generateReport(): void {
+    if (this.selectedBatchId() === 0) return;
+    this.loadData();
   }
 
   printReport(): void {
     window.print();
   }
 
-  getMarkColor(mark: string | null | undefined): string {
-    if (mark === 'C') return '#16a34a';
-    if (mark === 'NYC') return '#dc2626';
-    return '#64748b';
-  }
-
   hasAssessment(studentId: number, taskId: number): boolean {
     const data = this.reportData();
-    return data ? data.results.some((r: any) => r.studentId === studentId && r.moduleTaskId === taskId) : false;
+    return data ? data.results.some((r: AssessmentRecord) => r.studentId === studentId && r.moduleTaskId === taskId) : false;
+  }
+
+  getAssessment(studentId: number, taskId: number): AssessmentRecord | undefined {
+    const data = this.reportData();
+    if (!data) return undefined;
+    return data.results.find((r: AssessmentRecord) => r.studentId === studentId && r.moduleTaskId === taskId);
   }
 
   getAssessmentMark(studentId: number, taskId: number): string {
-    const data = this.reportData();
-    if (!data) return '';
-    const result = data.results.find((r: any) => r.studentId === studentId && r.moduleTaskId === taskId);
-    return result?.assessmentMark || '';
+    return this.getAssessment(studentId, taskId)?.assessmentMark || '';
   }
 
   getAssessmentDate(studentId: number, taskId: number): string | null {
-    const data = this.reportData();
-    if (!data) return null;
-    const result = data.results.find((r: any) => r.studentId === studentId && r.moduleTaskId === taskId);
-    return result?.assessmentDate || null;
+    return this.getAssessment(studentId, taskId)?.assessmentDate || null;
   }
 
   getFormattedDate(date: string | null | undefined): string {
     if (!date) return '-';
     const parts = date.split('T');
     return parts[0] || date;
+  }
+
+  getMarkColor(mark: string | null | undefined): string {
+    if (mark === 'C') return '#16a34a';
+    if (mark === 'NYC') return '#dc2626';
+    return '#64748b';
   }
 
   private getTodayDate(): string {

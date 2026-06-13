@@ -2,11 +2,10 @@
   <div class="page-header">
     <div>
       <h2>Continuous Assessments Report</h2>
-      <p>View student assessment dates by module</p>
+      <p>View student assessment results by module</p>
     </div>
   </div>
 
-  <!-- Batch & Module Filters -->
   <div class="filters-section">
     <div class="filter-row">
       <div class="filter-group">
@@ -42,7 +41,7 @@
     </div>
   }
 
-  @if (reportData()) {
+  @if (reportData() && selectedBatchId() > 0) {
     <div class="report-card">
       <div class="report-header">
         <h3>{{ reportData()!.moduleNo }} - {{ reportData()!.moduleName }}</h3>
@@ -57,19 +56,19 @@
         </div>
       } @else {
         <div class="table-container table-scroll">
-          <table class="data-table monthly-grid">
+          <table class="data-table assessments-grid">
             <thead>
               <tr>
-                <th class="sticky-col">Student</th>
+                <th class="sticky-col" style="min-width: 200px;">Student</th>
                 @for (task of reportData()!.tasks; track task.id) {
-                  <th>{{ task.taskNo }}</th>
+                  <th class="task-header">{{ task.taskNo }}</th>
                 }
               </tr>
             </thead>
             <tbody>
               @for (student of reportData()!.students; track student.id) {
                 <tr>
-                  <td class="sticky-col">{{ student.nameWithInitials }}</td>
+                  <td class="sticky-col student-name">{{ student.nameWithInitials }}</td>
                   @for (task of reportData()!.tasks; track task.id) {
                     <td>
                       @if (hasAssessment(student.id, task.id)) {
@@ -90,6 +89,13 @@
           </table>
         </div>
       }
+    </div>
+  }
+
+  @if (selectedBatchId() === 0 && !isLoading()) {
+    <div class="empty-state-card">
+      <i class="fas fa-chart-bar"></i>
+      <p>Please select a batch and module to generate the report</p>
     </div>
   }
 </div>
