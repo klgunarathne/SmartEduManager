@@ -32,7 +32,7 @@ public class CreateQuestionDto
     public string[]? Options { get; set; }
     public string? CorrectAnswer { get; set; }
     public string? Explanation { get; set; }
-    public string? Tags { get; set; }
+    public string[] Tags { get; set; } = [];
 }
 
 public class UpdateQuestionDto
@@ -45,5 +45,5 @@ public class UpdateQuestionDto
     public string[]? Options { get; set; }
     public string? CorrectAnswer { get; set; }
     public string? Explanation { get; set; }
-    public string? Tags { get; set; }
-}
+    public string[] Tags { get; set; } = [];
+ }

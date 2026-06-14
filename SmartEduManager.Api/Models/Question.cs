@@ -8,9 +8,14 @@ namespace SmartEduManager.Api.Models
     public enum QuestionType
     {
         MultipleChoice,
-        TrueFalse,
+        Checkbox,
+        Dropdown,
         ShortAnswer,
-        Essay
+        Essay,
+        LinearScale,
+        Rating,
+        Date,
+        Time
     }
 
     public enum DifficultyLevel

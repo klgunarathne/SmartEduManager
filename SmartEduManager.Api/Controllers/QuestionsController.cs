@@ -82,10 +82,7 @@ public class QuestionsController : ControllerBase
                 return BadRequest(ModelState);
 
             var question = _mapper.Map<Question>(createDto);
-            if (!string.IsNullOrEmpty(createDto.Tags))
-            {
-                question.Tags = createDto.Tags.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToArray();
-            }
+            question.Tags = createDto.Tags ?? [];
             await _repository.AddAsync(question);
             await _repository.SaveChangesAsync();
 
@@ -116,10 +113,7 @@ public class QuestionsController : ControllerBase
             }
 
             _mapper.Map(updateDto, question);
-            if (!string.IsNullOrEmpty(updateDto.Tags))
-            {
-                question.Tags = updateDto.Tags.Split(',').Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).ToArray();
-            }
+            question.Tags = updateDto.Tags ?? [];
             question.UpdatedAt = DateTime.UtcNow;
             _repository.Update(question);
             await _repository.SaveChangesAsync();
@@ -135,7 +129,7 @@ public class QuestionsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> Delete(int id)
     {
         try

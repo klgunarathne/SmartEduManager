@@ -114,6 +114,30 @@ export class ExamQuestionBuilderComponent implements OnInit {
 
   constructor(private http: HttpClient) {}
 
+  private mapQuestionTypeToApi(type: QuestionType): string {
+    const map: Record<QuestionType, string> = {
+      'multiple-choice': 'MultipleChoice',
+      'checkbox': 'Checkbox',
+      'dropdown': 'Dropdown',
+      'short-answer': 'ShortAnswer',
+      'paragraph': 'Essay',
+      'linear-scale': 'LinearScale',
+      'rating': 'Rating',
+      'date': 'Date',
+      'time': 'Time'
+    };
+    return map[type];
+  }
+
+  private mapDifficultyToApi(diff: DifficultyLevel): string {
+    const map: Record<DifficultyLevel, string> = {
+      'easy': 'Easy',
+      'medium': 'Medium',
+      'hard': 'Hard'
+    };
+    return map[diff];
+  }
+
   ngOnInit(): void {
     this.loadCategories();
     this.loadQuestionBank();
@@ -162,30 +186,31 @@ export class ExamQuestionBuilderComponent implements OnInit {
 
   // Question Bank CRUD
   addQuestionToBank(type: QuestionType): void {
-    const newQuestion: Question = {
-      id: Date.now(),
+    const payload = {
       content: '',
-      type,
-      difficulty: 'medium',
+      type: this.mapQuestionTypeToApi(type),
+      difficulty: this.mapDifficultyToApi('medium'),
       categoryId: this.categories()[0]?.id || 0,
       marks: 1,
-      required: false,
       tags: [],
-      options: this.getDefaultOptions(type)
+      options: this.getDefaultOptions(type)?.map(o => o.content)
     };
 
-    this.http.post<Question>(`${this.API_URL}/questions`, newQuestion).subscribe({
+    this.http.post<Question>(`${this.API_URL}/questions`, payload).subscribe({
       next: (result) => {
-        this.banks.set([...this.banks(), result]);
+        this.banks.set([...this.banks(), { ...result, tags: [], options: this.getDefaultOptions(type) }]);
         this.selectedBankQuestionId.set(result.id);
         this.toast.success('Question added to bank');
       },
-      error: () => this.toast.error('Failed to add question')
+      error: (err) => {
+        console.error('Add question error:', err);
+        this.toast.error(`Failed to add question: ${err.status} ${err.error || ''}`);
+      }
     });
   }
 
   deleteQuestionFromBank(questionId: number): void {
-    this.http.delete(`${this.API_URL}/questions/${questionId}`).subscribe({
+    this.http.delete(`${this.API_URL}/questions/${questionId}`, { responseType: 'text' as any }).subscribe({
       next: () => {
         this.banks.set(this.banks().filter(q => q.id !== questionId));
         if (this.selectedBankQuestionId() === questionId) {
@@ -193,16 +218,33 @@ export class ExamQuestionBuilderComponent implements OnInit {
         }
         this.toast.success('Question deleted');
       },
-      error: () => this.toast.error('Failed to delete question')
+      error: (err) => {
+        console.error('Delete question error:', err);
+        this.toast.error(`Failed to delete question: ${err.status} ${err.error || ''}`);
+      }
     });
   }
 
   updateBankQuestion(updated: Question): void {
-    this.http.put(`${this.API_URL}/questions/${updated.id}`, updated).subscribe({
+    const payload = {
+      content: updated.content,
+      type: this.mapQuestionTypeToApi(updated.type),
+      difficulty: this.mapDifficultyToApi(updated.difficulty),
+      categoryId: updated.categoryId,
+      marks: updated.marks,
+      tags: updated.tags || [],
+      options: updated.options?.map(o => o.content),
+      required: updated.required,
+      explanation: updated.explanation
+    };
+    this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
       next: () => {
         this.banks.update(questions => questions.map(q => q.id === updated.id ? updated : q));
       },
-      error: () => this.toast.error('Failed to update question')
+      error: (err) => {
+        console.error('Update question error:', err);
+        this.toast.error(`Failed to update question: ${err.status}`);
+      }
     });
   }
 
