@@ -172,6 +172,14 @@ interface Breadcrumb {
                   }
                 </a>
               </li>
+              <li class="nav-item">
+                <a routerLink="/instructor/exam-question-builder" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-clipboard-check"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>Exam Builder</span>
+                  }
+                </a>
+              </li>
             </ul>
           }
         </nav>

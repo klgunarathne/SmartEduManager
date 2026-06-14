@@ -110,13 +110,44 @@ public class MappingProfile : Profile
         CreateMap<UpdateAssignmentMarksDto, AssignmentMarks>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-        // Attendance mapping
-        CreateMap<Attendance, AttendanceDto>()
-            .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => src.Student.NameWithInitials))
-            .ForMember(dest => dest.MISNo, opt => opt.MapFrom(src => src.Student.MISNo))
-            .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch.BatchCode));
-        CreateMap<CreateAttendanceDto, Attendance>();
-        CreateMap<UpdateAttendanceDto, Attendance>()
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-    }
-}
+// Attendance mapping
+         CreateMap<Attendance, AttendanceDto>()
+             .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src => src.Student.NameWithInitials))
+             .ForMember(dest => dest.MISNo, opt => opt.MapFrom(src => src.Student.MISNo))
+             .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch.BatchCode));
+         CreateMap<CreateAttendanceDto, Attendance>();
+         CreateMap<UpdateAttendanceDto, Attendance>()
+             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+         // Question Category mapping
+         CreateMap<QuestionCategory, QuestionCategoryDto>()
+             .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.Questions.Count));
+         CreateMap<CreateQuestionCategoryDto, QuestionCategory>();
+         CreateMap<UpdateQuestionCategoryDto, QuestionCategory>()
+             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+         // Question mapping
+         CreateMap<Question, QuestionDto>()
+             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString().ToLower()))
+             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty.ToString().ToLower()))
+             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
+             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("yyyy-MM-dd")));
+         CreateMap<CreateQuestionDto, Question>()
+             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => Enum.Parse<QuestionType>(src.Type, true)))
+             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => Enum.Parse<DifficultyLevel>(src.Difficulty, true)));
+         CreateMap<UpdateQuestionDto, Question>()
+             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => Enum.Parse<QuestionType>(src.Type, true)))
+             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => Enum.Parse<DifficultyLevel>(src.Difficulty, true)));
+
+         // Exam mapping
+         CreateMap<Exam, ExamDto>()
+             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")));
+         CreateMap<CreateExamDto, Exam>();
+
+// ExamQuestion mapping
+          CreateMap<ExamQuestion, ExamQuestionDto>()
+              .ForMember(dest => dest.Question, opt => opt.MapFrom(src => src.Question));
+      }
+ }

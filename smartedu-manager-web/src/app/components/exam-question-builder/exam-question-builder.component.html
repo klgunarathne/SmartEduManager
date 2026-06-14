@@ -1,0 +1,408 @@
+<div class="question-builder">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Exam Question Builder</h2>
+      <p>Create, organize, and assemble exams from your question bank</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="showCategoryModal.set(true)">
+        <i class="fas fa-tags"></i>
+        Manage Categories
+      </button>
+      <button class="btn btn-primary" (click)="openQuestionModal()">
+        <i class="fas fa-plus"></i>
+        New Question
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-container">
+    <button class="tab-btn" 
+            [class.active]="activeTab() === 'bank'"
+            (click)="activeTab.set('bank')">
+      <i class="fas fa-database"></i>
+      <span>Question Bank</span>
+    </button>
+    <button class="tab-btn" 
+            [class.active]="activeTab() === 'builder'"
+            (click)="activeTab.set('builder')"
+            [disabled]="!selectedExam()">
+      <i class="fas fa-puzzle-piece"></i>
+      <span>Exam Builder</span>
+    </button>
+    <button class="tab-btn" 
+            [class.active]="activeTab() === 'exams'"
+            (click)="activeTab.set('exams')">
+      <i class="fas fa-file-alt"></i>
+      <span>My Exams</span>
+    </button>
+  </div>
+
+  <!-- Question Bank Tab -->
+  @if (activeTab() === 'bank') {
+    <div class="tab-content">
+      <!-- Filters -->
+      <div class="filters-section">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>Category</label>
+            <select [(ngModel)]="selectedCategory" (ngModelChange)="applyFilters()">
+              <option [ngValue]="null">All Categories</option>
+              @for (category of categories(); track category.id) {
+                <option [ngValue]="category.id">{{ category.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Question Type</label>
+            <select [(ngModel)]="selectedQuestionType" (ngModelChange)="applyFilters()">
+              <option value="">All Types</option>
+              <option value="multiple-choice">Multiple Choice</option>
+              <option value="true-false">True/False</option>
+              <option value="short-answer">Short Answer</option>
+              <option value="essay">Essay</option>
+            </select>
+          </div>
+          <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search questions..." 
+                   [(ngModel)]="searchTerm" 
+                   (ngModelChange)="applyFilters()">
+          </div>
+          <div class="filter-info">
+            {{ filteredQuestions().length }} questions
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions Grid -->
+      @if (filteredQuestions().length > 0) {
+        <div class="questions-grid">
+          @for (question of filteredQuestions(); track question.id) {
+            <div class="question-card">
+              <div class="question-header">
+                <span class="category-badge" 
+                      [style.background]="getCategoryColor(question.categoryId)">
+                  {{ question.categoryName }}
+                </span>
+                <span class="question-type">
+                  <i class="fas {{ questionTypeIcon(question.type) }}"></i>
+                  {{ getQuestionTypeLabel(question.type) }}
+                </span>
+              </div>
+              <div class="question-content">
+                <p>{{ question.content }}</p>
+                @if (question.options && question.options.length > 0) {
+                  <div class="options-preview">
+                    @for (option of question.options; track $index) {
+                      <span class="option-tag">Option {{ $index + 1 }}</span>
+                    }
+                  </div>
+                }
+              </div>
+              <div class="question-meta">
+                <span class="difficulty-badge" 
+                      [style.background]="getDifficultyColor(question.difficulty).bg"
+                      [style.color]="getDifficultyColor(question.difficulty).text">
+                  {{ question.difficulty }}
+                </span>
+                <span class="marks-badge">{{ question.marks }} marks</span>
+                @if (question.tags.length > 0) {
+                  <div class="tags-container">
+                    @for (tag of question.tags; track tag) {
+                      <span class="tag">{{ tag }}</span>
+                    }
+                  </div>
+                }
+              </div>
+              <div class="question-actions">
+                <button class="action-btn edit" (click)="openQuestionModal(question)" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-btn delete" (click)="deleteQuestion(question.id)" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+                @if (selectedExam()) {
+                  <button class="action-btn add" (click)="addQuestionToExam(question)" title="Add to Exam">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">
+          <i class="fas fa-database"></i>
+          <p>No questions found in the bank</p>
+          <button class="btn btn-primary" (click)="openQuestionModal()">
+            <i class="fas fa-plus"></i>
+            Create First Question
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Exam Builder Tab -->
+  @if (activeTab() === 'builder' && selectedExam()) {
+    <div class="tab-content">
+      <div class="builder-header">
+        <div class="exam-info">
+          <h3>{{ selectedExam()!.title }}</h3>
+          <p>{{ selectedExam()!.description }}</p>
+        </div>
+        <div class="exam-stats">
+          <div class="stat-item">
+            <span class="stat-value">{{ examQuestions().length }}</span>
+            <span class="stat-label">Questions</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ totalExamMarks() }}</span>
+            <span class="stat-label">Total Marks</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ selectedExam()!.duration }}min</span>
+            <span class="stat-label">Duration</span>
+          </div>
+        </div>
+      </div>
+
+      @if (examQuestions().length > 0) {
+        <div class="exam-questions-list">
+          @for (eq of examQuestions(); track eq.id) {
+            <div class="exam-question-item">
+              <div class="question-number">{{ $index + 1 }}</div>
+              <div class="question-details">
+                <p class="question-text">{{ eq.question?.content }}</p>
+                <span class="question-marks">{{ eq.question?.marks }} marks</span>
+                <span class="question-type">{{ getQuestionTypeLabel(eq.question?.type || 'multiple-choice') }}</span>
+              </div>
+              <button class="action-btn delete" (click)="removeQuestionFromExam(eq.questionId)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">
+          <i class="fas fa-puzzle-piece"></i>
+          <p>No questions added to this exam yet</p>
+          <button class="btn btn-outline" (click)="activeTab.set('bank')">
+            <i class="fas fa-arrow-left"></i>
+            Back to Question Bank
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Exams Tab -->
+  @if (activeTab() === 'exams') {
+    <div class="tab-content">
+      <div class="exams-header">
+        <h3>My Exams</h3>
+        <button class="btn btn-primary" (click)="openExamModal()">
+          <i class="fas fa-plus"></i>
+          Create Exam
+        </button>
+      </div>
+
+      @if (exams().length > 0) {
+        <div class="exams-grid">
+          @for (exam of exams(); track exam.id) {
+            <div class="exam-card" (click)="selectExam(exam); activeTab.set('builder')">
+              <div class="exam-card-header">
+                <span class="exam-badge">{{ exam.categoryName }}</span>
+                <span class="status-badge" [class.active]="exam.isActive">
+                  {{ exam.isActive ? 'Active' : 'Draft' }}
+                </span>
+              </div>
+              <h4 class="exam-title">{{ exam.title }}</h4>
+              <p class="exam-description">{{ exam.description }}</p>
+              <div class="exam-footer">
+                <span><i class="fas fa-question-circle"></i> {{ exam.questionCount }} questions</span>
+                <span><i class="fas fa-clock"></i> {{ exam.duration }} min</span>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">
+          <i class="fas fa-file-alt"></i>
+          <p>No exams created yet</p>
+          <button class="btn btn-primary" (click)="openExamModal()">
+            <i class="fas fa-plus"></i>
+            Create Your First Exam
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Question Modal -->
+  @if (showQuestionModal()) {
+    <div class="modal-overlay" (click)="hideQuestionModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingQuestion() ? 'Edit Question' : 'New Question' }}</h3>
+          <button class="close-btn" (click)="hideQuestionModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Question Content</label>
+            <textarea [(ngModel)]="questionForm.content" 
+                      placeholder="Enter your question..." 
+                      rows="3"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select [(ngModel)]="questionForm.categoryId">
+                @for (category of categories(); track category.id) {
+                  <option [ngValue]="category.id">{{ category.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Question Type</label>
+              <select [(ngModel)]="questionForm.type">
+                <option value="multiple-choice">Multiple Choice</option>
+                <option value="true-false">True/False</option>
+                <option value="short-answer">Short Answer</option>
+                <option value="essay">Essay</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Difficulty</label>
+              <select [(ngModel)]="questionForm.difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Marks</label>
+              <input type="number" [(ngModel)]="questionForm.marks" min="1" max="100">
+            </div>
+          </div>
+
+          @if (questionForm.type === 'multiple-choice') {
+            <div class="options-section">
+              <label>Options</label>
+              @for (option of questionForm.options; track $index; let i = $index) {
+                <div class="option-input">
+                  <span class="option-label">Option {{ i + 1 }}</span>
+                  <input type="text" [(ngModel)]="questionForm.options[i]" 
+                         placeholder="Enter option...">
+                </div>
+              }
+              <div class="form-group">
+                <label>Correct Answer Index (0-3)</label>
+                <input type="number" [(ngModel)]="questionForm.correctAnswer" min="0" max="3">
+              </div>
+            </div>
+          }
+
+          <div class="form-group">
+            <label>Explanation (Optional)</label>
+            <textarea [(ngModel)]="questionForm.explanation" 
+                      placeholder="Explanation for the answer..." 
+                      rows="2"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Tags (comma separated)</label>
+            <input type="text" [(ngModel)]="questionForm.tags" 
+                   placeholder="e.g., algebra, geometry">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="hideQuestionModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="saveQuestion()">
+            {{ editingQuestion() ? 'Update' : 'Create' }} Question
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Exam Modal -->
+  @if (showExamModal()) {
+    <div class="modal-overlay" (click)="hideExamModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Create New Exam</h3>
+          <button class="close-btn" (click)="hideExamModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="createExam()">
+            <div class="form-group">
+              <label>Exam Title</label>
+              <input type="text" [(ngModel)]="examForm.title" name="title" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea [(ngModel)]="examForm.description" name="description" rows="2"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Category</label>
+                <select [(ngModel)]="examForm.categoryId" name="categoryId">
+                  @for (category of categories(); track category.id) {
+                    <option [ngValue]="category.id">{{ category.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Duration (minutes)</label>
+                <input type="number" [(ngModel)]="examForm.duration" name="duration" min="10" max="180">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="hideExamModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="createExam()">Create Exam</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Category Modal -->
+  @if (showCategoryModal()) {
+    <div class="modal-overlay" (click)="hideCategoryModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingCategory() ? 'Edit Category' : 'New Category' }}</h3>
+          <button class="close-btn" (click)="hideCategoryModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Category Name</label>
+            <input type="text" [(ngModel)]="categoryForm.name">
+          </div>
+          <div class="form-group">
+            <label>Color</label>
+            <input type="color" [(ngModel)]="categoryForm.color">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="hideCategoryModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="saveCategory()">
+            {{ editingCategory() ? 'Update' : 'Create' }} Category
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

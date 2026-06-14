@@ -106,9 +106,12 @@ builder.Services.AddScoped<ICourseInstructorRepository, CourseInstructorReposito
     builder.Services.AddScoped<IModulesRepository, ModulesRepository>();
     builder.Services.AddScoped<IModuleTaskRepository, ModuleTaskRepository>();
     builder.Services.AddScoped<IContinuousAssessmentRepository, ContinuousAssessmentRepository>();
-    builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
-    builder.Services.AddScoped<IAssignmentMarksRepository, AssignmentMarksRepository>();
-    builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+builder.Services.AddScoped<IAssignmentRepository, AssignmentRepository>();
+     builder.Services.AddScoped<IAssignmentMarksRepository, AssignmentMarksRepository>();
+     builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+     builder.Services.AddScoped<IQuestionCategoryRepository, QuestionCategoryRepository>();
+     builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+     builder.Services.AddScoped<IExamRepository, ExamRepository>();
 
 // Configure AutoMapper
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());

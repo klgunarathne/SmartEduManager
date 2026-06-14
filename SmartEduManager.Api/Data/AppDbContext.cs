@@ -26,6 +26,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
       public DbSet<ContinuousAssessment> ContinuousAssessments { get; set; } = null!;
 public DbSet<Assignment> Assignments { get; set; } = null!;
        public DbSet<AssignmentMarks> AssignmentMarks { get; set; } = null!;
+       public DbSet<QuestionCategory> QuestionCategories { get; set; } = null!;
+       public DbSet<Question> Questions { get; set; } = null!;
+       public DbSet<Exam> Exams { get; set; } = null!;
+       public DbSet<ExamQuestion> ExamQuestions { get; set; } = null!;
 
      protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -148,9 +152,36 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
             .HasForeignKey(a => a.BatchId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Composite unique key to prevent duplicate attendance for same student on same date
-        builder.Entity<Attendance>()
-            .HasIndex(a => new { a.StudentId, a.Date })
-            .IsUnique();
-    }
-}
+// Composite unique key to prevent duplicate attendance for same student on same date
+         builder.Entity<Attendance>()
+             .HasIndex(a => new { a.StudentId, a.Date })
+             .IsUnique();
+
+         // Question relationships
+         builder.Entity<Question>()
+             .HasOne(q => q.Category)
+             .WithMany(c => c.Questions)
+             .HasForeignKey(q => q.CategoryId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+         // Exam relationships
+         builder.Entity<Exam>()
+             .HasOne(e => e.Category)
+             .WithMany(c => c.Exams)
+             .HasForeignKey(e => e.CategoryId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+         // ExamQuestion relationships
+         builder.Entity<ExamQuestion>()
+             .HasOne(eq => eq.Exam)
+             .WithMany(e => e.ExamQuestions)
+             .HasForeignKey(eq => eq.ExamId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+         builder.Entity<ExamQuestion>()
+             .HasOne(eq => eq.Question)
+             .WithMany(q => q.ExamQuestions)
+             .HasForeignKey(eq => eq.QuestionId)
+             .OnDelete(DeleteBehavior.Restrict);
+     }
+ }
