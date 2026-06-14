@@ -16,11 +16,11 @@ public static class Seeder
             try
             {
                 var context = services.GetRequiredService<AppDbContext>();
+                await context.Database.MigrateAsync();
+
                 var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
                 var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
                 var logger = services.GetRequiredService<ILogger<Program>>();
-
-                await context.Database.MigrateAsync();
 
                 var roles = new[] { "Admin", "Instructor", "User" };
                 foreach (var role in roles)
@@ -59,6 +59,38 @@ public static class Seeder
                         if (result.Succeeded)
                         {
                             await userManager.AddToRoleAsync(user, "Admin");
+                        }
+                    }
+                }
+
+                var instructorPassword = app.Configuration["Seeder:InstructorPassword"]
+                    ?? Environment.GetEnvironmentVariable("SMARTEDU_SEED_INSTRUCTOR_PASSWORD");
+
+                if (string.IsNullOrWhiteSpace(instructorPassword))
+                {
+                    logger.LogWarning("Instructor seed user skipped. Set SMARTEDU_SEED_INSTRUCTOR_PASSWORD for testing.");
+                }
+                else
+                {
+                    var instructorEmail = "instructor@smartedumanager.com";
+                    var instructorUser = await userManager.FindByEmailAsync(instructorEmail);
+                    if (instructorUser == null)
+                    {
+                        var user = new ApplicationUser
+                        {
+                            FirstName = "Test",
+                            LastName = "Instructor",
+                            UserName = instructorEmail,
+                            Email = instructorEmail,
+                            EmailConfirmed = true,
+                            Address = "Instructor Office",
+                            DateOfBirth = new DateTime(1985, 1, 1)
+                        };
+
+                        var result = await userManager.CreateAsync(user, instructorPassword);
+                        if (result.Succeeded)
+                        {
+                            await userManager.AddToRoleAsync(user, "Instructor");
                         }
                     }
                 }
@@ -116,19 +148,32 @@ public static class Seeder
                     await context.SaveChangesAsync();
                 }
 
-                if (!context.NCS.Any())
+if (!context.NCS.Any())
                 {
-                    var courses = await context.Courses.ToListAsync();
-                    var ncsList = new[]
-                    {
-                        new NCS { Version = "1.0", Name = "Web Development Curriculum", UpdatedDate = new DateTime(2024, 1, 1), CourseId = courses[0].CourseId },
-                        new NCS { Version = "1.1", Name = "Mobile App Development Curriculum", UpdatedDate = new DateTime(2024, 2, 15), CourseId = courses[1].CourseId },
-                        new NCS { Version = "2.0", Name = "Data Science Curriculum", UpdatedDate = new DateTime(2024, 3, 10), CourseId = courses[2].CourseId }
-                    };
-                    await context.NCS.AddRangeAsync(ncsList);
-                    await context.SaveChangesAsync();
-                }
+                var courses = await context.Courses.ToListAsync();
+                var ncsList = new[]
+                {
+                    new NCS { Version = "1.0", Name = "Web Development Curriculum", UpdatedDate = new DateTime(2024, 1, 1), CourseId = courses[0].CourseId },
+                    new NCS { Version = "1.1", Name = "Mobile App Development Curriculum", UpdatedDate = new DateTime(2024, 2, 15), CourseId = courses[1].CourseId },
+                    new NCS { Version = "2.0", Name = "Data Science Curriculum", UpdatedDate = new DateTime(2024, 3, 10), CourseId = courses[2].CourseId }
+                };
+                await context.NCS.AddRangeAsync(ncsList);
+                await context.SaveChangesAsync();
             }
+
+            if (!context.QuestionCategories.Any())
+            {
+                var categories = new[]
+                {
+                    new QuestionCategory { Name = "Mathematics", Color = "#6366f1" },
+                    new QuestionCategory { Name = "Science", Color = "#10b981" },
+                    new QuestionCategory { Name = "English", Color = "#f59e0b" },
+                    new QuestionCategory { Name = "History", Color = "#ef4444" }
+                };
+                await context.QuestionCategories.AddRangeAsync(categories);
+                await context.SaveChangesAsync();
+            }
+        }
             catch (Exception ex)
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();

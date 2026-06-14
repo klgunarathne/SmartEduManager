@@ -51,7 +51,7 @@ public class ExamsController : ControllerBase
                 CategoryName = e.Category.Name,
                 QuestionCount = e.ExamQuestions.Count,
                 Duration = e.Duration,
-                IsActive = e.IsActive,
+                IsActive = e.Status == ExamStatus.Active,
                 CreatedAt = e.CreatedAt.ToString("yyyy-MM-dd"),
                 TotalMarks = e.ExamQuestions.Sum(eq => eq.Question.Marks)
             });
@@ -135,7 +135,7 @@ public class ExamsController : ControllerBase
                 CategoryName = exam.Category.Name,
                 QuestionCount = exam.ExamQuestions.Count,
                 Duration = exam.Duration,
-                IsActive = exam.IsActive,
+                IsActive = exam.Status == ExamStatus.Active,
                 CreatedAt = exam.CreatedAt.ToString("yyyy-MM-dd"),
                 TotalMarks = exam.ExamQuestions.Sum(eq => eq.Question.Marks)
             };
@@ -218,6 +218,56 @@ public class ExamsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error removing question {questionId} from exam {examId}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPatch("{id}/schedule")]
+    public async Task<IActionResult> ScheduleExam(int id, [FromBody] ScheduleExamDto dto)
+    {
+        try
+        {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            exam.AvailableFrom = dto.AvailableFrom;
+            exam.AvailableTo = dto.AvailableTo;
+            exam.TimeZone = dto.TimeZone;
+            exam.Status = ExamStatus.Scheduled;
+
+            await _context.SaveChangesAsync();
+            return Ok("Exam scheduled successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error scheduling exam {id}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPatch("{id}/publish")]
+    public async Task<IActionResult> PublishExam(int id)
+    {
+        try
+        {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            exam.Status = ExamStatus.Active;
+            exam.PublishedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok("Exam published successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error publishing exam {id}");
             return StatusCode(500, "Internal server error");
         }
     }

@@ -163,20 +163,21 @@ builder.Services.AddSwaggerGen(options =>
      options.AddPolicy("AllowAllOrigins",
          policy =>
          {
-             policy.WithOrigins(
-                     "http://localhost:4200",
-                     "https://localhost:4200",
-                     "http://localhost:4201",
-                     "https://localhost:4201",
-                     "http://localhost:5000",
-                     "https://localhost:5000",
-                     "http://localhost:5001",
-                     "https://localhost:5001",
-                     "http://localhost:5173",
-                     "https://localhost:5173",
-                     "http://localhost:3000",
-                     "https://localhost:3001"
-                 )
+policy.WithOrigins(
+                      "http://localhost:4200",
+                      "https://localhost:4200",
+                      "http://localhost:4201",
+                      "https://localhost:4201",
+                      "http://localhost:5000",
+                      "https://localhost:5000",
+                      "http://localhost:5001",
+                      "https://localhost:5001",
+                      "http://localhost:5173",
+                      "https://localhost:5173",
+                      "http://localhost:3000",
+                      "https://localhost:3001",
+                      "https://localhost:7160"
+                  )
                  .AllowAnyMethod()
                  .AllowAnyHeader()
                  .AllowCredentials();

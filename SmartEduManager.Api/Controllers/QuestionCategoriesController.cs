@@ -7,7 +7,7 @@ using SmartEduManager.Api.Repositories.Interfaces;
 
 namespace SmartEduManager.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/question-categories")]
 [ApiController]
 [Authorize(Roles = "Admin,Instructor")]
 public class QuestionCategoriesController : ControllerBase
@@ -117,7 +117,7 @@ public class QuestionCategoriesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> Delete(int id)
     {
         try

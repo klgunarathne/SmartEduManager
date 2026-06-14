@@ -40,3 +40,10 @@ public class AddQuestionToExamDto
 {
     public int QuestionId { get; set; }
 }
+
+public class ScheduleExamDto
+{
+    public DateTime? AvailableFrom { get; set; }
+    public DateTime? AvailableTo { get; set; }
+    public string? TimeZone { get; set; }
+}

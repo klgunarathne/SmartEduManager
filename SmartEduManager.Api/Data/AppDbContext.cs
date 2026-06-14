@@ -160,16 +160,16 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
          // Question relationships
          builder.Entity<Question>()
              .HasOne(q => q.Category)
-             .WithMany(c => c.Questions)
+             .WithMany()
              .HasForeignKey(q => q.CategoryId)
-             .OnDelete(DeleteBehavior.Cascade);
+             .OnDelete(DeleteBehavior.Restrict);
 
-         // Exam relationships
+// Exam relationships
          builder.Entity<Exam>()
              .HasOne(e => e.Category)
-             .WithMany(c => c.Exams)
+             .WithMany()
              .HasForeignKey(e => e.CategoryId)
-             .OnDelete(DeleteBehavior.Cascade);
+             .OnDelete(DeleteBehavior.Restrict);
 
          // ExamQuestion relationships
          builder.Entity<ExamQuestion>()

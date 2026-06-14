@@ -498,6 +498,12 @@ namespace SmartEduManager.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("AvailableFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("AvailableTo")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
@@ -510,8 +516,20 @@ namespace SmartEduManager.Api.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("QuestionCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ScheduledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TimeZone")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -520,6 +538,8 @@ namespace SmartEduManager.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("QuestionCategoryId");
 
                     b.ToTable("Exams");
                 });
@@ -703,6 +723,9 @@ namespace SmartEduManager.Api.Migrations
                     b.Property<int>("Marks")
                         .HasColumnType("int");
 
+                    b.Property<int?>("QuestionCategoryId")
+                        .HasColumnType("int");
+
                     b.PrimitiveCollection<string>("Tags")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -716,6 +739,8 @@ namespace SmartEduManager.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("QuestionCategoryId");
 
                     b.ToTable("Questions");
                 });
@@ -1007,10 +1032,14 @@ namespace SmartEduManager.Api.Migrations
             modelBuilder.Entity("SmartEduManager.Api.Models.Exam", b =>
                 {
                     b.HasOne("SmartEduManager.Api.Models.QuestionCategory", "Category")
-                        .WithMany("Exams")
+                        .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("SmartEduManager.Api.Models.QuestionCategory", null)
+                        .WithMany("Exams")
+                        .HasForeignKey("QuestionCategoryId");
 
                     b.Navigation("Category");
                 });
@@ -1070,10 +1099,14 @@ namespace SmartEduManager.Api.Migrations
             modelBuilder.Entity("SmartEduManager.Api.Models.Question", b =>
                 {
                     b.HasOne("SmartEduManager.Api.Models.QuestionCategory", "Category")
-                        .WithMany("Questions")
+                        .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("SmartEduManager.Api.Models.QuestionCategory", null)
+                        .WithMany("Questions")
+                        .HasForeignKey("QuestionCategoryId");
 
                     b.Navigation("Category");
                 });

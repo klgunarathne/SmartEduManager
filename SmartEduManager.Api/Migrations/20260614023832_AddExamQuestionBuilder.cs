@@ -49,6 +49,43 @@ namespace SmartEduManager.Api.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.AddColumn<int>(
+                name: "Status",
+                table: "Exams",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "ScheduledAt",
+                table: "Exams",
+                type: "datetime2",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "PublishedAt",
+                table: "Exams",
+                type: "datetime2",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "AvailableFrom",
+                table: "Exams",
+                type: "datetime2",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "AvailableTo",
+                table: "Exams",
+                type: "datetime2",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "TimeZone",
+                table: "Exams",
+                type: "nvarchar(max)",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "Questions",
                 columns: table => new
@@ -128,14 +165,38 @@ namespace SmartEduManager.Api.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropColumn(
+                name: "TimeZone",
+                table: "Exams");
+
+            migrationBuilder.DropColumn(
+                name: "AvailableTo",
+                table: "Exams");
+
+            migrationBuilder.DropColumn(
+                name: "AvailableFrom",
+                table: "Exams");
+
+            migrationBuilder.DropColumn(
+                name: "PublishedAt",
+                table: "Exams");
+
+            migrationBuilder.DropColumn(
+                name: "ScheduledAt",
+                table: "Exams");
+
+            migrationBuilder.DropColumn(
+                name: "Status",
+                table: "Exams");
+
             migrationBuilder.DropTable(
                 name: "ExamQuestions");
 
             migrationBuilder.DropTable(
-                name: "Exams");
+                name: "Questions");
 
             migrationBuilder.DropTable(
-                name: "Questions");
+                name: "Exams");
 
             migrationBuilder.DropTable(
                 name: "QuestionCategories");
