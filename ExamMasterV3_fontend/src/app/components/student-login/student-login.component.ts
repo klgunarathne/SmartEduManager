@@ -32,7 +32,8 @@ export class StudentLoginComponent {
 
     const credentials: StudentLoginDto = {
       username: this.username,
-      password: this.password
+      password: this.password,
+      isStudentLogin: true
     };
 
     this.authService.login(credentials).subscribe({

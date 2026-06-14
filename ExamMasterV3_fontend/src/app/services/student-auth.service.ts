@@ -23,6 +23,7 @@ export interface GenerateCredentialsDto {
 export interface StudentLoginDto {
   username: string;
   password: string;
+  isStudentLogin?: boolean;
 }
 
 export interface StudentUser {
@@ -56,7 +57,11 @@ export class StudentAuthService {
   }
 
   login(credentials: StudentLoginDto): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/auth/login`, { email: credentials.username, password: credentials.password }).pipe(
+    return this.http.post<any>(`${this.API_URL}/auth/login`, {
+      email: credentials.username,
+      password: credentials.password,
+      isStudentLogin: true
+    }).pipe(
       tap(response => {
         this.studentUser.set(response.user);
         this.isAuthenticated.set(true);
