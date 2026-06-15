@@ -128,29 +128,29 @@
               </div>
             </div>
 
-            @if (editQuestion()!.options && editQuestion()!.options!.length > 0) {
-              <div class="setting-group">
-                <label>Options</label>
-                @for (opt of editQuestion()!.options; track opt.id) {
-                  <div class="option-row">
-                    <input type="radio" 
-                           [name]="'correct-' + editQuestion()!.id"
-                           [checked]="editQuestion()!.correctAnswer?.includes(opt.id)"
-                           (change)="setEditCorrectAnswer(opt.id)">
-                    <input type="text" 
-                           [ngModel]="opt.content" 
-                           (ngModelChange)="updateEditQuestionField('options', editQuestion()!.options!.map(o => o.id === opt.id ? { ...o, content: $event } : o))"
-                           class="option-input">
-                    <button class="action-btn-sm delete" (click)="removeEditOption(opt.id)" title="Remove">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
-                }
-                <button class="btn btn-sm btn-outline" (click)="addEditOption()" style="margin-top: 8px;">
-                  <i class="fas fa-plus"></i> Add Option
-                </button>
-              </div>
-            }
+@if (editQuestion()!.type === 'multiple-choice' || editQuestion()!.type === 'checkbox' || editQuestion()!.type === 'dropdown') {
+               <div class="setting-group">
+                 <label>Options</label>
+                 @for (opt of editQuestion()!.options || []; track opt.id) {
+                   <div class="option-row">
+                     <input [type]="editQuestion()!.type === 'checkbox' ? 'checkbox' : 'radio'" 
+                            [name]="'correct-' + editQuestion()!.id"
+                            [checked]="editQuestion()!.correctAnswer?.includes(opt.id)"
+                            (change)="setEditCorrectAnswer(opt.id)">
+                     <input type="text" 
+                            [ngModel]="opt.content" 
+                            (ngModelChange)="updateEditOption(opt.id, $event)"
+                            class="option-input">
+                     <button class="action-btn-sm delete" (click)="removeEditOption(opt.id)" title="Remove">
+                       <i class="fas fa-times"></i>
+                     </button>
+                   </div>
+                 }
+                 <button class="btn btn-sm btn-outline" (click)="addEditOption()" style="margin-top: 8px;">
+                   <i class="fas fa-plus"></i> Add Option
+                 </button>
+               </div>
+             }
           }
         </div>
         <div class="modal-footer">
@@ -198,9 +198,9 @@
 
         <div class="questions-list">
           @for (q of filteredBankQuestions; track q.id) {
-            <div class="question-item" 
-                 [class.selected]="selectedBankQuestionId() === q.id"
-                 (click)="openQuestionEditor(q.id)">
+<div class="question-item" 
+                   [class.selected]="selectedBankQuestionId() === q.id"
+                   (click)="openQuestionEditor(q.id)">
               <i class="fas {{ getQuestionTypeIcon(q.type) }}"></i>
               <div class="question-info">
                 <span class="question-text">{{ q.content || 'Untitled Question' }}</span>
@@ -208,20 +208,24 @@
                   {{ q.marks }}pt • {{ getQuestionTypeLabel(q.type) }} • 
                   {{ getCategoryById(q.categoryId)?.name || 'Uncategorized' }}
                 </span>
-                @if (q.type === 'multiple-choice' || q.type === 'checkbox') {
+                @if (q.type === 'multiple-choice' || q.type === 'checkbox' || q.type === 'dropdown') {
                   <div class="options-preview">
-                    @for (opt of q.options; track opt.id) {
-                      <span class="option-preview">{{ opt.content }}</span>
+                    @for (opt of q.options; track opt.id; let i = $index) {
+                      <span class="option-preview" [class.correct]="q.correctAnswer?.includes(opt.id)">
+                        {{ i + 1 }}. {{ opt.content }}
+                      </span>
                     }
                   </div>
                 }
               </div>
-              <button class="action-btn add-to-exam" (click)="addBankQuestionToExam(q); $event.stopPropagation()" title="Add to Exam">
-                <i class="fas fa-plus"></i>
-              </button>
-              <button class="action-btn delete" (click)="deleteQuestionFromBank(q.id); $event.stopPropagation()" title="Delete">
-                <i class="fas fa-trash"></i>
-              </button>
+              <div class="question-actions">
+                <button class="action-btn add-to-exam" (click)="addBankQuestionToExam(q); $event.stopPropagation()" title="Add to Exam">
+                  <i class="fas fa-plus"></i>
+                </button>
+                <button class="action-btn delete" (click)="deleteQuestionFromBank(q.id); $event.stopPropagation()" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </div>
           }
         </div>
@@ -287,9 +291,11 @@
                   {{ q.marks }}pt • {{ getCategoryById(q.categoryId)?.name || 'Uncategorized' }}
                 </span>
               </div>
-              <button class="action-btn add-to-exam" (click)="addBankQuestionToExam(q); $event.stopPropagation()" title="Add to Exam">
-                <i class="fas fa-plus"></i>
-              </button>
+              <div class="question-actions">
+                <button class="action-btn add-to-exam" (click)="addBankQuestionToExam(q); $event.stopPropagation()" title="Add to Exam">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
             </div>
           }
         </div>
@@ -387,6 +393,25 @@
                         @for (opt of eq.question!.options; track opt.id) {
                           <div class="option-row">
                             <input type="checkbox" 
+                                   [checked]="eq.question!.correctAnswer?.includes(opt.id)"
+                                   (change)="setCorrectAnswerExam(eq.question!.id!, opt.id)">
+                            <input type="text" 
+                                   [ngModel]="opt.content" 
+                                   (ngModelChange)="updateQuestionOption(eq.question!.id!, opt.id, $event)"
+                                   placeholder="Option">
+                          </div>
+                        }
+                        <button class="btn btn-sm btn-outline" (click)="addExamOption(eq.question!.id!)">
+                          <i class="fas fa-plus"></i> Add Option
+                        </button>
+                      </div>
+                    }
+                    @case ('dropdown') {
+                      <div class="options-list">
+                        @for (opt of eq.question!.options; track opt.id) {
+                          <div class="option-row">
+                            <input type="radio" 
+                                   [name]="'exam-correct-' + eq.question!.id"
                                    [checked]="eq.question!.correctAnswer?.includes(opt.id)"
                                    (change)="setCorrectAnswerExam(eq.question!.id!, opt.id)">
                             <input type="text" 

@@ -284,7 +284,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
       required: updated.required,
       explanation: updated.explanation
     };
-this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
+this.http.put(`${this.API_URL}/questions/${updated.id}`, payload, { responseType: 'text' as any }).subscribe({
       next: () => {
         this.banks.update(questions => questions.map(q => q.id === updated.id ? updated : q));
       },
@@ -316,7 +316,11 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
   openQuestionEditor(questionId: number): void {
     const question = this.banks().find(q => q.id === questionId);
     if (question) {
-      this.editQuestion.set({ ...question });
+      let edited = { ...question };
+      if (!edited.options && (edited.type === 'multiple-choice' || edited.type === 'checkbox' || edited.type === 'dropdown')) {
+        edited.options = this.getDefaultOptions(edited.type);
+      }
+      this.editQuestion.set(edited);
       this.showQuestionEditorModal.set(true);
     }
   }
@@ -331,6 +335,7 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
     if (q) {
       this.updateBankQuestion(q);
       this.toast.success('Question saved');
+      this.closeQuestionEditor();
     }
   }
 
@@ -347,6 +352,13 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
       const newId = `opt${Date.now()}`;
       const options = q.options || [];
       this.editQuestion.set({ ...q, options: [...options, { id: newId, content: 'New Option' }] });
+    }
+  }
+
+  updateEditOption(optId: string, content: string): void {
+    const q = this.editQuestion();
+    if (q && q.options) {
+      this.editQuestion.set({ ...q, options: q.options.map(o => o.id === optId ? { ...o, content } : o) });
     }
   }
 
@@ -422,7 +434,7 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
     };
 
     if (this.exam().id) {
-      this.http.put(`${this.API_URL}/exams/${this.exam().id}`, payload).subscribe({
+      this.http.put(`${this.API_URL}/exams/${this.exam().id}`, payload, { responseType: 'text' as any }).subscribe({
         next: () => this.toast.success('Exam saved'),
         error: () => this.toast.error('Failed to save exam')
       });
@@ -602,11 +614,11 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
     const payload = { name: cat.name, color: cat.color };
 
     if (cat.id && cat.id > 0) {
-      this.http.put(`${this.API_URL}/question-categories/${cat.id}`, payload).subscribe({
+      this.http.put(`${this.API_URL}/question-categories/${cat.id}`, payload, { responseType: 'text' as any }).subscribe({
         next: () => {
-        this.categories.set(this.categories().map(c => c.id === cat.id ? { ...c, ...payload } : c));
-        this.cancelEdit();
-        this.toast.success('Category updated');
+          this.categories.set(this.categories().map(c => c.id === cat.id ? { ...c, ...payload } : c));
+          this.cancelEdit();
+          this.toast.success('Category updated');
         },
         error: (err) => {
           console.error('Update error:', err);

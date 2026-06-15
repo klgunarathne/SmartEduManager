@@ -168,6 +168,8 @@ policy.WithOrigins(
                       "https://localhost:4200",
                       "http://localhost:4201",
                       "https://localhost:4201",
+                      "http://localhost:4201",
+                      "https://localhost:4201",
                       "http://localhost:5000",
                       "https://localhost:5000",
                       "http://localhost:5001",

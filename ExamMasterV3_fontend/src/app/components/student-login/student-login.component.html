@@ -1,54 +1,73 @@
-<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
-  <div class="card shadow" style="max-width: 400px; width: 100%;">
-    <div class="card-header bg-primary text-white text-center py-3">
-      <h4 class="mb-0">Student Exam Login</h4>
-    </div>
-    <div class="card-body p-4">
-      <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
-        <div class="mb-3">
-          <label for="username" class="form-label">NIC No</label>
-          <input 
-            type="text" 
-            class="form-control" 
-            id="username" 
-            [(ngModel)]="username" 
-            name="username" 
-            placeholder="Enter your NIC No"
-            required
-            [disabled]="isLoading()"
-          >
+<div class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h2>Student Exam Login</h2>
+        <p class="subtitle">Access your exams with your credentials</p>
+      </div>
+      
+      <form (ngSubmit)="onSubmit()" #loginForm="ngForm" class="login-form">
+        <div class="form-group">
+          <label for="username">NIC Number</label>
+          <div class="input-wrapper">
+            <i class="fas fa-id-card input-icon"></i>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="username" 
+              [(ngModel)]="username" 
+              name="username" 
+              placeholder="Enter your NIC No"
+              required
+              [disabled]="isLoading()"
+              autocomplete="username"
+            >
+          </div>
         </div>
         
-        <div class="mb-3">
-          <label for="password" class="form-label">Password</label>
-          <input 
-            type="password" 
-            class="form-control" 
-            id="password" 
-            [(ngModel)]="password" 
-            name="password" 
-            placeholder="Enter your password"
-            required
-            [disabled]="isLoading()"
-          >
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock input-icon"></i>
+            <input 
+              type="password" 
+              class="form-control" 
+              id="password" 
+              [(ngModel)]="password" 
+              name="password" 
+              placeholder="Enter your password"
+              required
+              [disabled]="isLoading()"
+              autocomplete="current-password"
+            >
+          </div>
         </div>
 
-        <div *ngIf="error()" class="alert alert-danger" role="alert">
-          {{ error() }}
-        </div>
+        @if (error()) {
+          <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ error() }}
+          </div>
+        }
 
         <button 
           type="submit" 
-          class="btn btn-primary w-100"
+          class="btn btn-login"
           [disabled]="isLoading()"
         >
-          <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-2" role="status"></span>
-          {{ isLoading() ? 'Logging in...' : 'Login' }}
+          @if (isLoading()) {
+            <span class="spinner"></span>
+          }
+          <span>{{ isLoading() ? 'Logging in...' : 'Login' }}</span>
         </button>
       </form>
-    </div>
-    <div class="card-footer text-center text-muted py-2">
-      Enter your NIC No and password to access the exam
+      
+      <div class="login-footer">
+        <p>Enter your NIC No and password to access the exam</p>
+      </div>
     </div>
   </div>
 </div>

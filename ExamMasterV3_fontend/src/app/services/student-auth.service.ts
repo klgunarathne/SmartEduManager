@@ -27,10 +27,14 @@ export interface StudentLoginDto {
 }
 
 export interface StudentUser {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+  id?: number;
+  studentId?: number;
+  firstName?: string;
+  lastName?: string;
+  nameWithInitials?: string;
+  fullName?: string;
+  email?: string;
+  username?: string;
   misNo?: string;
   batchId?: number;
   batchCode?: string;
@@ -63,10 +67,22 @@ export class StudentAuthService {
       isStudentLogin: true
     }).pipe(
       tap(response => {
-        this.studentUser.set(response.user);
+        const user: StudentUser = {
+          id: response.user?.id,
+          studentId: response.user?.studentId,
+          firstName: response.user?.firstName,
+          lastName: response.user?.lastName,
+          fullName: response.user?.fullName,
+          email: response.user?.email,
+          username: response.user?.username,
+          misNo: response.user?.misNo || response.user?.misno,
+          batchId: response.user?.batchId,
+          batchCode: response.user?.batchCode || response.user?.batchcode
+        };
+        this.studentUser.set(user);
         this.isAuthenticated.set(true);
         localStorage.setItem('access_token', response.accessToken);
-        localStorage.setItem('student_user', JSON.stringify(response.user));
+        localStorage.setItem('student_user', JSON.stringify(user));
       }),
       catchError(error => {
         console.error('Login error:', error);

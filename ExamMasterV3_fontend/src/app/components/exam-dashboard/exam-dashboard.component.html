@@ -1,62 +1,104 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">ExamMaster</a>
-    <div class="navbar-nav ms-auto">
-      <span class="navbar-text me-3">
-        Welcome, {{ studentUser()?.firstName }} {{ studentUser()?.lastName }}
-      </span>
-      <button class="btn btn-outline-light btn-sm" (click)="logout()">Logout</button>
+<div class="dashboard">
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1><i class="fas fa-graduation-cap"></i> ExamMaster</h1>
+      <div class="user-info">
+        <span class="welcome-text">Welcome, {{ displayName }}</span>
+        <button class="btn btn-logout" (click)="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
     </div>
-  </div>
-</nav>
+  </header>
 
-<div class="container-fluid py-4 bg-light min-vh-100">
-  <div class="row">
-    <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-header bg-white">
-          <h5 class="mb-0">Student Exam Dashboard</h5>
+  <!-- Main Content -->
+  <main class="dashboard-content">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-id-badge"></i>
         </div>
-        <div class="card-body">
-          <div class="row mb-4">
-            <div class="col-md-4">
-              <div class="card bg-info text-white">
-                <div class="card-body">
-                  <h6 class="card-title">MIS No</h6>
-                  <p class="card-text fs-5">{{ studentUser()?.misNo || 'N/A' }}</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card bg-success text-white">
-                <div class="card-body">
-                  <h6 class="card-title">Batch</h6>
-                  <p class="card-text fs-5">{{ studentUser()?.batchCode || 'N/A' }}</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card bg-warning text-dark">
-                <div class="card-body">
-                  <h6 class="card-title">Email</h6>
-                  <p class="card-text fs-6">{{ studentUser()?.email || 'N/A' }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card mt-4">
-            <div class="card-header">
-              <h6 class="mb-0">Available Exams</h6>
-            </div>
-            <div class="card-body">
-              <div class="alert alert-info">
-                No exams available at the moment. Please check back later.
-              </div>
-            </div>
-          </div>
+        <div class="stat-info">
+          <span class="stat-label">MIS No</span>
+          <span class="stat-value">{{ misNo }}</span>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Batch</span>
+          <span class="stat-value">{{ batchCode }}</span>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-envelope"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Email</span>
+          <span class="stat-value email">{{ studentUser()?.email || 'N/A' }}</span>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- Exams Section -->
+    <section class="exams-section">
+      <div class="section-header">
+        <h2><i class="fas fa-clipboard-list"></i> Available Exams</h2>
+      </div>
+      
+      <div class="exams-grid">
+        @if (exams().length === 0) {
+          <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+            <p>No exams available at the moment. Please check back later.</p>
+          </div>
+        } @else {
+          @for (exam of exams(); track exam.id) {
+            <div class="exam-card" [class.active]="exam.status === 'active'" [class.scheduled]="exam.status === 'scheduled'">
+              <div class="exam-header">
+                <h3>{{ exam.title }}</h3>
+                <span class="exam-status" [class]="exam.status">
+                  {{ exam.status === 'active' ? 'Available Now' : 'Scheduled' }}
+                </span>
+              </div>
+              <div class="exam-meta">
+                <div class="meta-item">
+                  <i class="fas fa-clock"></i>
+                  <span>{{ exam.duration }} minutes</span>
+                </div>
+                <div class="meta-item">
+                  <i class="fas fa-question-circle"></i>
+                  <span>{{ exam.questionCount }} questions</span>
+                </div>
+                @if (exam.availableFrom) {
+                  <div class="meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Starts: {{ exam.availableFrom | date:'short' }}</span>
+                  </div>
+                }
+                @if (exam.availableTo) {
+                  <div class="meta-item">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Ends: {{ exam.availableTo | date:'short' }}</span>
+                  </div>
+                }
+              </div>
+              <button class="btn btn-start" 
+                      [disabled]="exam.status !== 'active'"
+                      (click)="startExam(exam.id)">
+                <i class="fas fa-play"></i> Start Exam
+              </button>
+            </div>
+          }
+        }
+      </div>
+    </section>
+  </main>
 </div>
