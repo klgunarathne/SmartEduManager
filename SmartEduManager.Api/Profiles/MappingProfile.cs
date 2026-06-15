@@ -132,13 +132,16 @@ public class MappingProfile : Profile
              .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty.ToString().ToLower()))
              .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
              .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
-             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("yyyy-MM-dd")));
-CreateMap<CreateQuestionDto, Question>()
-              .ForMember(dest => dest.Type, opt => opt.MapFrom(src => Enum.Parse<QuestionType>(src.Type, true)))
-              .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => Enum.Parse<DifficultyLevel>(src.Difficulty, true)));
-          CreateMap<UpdateQuestionDto, Question>()
-              .ForMember(dest => dest.Type, opt => opt.MapFrom(src => Enum.Parse<QuestionType>(src.Type, true)))
-              .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => Enum.Parse<DifficultyLevel>(src.Difficulty, true)));
+             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("yyyy-MM-dd")))
+             .ForMember(dest => dest.Options, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.Options) ? null : src.Options.Split('|', StringSplitOptions.RemoveEmptyEntries)));
+            CreateMap<CreateQuestionDto, Question>()
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => Enum.Parse<QuestionType>(src.Type, true)))
+                .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => Enum.Parse<DifficultyLevel>(src.Difficulty, true)))
+                .ForMember(dest => dest.Options, opt => opt.MapFrom(src => src.Options != null ? string.Join("|", src.Options) : null));
+            CreateMap<UpdateQuestionDto, Question>()
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => Enum.Parse<QuestionType>(src.Type, true)))
+                .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => Enum.Parse<DifficultyLevel>(src.Difficulty, true)))
+                .ForMember(dest => dest.Options, opt => opt.MapFrom(src => src.Options != null ? string.Join("|", src.Options) : null));
 
          // Exam mapping
          CreateMap<Exam, ExamDto>()
@@ -147,7 +150,7 @@ CreateMap<CreateQuestionDto, Question>()
          CreateMap<CreateExamDto, Exam>();
 
 // ExamQuestion mapping
-          CreateMap<ExamQuestion, ExamQuestionDto>()
-              .ForMember(dest => dest.Question, opt => opt.MapFrom(src => src.Question));
-      }
+           CreateMap<ExamQuestion, ExamQuestionDto>()
+               .ForMember(dest => dest.Question, opt => opt.MapFrom(src => src.Question));
+       }
  }

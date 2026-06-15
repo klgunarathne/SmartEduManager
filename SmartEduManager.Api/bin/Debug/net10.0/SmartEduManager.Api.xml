@@ -4,6 +4,18 @@
         <name>SmartEduManager.Api</name>
     </assembly>
     <members>
+        <member name="T:SmartEduManager.Api.Data.Migrations.AddQuestionOptions">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.AddQuestionOptions.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.AddQuestionOptions.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.AddQuestionOptions.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:SmartEduManager.Api.Migrations.initialModel">
             <inheritdoc />
         </member>

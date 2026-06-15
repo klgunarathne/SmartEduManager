@@ -75,6 +75,10 @@ export class ExamQuestionBuilderComponent implements OnInit {
   selectedQuestionId = signal<number | null>(null);
   selectedBankQuestionId = signal<number | null>(null);
   
+  // Modal states
+  showQuestionEditorModal = signal(false);
+  editQuestion = signal<Question | null>(null);
+  
   // Filters
   selectedCategoryFilter = signal<number | null>(null);
   searchTerm = signal('');
@@ -87,7 +91,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
   categories = signal<Category[]>([]);
   banks = signal<Question[]>([]);
   exams = signal<Exam[]>([]);
-  
+
   // Current exam being built
   exam = signal<Exam>({
     id: 0,
@@ -138,6 +142,21 @@ export class ExamQuestionBuilderComponent implements OnInit {
     return map[diff];
   }
 
+  private mapQuestionTypeFromApi(type: string): QuestionType {
+    const map: Record<string, QuestionType> = {
+      'MultipleChoice': 'multiple-choice',
+      'Checkbox': 'checkbox',
+      'Dropdown': 'dropdown',
+      'ShortAnswer': 'short-answer',
+      'Essay': 'paragraph',
+      'LinearScale': 'linear-scale',
+      'Rating': 'rating',
+      'Date': 'date',
+      'Time': 'time'
+    };
+    return map[type] || 'multiple-choice';
+  }
+
   ngOnInit(): void {
     this.loadCategories();
     this.loadQuestionBank();
@@ -152,8 +171,26 @@ export class ExamQuestionBuilderComponent implements OnInit {
   }
 
   loadQuestionBank(): void {
-    this.http.get<Question[]>(`${this.API_URL}/questions`).subscribe({
-      next: (data) => this.banks.set(data),
+    this.http.get<any[]>(`${this.API_URL}/questions`).subscribe({
+      next: (data) => {
+        const questions = data.map((q: any) => {
+          const opts = ((q.options as any) || []).map((opt: string, i: number) => ({ id: `opt${i + 1}`, content: opt }));
+          const correctAns = (q.correctAnswer ? (q.correctAnswer as string).split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+          const correctIds = correctAns.map((c: string) => {
+            const found = opts.find((o: any) => o.content === c);
+            return found ? found.id : null;
+          }).filter(Boolean);
+          return {
+            ...q,
+            type: this.mapQuestionTypeFromApi(q.type),
+            options: opts,
+            correctAnswer: correctIds,
+            required: q.required ?? true,
+            tags: q.tags ?? []
+          };
+        });
+        this.banks.set(questions);
+      },
       error: () => this.banks.set([])
     });
   }
@@ -193,13 +230,17 @@ export class ExamQuestionBuilderComponent implements OnInit {
       categoryId: this.categories()[0]?.id || 0,
       marks: 1,
       tags: [],
-      options: this.getDefaultOptions(type)?.map(o => o.content)
+      options: (this.getDefaultOptions(type) || []).map((o: QuestionOption) => o.content)
     };
 
     this.http.post<Question>(`${this.API_URL}/questions`, payload).subscribe({
       next: (result) => {
-        this.banks.set([...this.banks(), { ...result, tags: [], options: this.getDefaultOptions(type) }]);
-        this.selectedBankQuestionId.set(result.id);
+        const opts = ((result.options as any) || []).map((opt: string, i: number) => ({ id: `opt${i + 1}`, content: opt }));
+        const correctAns = result.correctAnswer ? (result.correctAnswer as any).split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+        const correctIds = correctAns.map((c: string) => opts.find((o: any) => o.content === c)?.id || null).filter(Boolean);
+        const newQuestion = { ...result, type: this.mapQuestionTypeFromApi(result.type), tags: [], options: opts, correctAnswer: correctIds, required: result.required ?? true };
+        this.banks.set([...this.banks(), newQuestion]);
+        this.openQuestionEditor(result.id);
         this.toast.success('Question added to bank');
       },
       error: (err) => {
@@ -226,6 +267,11 @@ export class ExamQuestionBuilderComponent implements OnInit {
   }
 
   updateBankQuestion(updated: Question): void {
+    const opts = updated.options || [];
+    const correctAns = (updated.correctAnswer || []).map(id => {
+      const opt = opts.find(o => o.id === id);
+      return opt ? opt.content : '';
+    }).filter(Boolean);
     const payload = {
       content: updated.content,
       type: this.mapQuestionTypeToApi(updated.type),
@@ -233,17 +279,19 @@ export class ExamQuestionBuilderComponent implements OnInit {
       categoryId: updated.categoryId,
       marks: updated.marks,
       tags: updated.tags || [],
-      options: updated.options?.map(o => o.content),
+      options: opts.map(o => o.content),
+      correctAnswer: correctAns.join(','),
       required: updated.required,
       explanation: updated.explanation
     };
-    this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
+this.http.put(`${this.API_URL}/questions/${updated.id}`, payload).subscribe({
       next: () => {
         this.banks.update(questions => questions.map(q => q.id === updated.id ? updated : q));
       },
       error: (err) => {
         console.error('Update question error:', err);
-        this.toast.error(`Failed to update question: ${err.status}`);
+        console.error('Error body:', err.error);
+        this.toast.error(`Failed to update question: ${err.status} ${err.error || ''}`);
       }
     });
   }
@@ -262,6 +310,80 @@ export class ExamQuestionBuilderComponent implements OnInit {
       default:
         return [];
     }
+  }
+
+  // Question editor modal
+  openQuestionEditor(questionId: number): void {
+    const question = this.banks().find(q => q.id === questionId);
+    if (question) {
+      this.editQuestion.set({ ...question });
+      this.showQuestionEditorModal.set(true);
+    }
+  }
+
+  closeQuestionEditor(): void {
+    this.showQuestionEditorModal.set(false);
+    this.editQuestion.set(null);
+  }
+
+  saveQuestion(): void {
+    const q = this.editQuestion();
+    if (q) {
+      this.updateBankQuestion(q);
+      this.toast.success('Question saved');
+    }
+  }
+
+  updateEditQuestionField(field: keyof Question, value: any): void {
+    const q = this.editQuestion();
+    if (q) {
+      this.editQuestion.set({ ...q, [field]: value });
+    }
+  }
+
+  addEditOption(): void {
+    const q = this.editQuestion();
+    if (q) {
+      const newId = `opt${Date.now()}`;
+      const options = q.options || [];
+      this.editQuestion.set({ ...q, options: [...options, { id: newId, content: 'New Option' }] });
+    }
+  }
+
+  removeEditOption(optId: string): void {
+    const q = this.editQuestion();
+    if (q && q.options) {
+      this.editQuestion.set({ ...q, options: q.options.filter(o => o.id !== optId) });
+    }
+  }
+
+  updateTagsInput(value: string): void {
+    const q = this.editQuestion();
+    if (q) {
+      this.editQuestion.set({ ...q, tags: value.split(',').map(t => t.trim()).filter(Boolean) });
+    }
+  }
+
+  updateExamQuestionTags(questionId: number, value: string): void {
+    const tags = value.split(',').map(t => t.trim()).filter(Boolean);
+    this.updateQuestion({ ...this.selectedQuestion!, tags });
+  }
+
+  setEditCorrectAnswer(optId: string): void {
+    const q = this.editQuestion();
+    if (!q) return;
+    const currentCorrect = q.correctAnswer || [];
+    let updatedCorrect: string[];
+    if (q.type === 'checkbox') {
+      if (currentCorrect.includes(optId)) {
+        updatedCorrect = currentCorrect.filter(id => id !== optId);
+      } else {
+        updatedCorrect = [...currentCorrect, optId];
+      }
+    } else {
+      updatedCorrect = [optId];
+    }
+    this.editQuestion.set({ ...q, correctAnswer: updatedCorrect });
   }
 
   // Add question from bank to exam
@@ -328,11 +450,25 @@ export class ExamQuestionBuilderComponent implements OnInit {
   }
 
   duplicateQuestion(question: Question): void {
-    const newQuestion = { ...question, id: Date.now(), content: `${question.content} (copy)` };
-    this.http.post<Question>(`${this.API_URL}/questions`, newQuestion).subscribe({
+    const payload = {
+      content: question.content,
+      type: this.mapQuestionTypeToApi(question.type),
+      difficulty: this.mapDifficultyToApi(question.difficulty),
+      categoryId: question.categoryId,
+      marks: question.marks,
+      tags: question.tags || [],
+      options: (question.options || []).map((o: QuestionOption) => o.content),
+      correctAnswer: (question.correctAnswer || []).map(id => {
+        const opt = question.options?.find(o => o.id === id);
+        return opt ? opt.content : '';
+      }).filter(Boolean).join(',')
+    };
+    this.http.post<Question>(`${this.API_URL}/questions`, payload).subscribe({
       next: (result) => {
-        this.exam.update(e => ({ ...e, questions: [...e.questions, { questionId: result.id, question: result, order: e.questions.length }] }));
-        this.banks.set([...this.banks(), result]);
+        const opts = ((result.options as any) || []).map((opt: string, i: number) => ({ id: `opt${i + 1}`, content: opt }));
+        const newQuestion = { ...result, type: this.mapQuestionTypeFromApi(result.type), options: opts, tags: result.tags || [] };
+        this.exam.update(e => ({ ...e, questions: [...e.questions, { questionId: result.id, question: newQuestion, order: e.questions.length }] }));
+        this.banks.set([...this.banks(), newQuestion]);
       }
     });
   }
@@ -468,9 +604,9 @@ export class ExamQuestionBuilderComponent implements OnInit {
     if (cat.id && cat.id > 0) {
       this.http.put(`${this.API_URL}/question-categories/${cat.id}`, payload).subscribe({
         next: () => {
-          this.categories.set(this.categories().map(c => c.id === cat.id ? { ...c, ...payload } : c));
-          this.cancelEdit();
-          this.toast.success('Category updated');
+        this.categories.set(this.categories().map(c => c.id === cat.id ? { ...c, ...payload } : c));
+        this.cancelEdit();
+        this.toast.success('Category updated');
         },
         error: (err) => {
           console.error('Update error:', err);
@@ -542,6 +678,43 @@ export class ExamQuestionBuilderComponent implements OnInit {
               options: eq.question.options.map(o => o.id === optId ? { ...o, content } : o)
             }
           };
+        }
+        return eq;
+      })
+    }));
+  }
+
+  addExamOption(questionId: number): void {
+    this.exam.update(e => ({
+      ...e,
+      questions: e.questions.map(eq => {
+        if (eq.questionId === questionId && eq.question) {
+          const options = [...eq.question.options || []];
+          options.push({ id: `opt${Date.now()}`, content: `Option ${options.length + 1}` });
+          return { ...eq, question: { ...eq.question, options } };
+        }
+        return eq;
+      })
+    }));
+  }
+
+  setCorrectAnswerExam(questionId: number, optId: string): void {
+    this.exam.update(e => ({
+      ...e,
+      questions: e.questions.map(eq => {
+        if (eq.question?.id === questionId && eq.question.options) {
+          const currentCorrect = eq.question.correctAnswer || [];
+          let updatedCorrect: string[];
+          if (eq.question.type === 'checkbox') {
+            if (currentCorrect.includes(optId)) {
+              updatedCorrect = currentCorrect.filter(id => id !== optId);
+            } else {
+              updatedCorrect = [...currentCorrect, optId];
+            }
+          } else {
+            updatedCorrect = [optId];
+          }
+          return { ...eq, question: { ...eq.question, correctAnswer: updatedCorrect } };
         }
         return eq;
       })

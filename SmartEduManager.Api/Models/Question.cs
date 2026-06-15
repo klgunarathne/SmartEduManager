@@ -31,7 +31,8 @@ namespace SmartEduManager.Api.Models
         public string Content { get; set; } = string.Empty;
         public QuestionType Type { get; set; }
         public DifficultyLevel Difficulty { get; set; }
-        public int Marks { get; set; }
+        public int Marks { get; set; }
+        public string? Options { get; set; }
         public string? CorrectAnswer { get; set; }
         public string? Explanation { get; set; }
         public string[] Tags { get; set; } = [];

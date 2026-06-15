@@ -78,6 +78,89 @@
     </div>
   </div>
 
+  <!-- Question Editor Modal -->
+  @if (showQuestionEditorModal()) {
+    <div class="modal-overlay" (click)="closeQuestionEditor()">
+      <div class="modal-content question-editor-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Edit Question</h3>
+          <button class="close-btn" (click)="closeQuestionEditor()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          @if (editQuestion()) {
+            <div class="setting-group">
+              <label>Category</label>
+              <select [ngModel]="editQuestion()!.categoryId" 
+                      (ngModelChange)="updateEditQuestionField('categoryId', $event)">
+                @for (cat of categories(); track cat.id) {
+                  <option [ngValue]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label>Question Text</label>
+              <textarea [ngModel]="editQuestion()!.content" 
+                        (ngModelChange)="updateEditQuestionField('content', $event)"
+                        rows="3"
+                        placeholder="Enter question..."></textarea>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-group">
+                <label>Marks</label>
+                <input type="number" 
+                       [ngModel]="editQuestion()!.marks" 
+                       (ngModelChange)="updateEditQuestionField('marks', $event)"
+                       min="0" max="100">
+              </div>
+              
+              <div class="setting-group">
+                <label>Difficulty</label>
+                <select [ngModel]="editQuestion()!.difficulty" 
+                        (ngModelChange)="updateEditQuestionField('difficulty', $event)">
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+
+            @if (editQuestion()!.options && editQuestion()!.options!.length > 0) {
+              <div class="setting-group">
+                <label>Options</label>
+                @for (opt of editQuestion()!.options; track opt.id) {
+                  <div class="option-row">
+                    <input type="radio" 
+                           [name]="'correct-' + editQuestion()!.id"
+                           [checked]="editQuestion()!.correctAnswer?.includes(opt.id)"
+                           (change)="setEditCorrectAnswer(opt.id)">
+                    <input type="text" 
+                           [ngModel]="opt.content" 
+                           (ngModelChange)="updateEditQuestionField('options', editQuestion()!.options!.map(o => o.id === opt.id ? { ...o, content: $event } : o))"
+                           class="option-input">
+                    <button class="action-btn-sm delete" (click)="removeEditOption(opt.id)" title="Remove">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                }
+                <button class="btn btn-sm btn-outline" (click)="addEditOption()" style="margin-top: 8px;">
+                  <i class="fas fa-plus"></i> Add Option
+                </button>
+              </div>
+            }
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeQuestionEditor()">Cancel</button>
+          <button class="btn btn-primary" (click)="saveQuestion()">Save Question</button>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- Question Bank Panel -->
   @if (activePanel() === 'question-bank') {
     <div class="panel-container">
@@ -117,7 +200,7 @@
           @for (q of filteredBankQuestions; track q.id) {
             <div class="question-item" 
                  [class.selected]="selectedBankQuestionId() === q.id"
-                 (click)="selectedBankQuestionId.set(q.id)">
+                 (click)="openQuestionEditor(q.id)">
               <i class="fas {{ getQuestionTypeIcon(q.type) }}"></i>
               <div class="question-info">
                 <span class="question-text">{{ q.content || 'Untitled Question' }}</span>
@@ -125,6 +208,13 @@
                   {{ q.marks }}pt • {{ getQuestionTypeLabel(q.type) }} • 
                   {{ getCategoryById(q.categoryId)?.name || 'Uncategorized' }}
                 </span>
+                @if (q.type === 'multiple-choice' || q.type === 'checkbox') {
+                  <div class="options-preview">
+                    @for (opt of q.options; track opt.id) {
+                      <span class="option-preview">{{ opt.content }}</span>
+                    }
+                  </div>
+                }
               </div>
               <button class="action-btn add-to-exam" (click)="addBankQuestionToExam(q); $event.stopPropagation()" title="Add to Exam">
                 <i class="fas fa-plus"></i>
@@ -137,7 +227,7 @@
         </div>
       </div>
 
-      <!-- Right: Question Palette & Edit -->
+      <!-- Right: Question Palette -->
       <div class="question-edit-panel">
         <div class="panel-header">
           <h3>Add Question Type</h3>
@@ -151,69 +241,6 @@
             </div>
           }
         </div>
-
-        @if (selectedBankQuestion) {
-          <div class="question-editor">
-            <h3>Edit Question</h3>
-            
-            <div class="setting-group">
-              <label>Category</label>
-              <select [ngModel]="selectedBankQuestion.categoryId" 
-                      (ngModelChange)="updateBankQuestion({ ...selectedBankQuestion, categoryId: $event })">
-                @for (cat of categories(); track cat.id) {
-                  <option [ngValue]="cat.id">{{ cat.name }}</option>
-                }
-              </select>
-            </div>
-
-            <div class="setting-group">
-              <label>Question Text</label>
-              <textarea [ngModel]="selectedBankQuestion.content" 
-                        (ngModelChange)="updateBankQuestion({ ...selectedBankQuestion, content: $event })"
-                        rows="3"></textarea>
-            </div>
-
-            <div class="setting-row">
-              <div class="setting-group">
-                <label>Marks</label>
-                <input type="number" 
-                       [ngModel]="selectedBankQuestion.marks" 
-                       (ngModelChange)="updateBankQuestion({ ...selectedBankQuestion, marks: $event })"
-                       min="0" max="100">
-              </div>
-
-              <div class="setting-group">
-                <label>Difficulty</label>
-                <select [ngModel]="selectedBankQuestion.difficulty" 
-                        (ngModelChange)="updateBankQuestion({ ...selectedBankQuestion, difficulty: $event })">
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
-            </div>
-
-@if (selectedBankQuestion.options && selectedBankQuestion.options.length > 0) {
-               <div class="setting-group">
-                 <label>Options</label>
-                 @for (opt of selectedBankQuestion.options; track opt.id) {
-                   <input type="text" 
-                          [ngModel]="opt.content" 
-                          (ngModelChange)="updateBankQuestionOption(selectedBankQuestion.id, opt.id, $event)"
-                          class="option-input">
-                 }
-               </div>
-             }
-
-            <div class="setting-group">
-              <label>Tags (comma separated)</label>
-              <input type="text" 
-                     [ngModel]="selectedBankQuestion.tags.join(', ')" 
-                     (ngModelChange)="updateBankQuestion({ ...selectedBankQuestion, tags: $event.split(',').map(t => t.trim()) })"
-                     placeholder="e.g., algebra">
-            </div>
-          </div>
-        }
       </div>
     </div>
   }
@@ -221,7 +248,7 @@
   <!-- Exam Builder Panel -->
   @if (activePanel() === 'exam-builder') {
     <div class="panel-container">
-      <!-- Left: Question Palette -->
+      <!-- Left: Question Bank Panel -->
       <div class="question-list-panel">
         <div class="panel-header">
           <h2>Question Bank ({{ banks().length }})</h2>
@@ -340,26 +367,37 @@
                       <div class="options-list">
                         @for (opt of eq.question!.options; track opt.id) {
                           <div class="option-row">
-                            <i class="fas fa-circle-dot"></i>
+                            <input type="radio" 
+                                   [name]="'exam-correct-' + eq.question!.id"
+                                   [checked]="eq.question!.correctAnswer?.includes(opt.id)"
+                                   (change)="setCorrectAnswerExam(eq.question!.id!, opt.id)">
                             <input type="text" 
                                    [ngModel]="opt.content" 
                                    (ngModelChange)="updateQuestionOption(eq.question!.id!, opt.id, $event)"
                                    placeholder="Option">
                           </div>
                         }
+                        <button class="btn btn-sm btn-outline" (click)="addExamOption(eq.question!.id!)">
+                          <i class="fas fa-plus"></i> Add Option
+                        </button>
                       </div>
                     }
                     @case ('checkbox') {
                       <div class="options-list">
                         @for (opt of eq.question!.options; track opt.id) {
                           <div class="option-row">
-                            <i class="fas fa-square"></i>
+                            <input type="checkbox" 
+                                   [checked]="eq.question!.correctAnswer?.includes(opt.id)"
+                                   (change)="setCorrectAnswerExam(eq.question!.id!, opt.id)">
                             <input type="text" 
                                    [ngModel]="opt.content" 
                                    (ngModelChange)="updateQuestionOption(eq.question!.id!, opt.id, $event)"
                                    placeholder="Option">
                           </div>
                         }
+                        <button class="btn btn-sm btn-outline" (click)="addExamOption(eq.question!.id!)">
+                          <i class="fas fa-plus"></i> Add Option
+                        </button>
                       </div>
                     }
                     @case ('linear-scale') {
@@ -443,22 +481,6 @@
                   <option value="hard">Hard</option>
                 </select>
               </div>
-            </div>
-
-            <div class="setting-group">
-              <label>Tags (comma separated)</label>
-              <input type="text" 
-                     [ngModel]="selectedQuestion.tags.join(', ')" 
-                     (ngModelChange)="updateQuestion({ ...selectedQuestion, tags: $event.split(',').map(t => t.trim()) })"
-                     placeholder="e.g., algebra">
-            </div>
-
-            <div class="setting-group">
-              <label>Explanation (for feedback)</label>
-              <textarea [ngModel]="selectedQuestion.explanation" 
-                        (ngModelChange)="updateQuestion({ ...selectedQuestion, explanation: $event })"
-                        rows="2"
-                        placeholder="Explain the answer..."></textarea>
             </div>
           </div>
         </div>
