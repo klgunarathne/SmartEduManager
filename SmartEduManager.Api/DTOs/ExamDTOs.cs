@@ -17,6 +17,8 @@ public class ExamDto
     public int Duration { get; set; }
     public bool IsActive { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public ICollection<ExamQuestionDto>? Questions { get; set; }
 }
 
 public class CreateExamDto
@@ -46,4 +48,12 @@ public class ScheduleExamDto
     public DateTime? AvailableFrom { get; set; }
     public DateTime? AvailableTo { get; set; }
     public string? TimeZone { get; set; }
+}
+
+public class UpdateExamDto
+{
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int CategoryId { get; set; }
+    public int Duration { get; set; } = 60;
 }

@@ -157,34 +157,34 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
- // Configure CORS
- builder.Services.AddCors(options =>
- {
-     options.AddPolicy("AllowAllOrigins",
-         policy =>
-         {
-policy.WithOrigins(
-                      "http://localhost:4200",
-                      "https://localhost:4200",
-                      "http://localhost:4201",
-                      "https://localhost:4201",
-                      "http://localhost:4201",
-                      "https://localhost:4201",
-                      "http://localhost:5000",
-                      "https://localhost:5000",
-                      "http://localhost:5001",
-                      "https://localhost:5001",
-                      "http://localhost:5173",
-                      "https://localhost:5173",
-                      "http://localhost:3000",
-                      "https://localhost:3001",
-                      "https://localhost:7160"
-                  )
-                 .AllowAnyMethod()
-                 .AllowAnyHeader()
-                 .AllowCredentials();
-         });
- });
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        policy =>
+        {
+            policy.WithOrigins(
+                "http://localhost:4200",
+                "https://localhost:4200",
+                "http://localhost:4201",
+                "https://localhost:4201",
+                "http://localhost:4001",
+                "https://localhost:4001",
+                "http://localhost:5000",
+                "https://localhost:5000",
+                "http://localhost:5001",
+                "https://localhost:5001",
+                "http://localhost:5173",
+                "https://localhost:5173",
+                "http://localhost:3000",
+                "https://localhost:3001",
+                "https://localhost:7160"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
 
 builder.Services.AddScoped<ImageUploadHelper>();
 
@@ -199,9 +199,13 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartEduManager API v1");
         options.RoutePrefix = "swagger"; // To serve Swagger UI at /swagger instead of root
     });
+    // Disable HTTPS redirection in development when using proxy
+    // app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
+else
+{
+    app.UseHttpsRedirection();
+}
 
 // Enable static file serving
 app.UseStaticFiles();
@@ -209,7 +213,6 @@ app.UseStaticFiles();
 // Configure Serilog request logging
 app.UseSerilogRequestLogging();
 
-// Enable CORS
 app.UseCors("AllowAllOrigins");
 
 // Custom error handling

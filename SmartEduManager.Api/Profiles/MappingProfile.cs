@@ -143,11 +143,12 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => Enum.Parse<DifficultyLevel>(src.Difficulty, true)))
                 .ForMember(dest => dest.Options, opt => opt.MapFrom(src => src.Options != null ? string.Join("|", src.Options) : null));
 
-         // Exam mapping
-         CreateMap<Exam, ExamDto>()
-             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
-             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")));
-         CreateMap<CreateExamDto, Exam>();
+// Exam mapping
+          CreateMap<Exam, ExamDto>()
+              .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+              .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
+              .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString().ToLowerInvariant()));
+          CreateMap<CreateExamDto, Exam>();
 
 // ExamQuestion mapping
            CreateMap<ExamQuestion, ExamQuestionDto>()

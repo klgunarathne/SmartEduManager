@@ -66,27 +66,50 @@ export class StudentAuthService {
       password: credentials.password,
       isStudentLogin: true
     }).pipe(
-      tap(response => {
-        const user: StudentUser = {
+      tap((response) => {
+        const baseUser: StudentUser = {
           id: response.user?.id,
-          studentId: response.user?.studentId,
           firstName: response.user?.firstName,
           lastName: response.user?.lastName,
           fullName: response.user?.fullName,
           email: response.user?.email,
           username: response.user?.username,
-          misNo: response.user?.misNo || response.user?.misno,
-          batchId: response.user?.batchId,
-          batchCode: response.user?.batchCode || response.user?.batchcode
         };
-        this.studentUser.set(user);
+        this.studentUser.set(baseUser);
         this.isAuthenticated.set(true);
         localStorage.setItem('access_token', response.accessToken);
-        localStorage.setItem('student_user', JSON.stringify(user));
+        
+        this.fetchStudentDetails(credentials.username, baseUser).subscribe({
+          next: (student) => {
+            const fullUser = { ...baseUser, ...student };
+            this.studentUser.set(fullUser);
+            localStorage.setItem('student_user', JSON.stringify(fullUser));
+          },
+          error: (err) => {
+            console.log('Could not fetch student details:', err);
+            localStorage.setItem('student_user', JSON.stringify(baseUser));
+          }
+        });
       }),
       catchError(error => {
         console.error('Login error:', error);
         return throwError(() => error);
+      })
+    );
+  }
+
+  fetchStudentDetails(username: string, baseUser: StudentUser): Observable<Partial<StudentUser>> {
+    return this.http.get<any>(`${this.API_URL}/students/by-nic/${username}`).pipe(
+      catchError(() => {
+        return this.http.get<any>(`${this.API_URL}/students/by-mis/${baseUser.id}`);
+      })
+    );
+  }
+
+  checkBackend(): Observable<any> {
+    return this.http.get(`${this.API_URL}/health`).pipe(
+      catchError(error => {
+        return throwError(() => new Error('Backend not reachable'));
       })
     );
   }

@@ -74,10 +74,21 @@ export class ExamQuestionBuilderComponent implements OnInit {
   // View modes
   selectedQuestionId = signal<number | null>(null);
   selectedBankQuestionId = signal<number | null>(null);
+  selectedExamId = signal<number | null>(null); // Track selected exam for question bank view
   
   // Modal states
   showQuestionEditorModal = signal(false);
   editQuestion = signal<Question | null>(null);
+  showExamModal = signal(false);
+  editExamData = signal<Exam>({
+    id: 0,
+    title: '',
+    description: '',
+    categoryId: 0,
+    duration: 60,
+    status: 'draft',
+    questions: []
+  }); // For editing exam details
   
   // Filters
   selectedCategoryFilter = signal<number | null>(null);
@@ -406,9 +417,9 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload, { responseType
     }));
   }
 
-  // Create new exam
-  createNewExam(): void {
-    this.exam.set({
+// Create new exam (opens modal, doesn't navigate yet)
+  openNewExamModal(): void {
+    this.editExamData.set({
       id: 0,
       title: '',
       description: '',
@@ -417,7 +428,7 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload, { responseType
       status: 'draft',
       questions: []
     });
-    this.showExamBuilder();
+    this.showExamModal.set(true);
   }
 
   // Exam CRUD
@@ -585,7 +596,142 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload, { responseType
     }));
   }
 
-// Category CRUD
+deleteExam(examId: number): void {
+    if (confirm('Are you sure you want to delete this exam?')) {
+      this.http.delete(`${this.API_URL}/exams/${examId}`, { responseType: 'text' as any }).subscribe({
+        next: () => {
+          this.exams.set(this.exams().filter(e => e.id !== examId));
+          this.toast.success('Exam deleted');
+        },
+        error: (err) => {
+          console.error('Delete exam error:', err);
+          this.toast.error(`Failed to delete exam: ${err.status} ${err.error || ''}`);
+        }
+      });
+    }
+  }
+
+  editExamDetails(exam: Exam): void {
+    this.editExamData.set({ ...exam });
+    this.showExamModal.set(true);
+  }
+
+  closeExamModal(): void {
+    this.showExamModal.set(false);
+  }
+
+  saveExamDetails(): void {
+    const exam = this.editExamData();
+    if (!exam.title.trim()) {
+      this.toast.error('Exam title is required');
+      return;
+    }
+    this.http.put(`${this.API_URL}/exams/${exam.id}`, {
+      title: exam.title,
+      description: exam.description,
+      categoryId: exam.categoryId,
+      duration: exam.duration
+    }, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.exams.set(this.exams().map(e => e.id === exam.id ? { ...e, ...exam } : e));
+        this.exam.update(e => e.id === exam.id ? { ...e, ...exam } : e);
+        this.closeExamModal();
+        this.toast.success('Exam updated');
+      },
+      error: (err) => {
+        console.error('Update exam error:', err);
+        this.toast.error(`Failed to update exam: ${err.status} ${err.error || ''}`);
+      }
+    });
+  }
+
+  duplicateExam(exam: Exam): void {
+    this.http.post<Exam>(`${this.API_URL}/exams`, {
+      title: `${exam.title} (Copy)`,
+      description: exam.description,
+      categoryId: exam.categoryId,
+      duration: exam.duration,
+      questions: exam.questions?.map((q: any, i: number) => ({ questionId: q.questionId, order: i })) || []
+    }).subscribe({
+      next: (result) => {
+        this.exams.set([...this.exams(), result]);
+        this.toast.success('Exam duplicated');
+      },
+      error: (err) => {
+        console.error('Duplicate exam error:', err);
+        this.toast.error(`Failed to duplicate exam: ${err.status} ${err.error || ''}`);
+      }
+    });
+  }
+
+  createNewExam(): void {
+    const exam = this.editExamData();
+    if (!exam.title.trim()) {
+      this.toast.error('Exam title is required');
+      return;
+    }
+    const payload = {
+      title: exam.title,
+      description: exam.description,
+      categoryId: exam.categoryId,
+      duration: exam.duration,
+      questions: []
+    };
+    this.http.post<Exam>(`${this.API_URL}/exams`, payload).subscribe({
+      next: (result) => {
+        this.closeExamModal();
+        this.exam.set(result);
+        this.exams.set([...this.exams(), result]);
+        this.showExamBuilder();
+        this.toast.success('Exam created');
+      },
+      error: (err) => {
+        console.error('Create exam error:', err);
+        this.toast.error(`Failed to create exam: ${err.status} ${err.error || ''}`);
+      }
+    });
+  }
+
+  // Open existing exam
+  openExistingExam(examId: number): void {
+    const exam = this.exams().find(e => e.id === examId);
+    if (exam && exam.questions && exam.questions.length > 0) {
+      this.exam.set(exam);
+      this.showExamBuilder();
+    } else {
+      this.loadFullExam(examId);
+    }
+  }
+
+  loadFullExam(examId: number): void {
+    this.http.get<any>(`${this.API_URL}/exams/${examId}/questions`).subscribe({
+      next: (fullExam) => {
+        const mappedQuestions = (fullExam.questions || []).map((eq: any) => ({
+          questionId: eq.questionId,
+          order: eq.order,
+          question: eq.question ? {
+            ...eq.question,
+            type: this.mapQuestionTypeFromApi(eq.question.type),
+            options: eq.question.options || [],
+            correctAnswer: eq.question.correctAnswer ? eq.question.correctAnswer.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+            tags: eq.question.tags || []
+          } : undefined
+        }));
+        this.exam.set({
+          ...fullExam,
+          status: (fullExam.status || 'draft') as ExamStatus,
+          questions: mappedQuestions
+        });
+        this.showExamBuilder();
+      },
+      error: (err) => {
+        console.error('Load exam error:', err);
+        this.toast.error(`Failed to load exam: ${err.status}`);
+      }
+    });
+  }
+
+  // Category CRUD
   openCategoryManager(): void {
     this.selectedCategory.set({ id: 0, name: '', color: '#6366f1' });
     this.showCategoryModal.set(true);
@@ -666,16 +812,6 @@ this.http.put(`${this.API_URL}/questions/${updated.id}`, payload, { responseType
     if (question) {
       this.updateBankQuestion(question);
     }
-  }
-
-  // Open existing exam
-  openExam(exam: Exam): void {
-    this.http.get<Exam>(`${this.API_URL}/exams/${exam.id}/questions`).subscribe({
-      next: (fullExam) => {
-        this.exam.set(fullExam);
-        this.showExamBuilder();
-      }
-    });
   }
 
   updateQuestionOption(questionId: number, optId: string, content: string): void {

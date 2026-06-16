@@ -100,6 +100,31 @@ public class StudentsController : ControllerBase
         }
     }
 
+    [HttpGet("by-nic/{nicNo}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetStudentByNIC(string nicNo)
+    {
+        try
+        {
+            var students = await _studentRepository.GetStudentsWithBatchAndCourseAsync();
+            var student = students.FirstOrDefault(s => s.NICNo == nicNo);
+
+            if (student == null)
+            {
+                _logger.LogWarning($"Student with NIC {nicNo} not found");
+                return NotFound("Student not found");
+            }
+
+            var studentDto = _mapper.Map<StudentDto>(student);
+            return Ok(studentDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error retrieving student with NIC {nicNo}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateStudent([FromBody] CreateStudentDto createStudentDto)
     {

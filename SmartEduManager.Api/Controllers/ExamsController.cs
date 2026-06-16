@@ -6,6 +6,9 @@ using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Repositories.Interfaces;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SmartEduManager.Api.Controllers;
 
@@ -41,21 +44,22 @@ public class ExamsController : ControllerBase
                 .Include(e => e.ExamQuestions)
                     .ThenInclude(eq => eq.Question)
                 .ToListAsync();
-            
+
             var examsDto = exams.Select(e => new ExamDto
             {
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
                 CategoryId = e.CategoryId,
-                CategoryName = e.Category.Name,
-                QuestionCount = e.ExamQuestions.Count,
+                CategoryName = e.Category?.Name ?? "Uncategorized",
+                QuestionCount = e.ExamQuestions?.Count ?? 0,
                 Duration = e.Duration,
                 IsActive = e.Status == ExamStatus.Active,
                 CreatedAt = e.CreatedAt.ToString("yyyy-MM-dd"),
-                TotalMarks = e.ExamQuestions.Sum(eq => eq.Question.Marks)
+                TotalMarks = e.ExamQuestions?.Sum(eq => eq.Question?.Marks ?? 0) ?? 0,
+                Status = e.Status.ToString().ToLowerInvariant()
             });
-            
+
             return Ok(examsDto);
         }
         catch (Exception ex)
@@ -70,18 +74,84 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var examQuestions = await _context.ExamQuestions
-                .Include(eq => eq.Question)
-                .Where(eq => eq.ExamId == id)
-                .OrderBy(eq => eq.Order)
-                .ToListAsync();
+            var exam = await _context.Exams
+                .Include(e => e.Category)
+                .Include(e => e.ExamQuestions)
+                    .ThenInclude(eq => eq.Question)
+                .FirstOrDefaultAsync(e => e.Id == id);
 
-            var examQuestionsDto = _mapper.Map<IEnumerable<ExamQuestionDto>>(examQuestions);
-            return Ok(examQuestionsDto);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            var examDto = new ExamDto
+            {
+                Id = exam.Id,
+                Title = exam.Title,
+                Description = exam.Description,
+                CategoryId = exam.CategoryId,
+                CategoryName = exam.Category?.Name ?? "Uncategorized",
+                QuestionCount = exam.ExamQuestions?.Count ?? 0,
+                Duration = exam.Duration,
+                IsActive = exam.Status == ExamStatus.Active,
+                CreatedAt = exam.CreatedAt.ToString("yyyy-MM-dd"),
+                TotalMarks = exam.ExamQuestions?.Sum(eq => eq.Question?.Marks ?? 0) ?? 0,
+                Status = exam.Status.ToString().ToLowerInvariant(),
+                Questions = exam.ExamQuestions?
+                    .OrderBy(eq => eq.Order)
+                    .Select(eq => new ExamQuestionDto
+                    {
+                        Id = eq.Id,
+                        ExamId = eq.ExamId,
+                        QuestionId = eq.QuestionId,
+                        Order = eq.Order,
+                        Question = eq.Question != null ? _mapper.Map<QuestionDto>(eq.Question) : null
+                    })
+                    .ToList() ?? []
+            };
+
+            return Ok(examDto);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error retrieving questions for exam {id}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("student")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetStudentExams()
+    {
+        try
+        {
+            var exams = await _context.Exams
+                .Include(e => e.Category)
+                .Include(e => e.ExamQuestions)
+                    .ThenInclude(eq => eq.Question)
+                .Where(e => e.Status == ExamStatus.Active || e.Status == ExamStatus.Scheduled)
+                .ToListAsync();
+
+            var examsDto = exams.Select(e => new ExamDto
+            {
+                Id = e.Id,
+                Title = e.Title,
+                Description = e.Description,
+                CategoryId = e.CategoryId,
+                CategoryName = e.Category.Name,
+                QuestionCount = e.ExamQuestions.Count,
+                Duration = e.Duration,
+                IsActive = e.Status == ExamStatus.Active,
+                CreatedAt = e.CreatedAt.ToString("yyyy-MM-dd"),
+                TotalMarks = e.ExamQuestions.Sum(eq => eq.Question.Marks)
+            });
+
+            return Ok(examsDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving student exams");
             return StatusCode(500, "Internal server error");
         }
     }
@@ -132,12 +202,13 @@ public class ExamsController : ControllerBase
                 Title = exam.Title,
                 Description = exam.Description,
                 CategoryId = exam.CategoryId,
-                CategoryName = exam.Category.Name,
-                QuestionCount = exam.ExamQuestions.Count,
+                CategoryName = exam.Category?.Name ?? "Uncategorized",
+                QuestionCount = exam.ExamQuestions?.Count ?? 0,
                 Duration = exam.Duration,
                 IsActive = exam.Status == ExamStatus.Active,
                 CreatedAt = exam.CreatedAt.ToString("yyyy-MM-dd"),
-                TotalMarks = exam.ExamQuestions.Sum(eq => eq.Question.Marks)
+                TotalMarks = exam.ExamQuestions?.Sum(eq => eq.Question?.Marks ?? 0) ?? 0,
+                Status = exam.Status.ToString().ToLowerInvariant()
             };
             
             return Ok(examDto);
@@ -244,6 +315,54 @@ public class ExamsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error scheduling exam {id}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateExamDto updateDto)
+    {
+        try
+        {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            exam.Title = updateDto.Title;
+            exam.Description = updateDto.Description;
+            exam.CategoryId = updateDto.CategoryId;
+            exam.Duration = updateDto.Duration;
+
+            await _context.SaveChangesAsync();
+            return Ok("Exam updated successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating exam {id}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
+        {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            _context.Exams.Remove(exam);
+            await _context.SaveChangesAsync();
+            return Ok("Exam deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting exam {id}");
             return StatusCode(500, "Internal server error");
         }
     }
