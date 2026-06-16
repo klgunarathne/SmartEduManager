@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../services/toast.service';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { ExamEditorModalComponent } from '../exam-editor-modal/exam-editor-modal.component';
 
 type QuestionType = 'multiple-choice' | 'checkbox' | 'dropdown' | 'short-answer' | 'paragraph' | 'linear-scale' | 'rating' | 'date' | 'time';
 type DifficultyLevel = 'easy' | 'medium' | 'hard';
@@ -133,7 +134,7 @@ interface ApiCategoryDto {
 @Component({
   selector: 'app-exam-question-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule],
+  imports: [CommonModule, FormsModule, DragDropModule, ExamEditorModalComponent],
   templateUrl: './exam-question-builder.component.html',
   styleUrl: './exam-question-builder.component.scss'
 })
@@ -149,14 +150,15 @@ export class ExamQuestionBuilderComponent implements OnInit {
   selectedQuestionId = signal<number | null>(null);
   selectedBankQuestionId = signal<number | null>(null);
   selectedExamId = signal<number | null>(null);
+  showExamEditorModal = signal(false);
 
   showQuestionEditorModal = signal(false);
   editQuestion = signal<Question | null>(null);
-  showExamModal = signal(false);
-  editExamData = signal<Exam>(this.emptyExam());
 
   selectedCategoryFilter = signal<number | null>(null);
   searchTerm = signal('');
+  examBuilderSearchTerm = signal('');
+  examBuilderCategoryFilter = signal<number | null>(null);
 
   showCategoryModal = signal(false);
   selectedCategory = signal<Category>({ id: 0, name: '', color: '#6366f1' });
@@ -182,6 +184,20 @@ export class ExamQuestionBuilderComponent implements OnInit {
   filteredBankQuestions = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
     const selectedCategory = this.selectedCategoryFilter();
+
+    return this.banks().filter(question => {
+      const matchesCategory = !selectedCategory || question.categoryId === selectedCategory;
+      const matchesSearch = !term ||
+        question.content.toLowerCase().includes(term) ||
+        question.tags.some(tag => tag.toLowerCase().includes(term));
+
+      return matchesCategory && matchesSearch;
+    });
+  });
+
+  filteredExamBuilderQuestions = computed(() => {
+    const term = this.examBuilderSearchTerm().trim().toLowerCase();
+    const selectedCategory = this.examBuilderCategoryFilter();
 
     return this.banks().filter(question => {
       const matchesCategory = !selectedCategory || question.categoryId === selectedCategory;
@@ -236,23 +252,6 @@ export class ExamQuestionBuilderComponent implements OnInit {
     });
   }
 
-  loadFullExam(examId: number): void {
-    this.isLoadingFullExam.set(true);
-    this.http.get<ApiExamDto>(`${this.API_URL}/exams/${examId}/questions`).subscribe({
-      next: data => {
-        const questions = (data.Questions || data.questions || []).map(item => this.toExamQuestion(item));
-        this.exam.set(this.toExam(data, questions));
-        this.selectedExamId.set(this.exam().id);
-        this.showExamBuilder();
-      },
-      error: err => {
-        console.error('Load exam error:', err);
-        this.toast.error(`Failed to load exam: ${err.status || 'Unknown error'}`);
-      },
-      complete: () => this.isLoadingFullExam.set(false)
-    });
-  }
-
   showQuestionBank(): void {
     this.activePanel.set('question-bank');
   }
@@ -261,77 +260,26 @@ export class ExamQuestionBuilderComponent implements OnInit {
     this.activePanel.set('exam-builder');
   }
 
-  openNewExamModal(): void {
-    this.editExamData.set({
-      ...this.emptyExam(),
-      categoryId: this.categories()[0]?.id || 0
-    });
-    this.showExamModal.set(true);
-  }
-
   editExamDetails(exam: Exam): void {
-    this.editExamData.set({ ...exam });
-    this.showExamModal.set(true);
+    this.selectedExamId.set(exam.id);
+    this.showExamEditorModal.set(true);
+    this.showExamBuilder();
   }
 
-  closeExamModal(): void {
-    this.showExamModal.set(false);
+  openNewExamModal(): void {
+    this.selectedExamId.set(null);
+    this.showExamEditorModal.set(true);
+    this.showExamBuilder();
   }
 
-  createNewExam(): void {
-    const exam = this.editExamData();
-    if (!exam.title.trim()) {
-      this.toast.error('Exam title is required');
-      return;
-    }
-
-    this.http.post<ApiExamDto>(`${this.API_URL}/exams`, {
-      Title: exam.title,
-      Description: exam.description,
-      CategoryId: exam.categoryId,
-      Duration: exam.duration
-    }).subscribe({
-      next: result => {
-        const created = this.toExam(result);
-        this.exam.set(created);
-        this.exams.update(items => [created, ...items]);
-        this.closeExamModal();
-        this.showExamBuilder();
-        this.persistExamQuestions(created.id);
-        this.toast.success('Exam created');
-      },
-      error: err => {
-        console.error('Create exam error:', err);
-        this.toast.error(`Failed to create exam: ${err.status || 'Unknown error'}`);
-      }
-    });
+  closeExamEditorModal(): void {
+    this.showExamEditorModal.set(false);
+    this.selectedExamId.set(null);
   }
 
-  saveExamDetails(): void {
-    const exam = this.editExamData();
-    if (!exam.title.trim()) {
-      this.toast.error('Exam title is required');
-      return;
-    }
-
-    this.http.put(`${this.API_URL}/exams/${exam.id}`, {
-      Title: exam.title,
-      Description: exam.description,
-      CategoryId: exam.categoryId,
-      Duration: exam.duration
-    }, { responseType: 'text' as any }).subscribe({
-      next: () => {
-        const updated = { ...exam };
-        this.exams.update(items => items.map(item => item.id === exam.id ? { ...item, ...updated } : item));
-        this.exam.update(item => item.id === exam.id ? { ...item, ...updated } : item);
-        this.closeExamModal();
-        this.toast.success('Exam updated');
-      },
-      error: err => {
-        console.error('Update exam error:', err);
-        this.toast.error(`Failed to update exam: ${err.status || 'Unknown error'}`);
-      }
-    });
+  handleExamSaved(): void {
+    this.closeExamEditorModal();
+    this.loadExams();
   }
 
   saveExam(): void {
@@ -994,7 +942,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
       this.http.post<ApiExamQuestionDto>(`${this.API_URL}/exams/${examId}/questions`, {
         QuestionId: question.questionId
       }).subscribe({
-        next: () => this.loadFullExam(examId),
+        next: () => this.loadExams(),
         error: err => console.error('Persist exam question error:', err)
       });
     });

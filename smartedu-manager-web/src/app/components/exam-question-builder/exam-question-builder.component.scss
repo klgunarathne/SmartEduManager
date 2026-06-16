@@ -477,11 +477,22 @@
   cursor: grab;
 }
 
-.builder-layout {
+.builder-layout,
+.exam-list-layout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 320px;
+  grid-template-columns: 100%;
   gap: 20px;
   align-items: start;
+}
+
+.exam-list-layout {
+  width: 100%;
+  max-width: 100%;
+}
+
+.exam-list-sidebar {
+  max-height: calc(100vh - 170px);
+  overflow: hidden;
 }
 
 .side-card {
@@ -508,6 +519,11 @@
     color: #64748b;
     font-size: 12px;
   }
+}
+
+.compact-header {
+  padding: 16px 18px;
+  border-bottom: none;
 }
 
 .exam-list {
@@ -567,6 +583,43 @@
   gap: 4px;
 }
 
+.new-exam-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: calc(100% - 20px);
+  margin: 0 10px 12px;
+  padding: 14px;
+  border: 1px dashed #6366f1;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eef2ff, #f8fafc);
+  color: #1e293b;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  i {
+    color: #6366f1;
+    font-size: 18px;
+  }
+
+  span {
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  small {
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  &:hover {
+    border-color: #4f46e5;
+    background: #e0e7ff;
+    transform: translateY(-1px);
+  }
+}
+
 .action-btn {
   display: inline-flex;
   align-items: center;
@@ -596,6 +649,165 @@
   flex-direction: column;
   gap: 20px;
   min-width: 0;
+}
+
+.builder-side-stack {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 150px);
+  overflow: hidden;
+}
+
+.side-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-bottom: 1px solid #eef2f7;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.quick-question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.quick-question-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #1e293b;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  i {
+    color: #6366f1;
+  }
+
+  span {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    grid-column: 2;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  &:hover {
+    border-color: #6366f1;
+    background: #eef2ff;
+    transform: translateY(-1px);
+  }
+}
+
+.empty-exam-card,
+.exam-summary-card {
+  padding: 20px;
+}
+
+.empty-exam-card-header,
+.exam-summary-header,
+.stat-cards {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.empty-exam-card-header,
+.exam-summary-header {
+  margin-bottom: 18px;
+}
+
+.empty-exam-card-header {
+  h3,
+  .exam-summary-header h3 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  p,
+  .exam-summary-header p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 13px;
+  }
+}
+
+.exam-summary-badges,
+.stat-cards {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.stat-cards div {
+  padding: 14px;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.stat-cards span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-cards strong {
+  display: block;
+  margin-top: 4px;
+  color: #1e293b;
+  font-size: 20px;
+}
+
+.helper-text {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.form-actions {
+  .helper-text {
+    flex: 1;
+  }
+}
+
+.settings-section {
+  overflow-y: auto;
+}
+
+.options-editor {
+  margin-top: 18px;
 }
 
 .exam-form {
@@ -702,6 +914,11 @@
   box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
 }
 
+.wide-exam-modal {
+  width: min(1440px, calc(100vw - 48px));
+  max-height: min(92vh, 980px);
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -745,6 +962,123 @@
 .modal-body {
   overflow-y: auto;
   padding: 24px;
+}
+
+.wide-exam-modal-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.exam-modal-header {
+  padding: 22px 28px;
+}
+
+.exam-details-section,
+.exam-question-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 20px;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-title-row h4 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.section-title-row p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.section-title-row.compact-row {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.exam-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #eef2f7;
+}
+
+.compact-stats {
+  flex-shrink: 0;
+}
+
+.exam-modal-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+.exam-question-panel {
+  min-width: 0;
+  background: white;
+}
+
+.question-table-scroll-wrapper {
+  max-height: min(46vh, 440px);
+  overflow-y: auto;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  background: white;
+}
+
+.question-table-scroll-wrapper .data-table {
+  min-width: 780px;
+}
+
+.exam-modal-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.modal-side-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+  padding: 18px;
+}
+
+.modal-side-header {
+  margin: -18px -18px 16px;
+  padding: 18px;
+  background: #f8fafc;
+  border-radius: 16px 16px 0 0;
+}
+
+.modal-quick-list {
+  max-height: 300px;
+  margin-top: 14px;
+}
+
+.modal-settings-panel {
+  padding: 0;
 }
 
 .modal-footer {
