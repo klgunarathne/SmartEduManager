@@ -1,613 +1,675 @@
-<div class="exam-builder">
-  <!-- Header -->
-  <div class="header">
+<div class="page-container">
+  <div class="page-header">
     <div class="header-left">
-      <h1><i class="fas fa-file-alt"></i> Exam Question Builder</h1>
+      <h2>Exam Question Builder</h2>
+      <p>Manage the question bank, categories and exam papers from one workspace.</p>
     </div>
-    <div class="header-right">
-      <button class="btn btn-outline" 
-              [class.active]="activePanel() === 'question-bank'"
-              (click)="showQuestionBank()">
-        <i class="fas fa-book"></i> Question Bank
-      </button>
-      <button class="btn btn-outline" 
-              [class.active]="activePanel() === 'exam-builder'"
-              (click)="showExamBuilder()">
-        <i class="fas fa-edit"></i> Exam Builder
-      </button>
-      <button class="btn btn-outline" (click)="openCategoryManager()" title="Manage Categories">
+    <div class="header-actions">
+      <button type="button" class="btn btn-outline" (click)="openCategoryManager()">
         <i class="fas fa-tags"></i> Manage Categories
       </button>
-
-      @if (showCategoryModal()) {
-        <div class="modal-overlay" (click)="closeCategoryModal()">
-          <div class="modal-content" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>Manage Categories</h3>
-              <button class="close-btn" (click)="closeCategoryModal()">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-            <div class="modal-body">
-              <div class="categories-list">
-                @for (cat of categories(); track cat.id) {
-                  <div class="category-item">
-                    <span class="color-dot" [style.background-color]="cat.color"></span>
-                    <span class="category-name">{{ cat.name }}</span>
-                    <div class="category-actions">
-                      <button class="action-btn-sm" (click)="editExistingCategory(cat)" title="Edit">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="action-btn-sm delete" (click)="deleteCategory(cat.id)" title="Delete">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                }
-                @if (categories().length === 0) {
-                  <div class="category-item empty">No categories yet</div>
-                }
-              </div>
-              
-              <div class="category-form">
-                <h4>{{ selectedCategory().id ? 'Edit Category' : 'Add New Category' }}</h4>
-                <div class="setting-group">
-                  <label>Category Name</label>
-                  <input type="text" 
-                         [ngModel]="selectedCategory().name" 
-                         (ngModelChange)="selectedCategory.update(c => ({ ...c, name: $event }))"
-                         placeholder="Enter category name">
-                </div>
-                <div class="setting-group">
-                  <label>Color</label>
-                  <input type="color" 
-                         [ngModel]="selectedCategory().color" 
-                         (ngModelChange)="selectedCategory.update(c => ({ ...c, color: $event }))">
-                </div>
-                <div class="form-actions">
-                  @if (selectedCategory().id) {
-                    <button class="btn btn-outline" (click)="cancelEdit()">Cancel</button>
-                  }
-                  <button class="btn btn-primary" (click)="saveCategory()">{{ selectedCategory().id ? 'Update' : 'Add' }}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
+      <button type="button" class="btn btn-primary" (click)="openNewExamModal()">
+        <i class="fas fa-plus"></i> New Exam
+      </button>
     </div>
   </div>
 
-  <!-- Question Editor Modal -->
-@if (showQuestionEditorModal()) {
-     <div class="modal-overlay" (click)="closeQuestionEditor()">
-       <div class="modal-content question-editor-modal" (click)="$event.stopPropagation()">
-         <div class="modal-header">
-           <h3>Edit Question</h3>
-           <button class="close-btn" (click)="closeQuestionEditor()">
-             <i class="fas fa-times"></i>
-           </button>
-         </div>
-         <div class="modal-body">
-           @if (editQuestion()) {
-             <div class="setting-group">
-               <label>Category</label>
-               <select [ngModel]="editQuestion()!.categoryId" 
-                       (ngModelChange)="updateEditQuestionField('categoryId', $event)">
-                 @for (cat of categories(); track cat.id) {
-                   <option [ngValue]="cat.id">{{ cat.name }}</option>
-                 }
-               </select>
-             </div>
+  <div class="tabs">
+    <button type="button" class="tab-btn" [class.active]="activePanel() === 'question-bank'" (click)="showQuestionBank()">
+      <i class="fas fa-book"></i> Question Bank
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activePanel() === 'exam-builder'" (click)="showExamBuilder()">
+      <i class="fas fa-clipboard-list"></i> Exam Builder
+    </button>
+  </div>
 
-             <div class="setting-group">
-               <label>Question Text</label>
-               <textarea [ngModel]="editQuestion()!.content" 
-                         (ngModelChange)="updateEditQuestionField('content', $event)"
-                         rows="3"
-                         placeholder="Enter question..."></textarea>
-             </div>
-
-             <div class="setting-row">
-               <div class="setting-group">
-                 <label>Marks</label>
-                 <input type="number" 
-                        [ngModel]="editQuestion()!.marks" 
-                        (ngModelChange)="updateEditQuestionField('marks', $event)"
-                        min="0" max="100">
-               </div>
-               
-               <div class="setting-group">
-                 <label>Difficulty</label>
-                 <select [ngModel]="editQuestion()!.difficulty" 
-                         (ngModelChange)="updateEditQuestionField('difficulty', $event)">
-                   <option value="easy">Easy</option>
-                   <option value="medium">Medium</option>
-                   <option value="hard">Hard</option>
-                 </select>
-               </div>
-             </div>
-
- @if (editQuestion()!.type === 'multiple-choice' || editQuestion()!.type === 'checkbox' || editQuestion()!.type === 'dropdown') {
-               <div class="setting-group">
-                 <label>Options</label>
-                 @for (opt of editQuestion()!.options || []; track opt.id) {
-                   <div class="option-row">
-                     <input [type]="editQuestion()!.type === 'checkbox' ? 'checkbox' : 'radio'" 
-                            [name]="'correct-' + editQuestion()!.id"
-                            [checked]="editQuestion()!.correctAnswer?.includes(opt.id)"
-                            (change)="setEditCorrectAnswer(opt.id)">
-                     <input type="text" 
-                            [ngModel]="opt.content" 
-                            (ngModelChange)="updateEditOption(opt.id, $event)"
-                            class="option-input">
-                     <button class="action-btn-sm delete" (click)="removeEditOption(opt.id)" title="Remove">
-                       <i class="fas fa-times"></i>
-                     </button>
-                   </div>
-                 }
-                 <button class="btn btn-sm btn-outline" (click)="addEditOption()" style="margin-top: 8px;">
-                   <i class="fas fa-plus"></i> Add Option
-                 </button>
-               </div>
-             }
-           }
-         </div>
-         <div class="modal-footer">
-           <button class="btn btn-outline" (click)="closeQuestionEditor()">Cancel</button>
-           <button class="btn btn-primary" (click)="saveQuestion()">Save Question</button>
-         </div>
-       </div>
-     </div>
-   }
-
-<!-- Exam Modal -->
-    @if (showExamModal()) {
-      <div class="modal-overlay" (click)="closeExamModal()">
-        <div class="modal-content" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h3>{{ editExamData().id && editExamData().id > 0 ? 'Edit Exam' : 'New Exam' }}</h3>
-            <button class="close-btn" (click)="closeExamModal()">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="setting-group">
-              <label>Exam Title *</label>
-              <input type="text" 
-                     [ngModel]="editExamData().title" 
-                     (ngModelChange)="editExamData.update(e => ({ ...e, title: $event }))"
-                     placeholder="Enter exam title">
-            </div>
-            <div class="setting-group">
-              <label>Description</label>
-              <textarea [ngModel]="editExamData().description ?? ''" 
-                        (ngModelChange)="editExamData.update(e => ({ ...e, description: $event }))"
-                        placeholder="Description (optional)"
-                        rows="2"></textarea>
-            </div>
-            <div class="setting-row">
-              <div class="setting-group">
-                <label>Category</label>
-                <select [ngModel]="editExamData().categoryId" 
-                        (ngModelChange)="editExamData.update(e => ({ ...e, categoryId: $event }))">
-                  @for (cat of categories(); track cat.id) {
-                    <option [ngValue]="cat.id">{{ cat.name }}</option>
-                  }
-                </select>
-              </div>
-              <div class="setting-group">
-                <label>Duration (minutes)</label>
-                <input type="number" 
-                       [ngModel]="editExamData().duration" 
-                       (ngModelChange)="editExamData.update(e => ({ ...e, duration: $event }))"
-                       min="1" max="300">
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline" (click)="closeExamModal()">Cancel</button>
-            @if (editExamData().id && editExamData().id > 0) {
-              <button class="btn btn-primary" (click)="saveExamDetails()">Save Changes</button>
-            } @else {
-              <button class="btn btn-primary" (click)="createNewExam()">Create Exam</button>
+  @if (activePanel() === 'question-bank') {
+    <section class="filters-section">
+      <div class="filter-row">
+        <div class="filter-group wide">
+          <label>Search questions</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Search by question text or tag"
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+          />
+        </div>
+        <div class="filter-group">
+          <label>Category</label>
+          <select
+            class="form-select"
+            [ngModel]="selectedCategoryFilter()"
+            (ngModelChange)="selectedCategoryFilter.set($event)"
+          >
+            <option [ngValue]="null">All Categories</option>
+            @for (category of categories(); track category.id) {
+              <option [ngValue]="category.id">{{ category.name }}</option>
             }
-          </div>
+          </select>
         </div>
       </div>
-    }
 
-<!-- Question Bank Panel -->
-    @if (activePanel() === 'question-bank') {
-      <div class="panel-container">
-        <!-- Full Question List -->
-        <div class="question-list-panel">
-          <div class="panel-header">
-            <h2>Question Bank ({{ banks().length }})</h2>
-            <button class="btn btn-primary" (click)="openNewExamModal()">
-              <i class="fas fa-plus"></i> New Exam
-            </button>
-          </div>
+      <div class="question-type-grid">
+        @for (type of questionTypes; track type.type) {
+          <button type="button" class="type-card" (click)="addQuestionToBank(type.type)">
+            <i class="fas {{ type.icon }}"></i>
+            <span>{{ type.label }}</span>
+            <small>{{ type.description }}</small>
+          </button>
+        }
+      </div>
+    </section>
 
-          <div class="filters">
-            <input type="text" 
-                   placeholder="Search questions..." 
-                   [ngModel]="searchTerm()"
-                   (ngModelChange)="searchTerm.set($event)"
-                   class="search-input">
-            <select [ngModel]="selectedCategoryFilter()" 
-                    (ngModelChange)="selectedCategoryFilter.set($event)" 
-                    class="category-filter">
-              <option [ngValue]="null">All Categories</option>
-              @for (cat of categories(); track cat.id) {
-                <option [ngValue]="cat.id">{{ cat.name }}</option>
-              }
-            </select>
-          </div>
-
-          @if (filteredBankQuestions.length === 0) {
-            <div class="empty-state">
-              <i class="fas fa-folder-open"></i>
-              <p>No questions in bank. Add one using the palette on the right.</p>
-            </div>
-          }
-
-          <div class="questions-list">
-            @for (q of filteredBankQuestions; track q.id) {
-              <div class="question-item" 
-                   [class.selected]="selectedBankQuestionId() === q.id"
-                   (click)="openQuestionEditor(q.id)">
-                <i class="fas {{ getQuestionTypeIcon(q.type) }}"></i>
-                <div class="question-info">
-                  <span class="question-text">{{ q.content || 'Untitled Question' }}</span>
-                  <span class="question-meta">
-                    {{ q.marks }}pt • {{ getQuestionTypeLabel(q.type) }} • 
-                    {{ getCategoryById(q.categoryId)?.name || 'Uncategorized' }}
+    <section class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 70px;">Type</th>
+            <th>Question</th>
+            <th>Category</th>
+            <th style="width: 90px;">Marks</th>
+            <th style="width: 110px;">Difficulty</th>
+            <th>Correct Answer</th>
+            <th style="width: 220px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (isLoadingQuestionBank()) {
+            <tr>
+              <td colspan="7" class="no-data">
+                <i class="fas fa-spinner fa-spin"></i> Loading questions...
+              </td>
+            </tr>
+          } @else if (filteredBankQuestions().length === 0) {
+            <tr>
+              <td colspan="7" class="no-data">No questions found. Add a question type above to start building your bank.</td>
+            </tr>
+          } @else {
+            @for (question of filteredBankQuestions(); track question.id) {
+              <tr [class.selected]="selectedBankQuestionId() === question.id">
+                <td>
+                  <span class="question-icon">
+                    <i class="fas {{ getQuestionTypeIcon(question.type) }}"></i>
                   </span>
-                  @if (q.type === 'multiple-choice' || q.type === 'checkbox' || q.type === 'dropdown') {
-                    <div class="options-preview">
-                      @for (opt of q.options; track opt.id; let i = $index) {
-                        <span class="option-preview" [class.correct]="q.correctAnswer?.includes(opt.id)">
-                          {{ i + 1 }}. {{ opt.content }}
-                        </span>
-                      }
-                    </div>
-                  }
+                </td>
+                <td>
+                  <a class="link-btn" (click)="openQuestionEditor(question.id)">{{ question.content || 'Untitled Question' }}</a>
+                  <div class="table-subtext">{{ getCorrectAnswerText(question) }}</div>
+                </td>
+                <td>
+                  <span class="category-pill" [style.background-color]="getCategoryById(question.categoryId)?.color || '#e0e7ff'">
+                    {{ getCategoryName(question.categoryId) }}
+                  </span>
+                </td>
+                <td>{{ question.marks }}</td>
+                <td>
+                  <span class="difficulty-badge">{{ question.difficulty }}</span>
+                </td>
+                <td>
+                  <span class="tag-list">
+                    @for (tag of question.tags.slice(0, 3); track tag) {
+                      <span>{{ tag }}</span>
+                    }
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="openQuestionEditor(question.id)">
+                      <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" (click)="addBankQuestionToExam(question)">
+                      <i class="fas fa-plus"></i> Add
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" (click)="deleteQuestionFromBank(question.id)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  @if (activePanel() === 'exam-builder') {
+    <section class="builder-layout">
+      <aside class="side-card">
+        <div class="side-header">
+          <div>
+            <h3>Exams</h3>
+            <p>{{ exams().length }} exam{{ exams().length === 1 ? '' : 's' }}</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" (click)="openNewExamModal()">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+
+        @if (isLoadingExams()) {
+          <div class="loading-state compact">
+            <i class="fas fa-spinner fa-spin"></i> Loading exams...
+          </div>
+        } @else if (exams().length === 0) {
+          <div class="empty-state compact">
+            <i class="fas fa-folder-open"></i>
+            <p>No exams yet. Create one to start building.</p>
+          </div>
+        } @else {
+          <div class="exam-list">
+            @for (exam of exams(); track exam.id) {
+              <div class="exam-card" [class.selected]="selectedExamId() === exam.id">
+                <div class="exam-card-main" (click)="selectedExamId.set(exam.id); loadFullExam(exam.id)">
+                  <div class="exam-card-title">{{ exam.title || 'Untitled Exam' }}</div>
+                  <div class="exam-card-meta">
+                    <span [ngClass]="getStatusClass(exam.status)">{{ exam.status }}</span>
+                    <span>{{ exam.questions.length }} questions</span>
+                  </div>
                 </div>
-                <div class="question-actions">
-                  <button class="action-btn add-to-exam" (click)="addBankQuestionToExam(q); $event.stopPropagation()" title="Add to Exam">
-                    <i class="fas fa-plus"></i>
+                <div class="exam-card-actions">
+                  <button type="button" class="action-btn" (click)="editExamDetails(exam)" title="Edit">
+                    <i class="fas fa-edit"></i>
                   </button>
-                  <button class="action-btn delete" (click)="deleteQuestionFromBank(q.id); $event.stopPropagation()" title="Delete">
+                  <button type="button" class="action-btn" (click)="duplicateExam(exam)" title="Duplicate">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button type="button" class="action-btn danger" (click)="deleteExam(exam.id)" title="Delete">
                     <i class="fas fa-trash"></i>
                   </button>
                 </div>
               </div>
             }
           </div>
-        </div>
-
-        <!-- Right: Question Palette -->
-        <div class="question-edit-panel">
-          <div class="panel-header">
-            <h3>Add Question Type</h3>
-          </div>
-          
-          <div class="question-types">
-            @for (qt of questionTypes; track qt.type) {
-              <div class="question-type-btn" (click)="addQuestionToBank(qt.type)">
-                <i class="fas {{ qt.icon }}"></i>
-                <span>{{ qt.label }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    }
-
-<!-- Exam Builder Panel -->
-   @if (activePanel() === 'exam-builder') {
-     <div class="panel-container">
-       <!-- Left: Exam List Sidebar -->
-       <div class="exam-list-sidebar">
-         <div class="panel-header">
-           <h3>Exams ({{ exams().length }})</h3>
-           <button class="btn btn-sm btn-primary" (click)="openNewExamModal()" title="New Exam">
-             <i class="fas fa-plus"></i>
-           </button>
-         </div>
-         
-         @if (exams().length === 0) {
-           <div class="empty-state small">
-             <i class="fas fa-folder-open"></i>
-             <p>No exams yet. Create one!</p>
-           </div>
-         }
-         
-         <div class="exams-list">
-           @for (exam of exams(); track exam.id) {
-             <div class="exam-card" [class.selected]="selectedExamId() === exam.id">
-               <div class="exam-card-content" (click)="selectedExamId.set(exam.id); openExistingExam(exam.id)">
-                 <span class="exam-title">{{ exam.title || 'Untitled Exam' }}</span>
-                 <span class="exam-meta">
-                   <span class="status-badge" [class]="exam.status">{{ exam.status }}</span>
-                   {{ exam.questions?.length || 0 }} questions
-                 </span>
-               </div>
-               <div class="exam-card-actions">
-                 <button class="action-btn-sm" (click)="editExamDetails(exam)" title="Edit">
-                   <i class="fas fa-edit"></i>
-                 </button>
-                 <button class="action-btn-sm" (click)="duplicateExam(exam)" title="Duplicate">
-                   <i class="fas fa-copy"></i>
-                 </button>
-                 <button class="action-btn-sm delete" (click)="deleteExam(exam.id)" title="Delete">
-                   <i class="fas fa-trash"></i>
-                 </button>
-               </div>
-             </div>
-           }
-         </div>
-       </div>
-
-       <!-- Middle: Question Bank Panel -->
-       <div class="question-list-panel">
-         <div class="panel-header">
-           <h2>Question Bank ({{ banks().length }})</h2>
-         </div>
-
-        <div class="filters">
-          <input type="text" 
-                 placeholder="Search questions..." 
-                 [ngModel]="searchTerm()"
-                 (ngModelChange)="searchTerm.set($event)"
-                 class="search-input">
-          <select [ngModel]="selectedCategoryFilter()" 
-                  (ngModelChange)="selectedCategoryFilter.set($event)" 
-                  class="category-filter">
-            <option [ngValue]="null">All Categories</option>
-            @for (cat of categories(); track cat.id) {
-              <option [ngValue]="cat.id">{{ cat.name }}</option>
-            }
-          </select>
-        </div>
-
-        @if (filteredBankQuestions.length === 0) {
-          <div class="empty-state">
-            <i class="fas fa-folder-open"></i>
-            <p>No questions found. Add some questions first.</p>
-          </div>
         }
+      </aside>
 
-        <div class="questions-list">
-          @for (q of filteredBankQuestions; track q.id) {
-            <div class="question-item" (click)="addBankQuestionToExam(q)">
-              <i class="fas {{ getQuestionTypeIcon(q.type) }}"></i>
-              <div class="question-info">
-                <span class="question-text">{{ q.content || 'Untitled Question' }}</span>
-                <span class="question-meta">
-                  {{ q.marks }}pt • {{ getCategoryById(q.categoryId)?.name || 'Uncategorized' }}
-                </span>
-              </div>
-              <div class="question-actions">
-                <button class="action-btn add-to-exam" (click)="addBankQuestionToExam(q); $event.stopPropagation()" title="Add to Exam">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
+      <main class="builder-main">
+        <section class="filters-section exam-form">
+          <div class="form-grid">
+            <div class="filter-group wide">
+              <label>Exam Title</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Exam title"
+                [ngModel]="exam().title"
+                (ngModelChange)="exam.update(item => ({ ...item, title: $event }))"
+              />
             </div>
-          }
-        </div>
-      </div>
-
-      <!-- Center: Exam Canvas -->
-      <div class="exam-canvas-panel">
-        <div class="exam-info">
-          <input type="text" 
-                 [ngModel]="exam().title" 
-                 (ngModelChange)="exam.update(e => ({ ...e, title: $event }))"
-                 placeholder="Exam Title" 
-                 class="exam-title-input">
-          <textarea [ngModel]="exam().description" 
-                    (ngModelChange)="exam.update(e => ({ ...e, description: $event }))"
-                    placeholder="Description (optional)"
-                    rows="2"></textarea>
-          <div class="exam-meta">
-            <select [ngModel]="exam().categoryId" 
-                    (ngModelChange)="exam.update(e => ({ ...e, categoryId: $event }))">
-              @for (cat of categories(); track cat.id) {
-                <option [ngValue]="cat.id">{{ cat.name }}</option>
-              }
-            </select>
-            <span class="duration-input">
-              <i class="fas fa-clock"></i>
-              <input type="number" 
-                     [ngModel]="exam().duration" 
-                     (ngModelChange)="exam.update(e => ({ ...e, duration: $event }))"
-                     min="1" max="300"> minutes
-            </span>
-          </div>
-        </div>
-
-        <cdk-drop-list 
-          class="question-canvas" 
-          (cdkDropListDropped)="drop($event)"
-          [cdkDropListData]="exam().questions">
-          @if (exam().questions.length === 0) {
-            <div class="empty-canvas">
-              <i class="fas fa-mouse-pointer"></i>
-              <p>Click questions from the bank to add them here</p>
+            <div class="filter-group">
+              <label>Duration</label>
+              <input
+                type="number"
+                class="form-control"
+                min="1"
+                max="300"
+                [ngModel]="exam().duration"
+                (ngModelChange)="exam.update(item => ({ ...item, duration: $event }))"
+              />
             </div>
-          }
-
-          @for (eq of exam().questions; track eq.questionId; let i = $index) {
-            <div class="question-wrapper" 
-                 [class.selected]="selectedQuestionId() === eq.questionId"
-                 cdkDrag
-                 (click)="selectedQuestionId.set(eq.questionId)">
-              <div class="question-editor" *ngIf="eq.question">
-                <div class="question-header">
-                  <span class="question-number">{{ i + 1 }}</span>
-                  <span class="question-type-badge">{{ getQuestionTypeLabel(eq.question.type) }}</span>
-                  <div class="question-actions">
-                    <button class="action-btn" (click)="duplicateQuestion(eq.question)" title="Duplicate">
-                      <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="action-btn delete" (click)="removeQuestion(eq.questionId)" title="Remove">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                    <i class="fas fa-grip-vertical drag-handle" cdkDragHandle></i>
-                  </div>
-                </div>
-
-                <div class="question-content">
-                  <textarea 
-                    placeholder="Question title" 
-                    [ngModel]="eq.question.content"
-                    (ngModelChange)="updateQuestion({ ...eq.question, content: $event })"
-                    rows="2"></textarea>
-
-                  @switch (eq.question!.type) {
-                    @case ('multiple-choice') {
-                      <div class="options-list">
-                        @for (opt of eq.question!.options; track opt.id) {
-                          <div class="option-row">
-                            <input type="radio" 
-                                   [name]="'exam-correct-' + eq.question!.id"
-                                   [checked]="eq.question!.correctAnswer?.includes(opt.id)"
-                                   (change)="setCorrectAnswerExam(eq.question!.id!, opt.id)">
-                            <input type="text" 
-                                   [ngModel]="opt.content" 
-                                   (ngModelChange)="updateQuestionOption(eq.question!.id!, opt.id, $event)"
-                                   placeholder="Option">
-                          </div>
-                        }
-                        <button class="btn btn-sm btn-outline" (click)="addExamOption(eq.question!.id!)">
-                          <i class="fas fa-plus"></i> Add Option
-                        </button>
-                      </div>
-                    }
-                    @case ('checkbox') {
-                      <div class="options-list">
-                        @for (opt of eq.question!.options; track opt.id) {
-                          <div class="option-row">
-                            <input type="checkbox" 
-                                   [checked]="eq.question!.correctAnswer?.includes(opt.id)"
-                                   (change)="setCorrectAnswerExam(eq.question!.id!, opt.id)">
-                            <input type="text" 
-                                   [ngModel]="opt.content" 
-                                   (ngModelChange)="updateQuestionOption(eq.question!.id!, opt.id, $event)"
-                                   placeholder="Option">
-                          </div>
-                        }
-                        <button class="btn btn-sm btn-outline" (click)="addExamOption(eq.question!.id!)">
-                          <i class="fas fa-plus"></i> Add Option
-                        </button>
-                      </div>
-                    }
-                    @case ('dropdown') {
-                      <div class="options-list">
-                        @for (opt of eq.question!.options; track opt.id) {
-                          <div class="option-row">
-                            <input type="radio" 
-                                   [name]="'exam-correct-' + eq.question!.id"
-                                   [checked]="eq.question!.correctAnswer?.includes(opt.id)"
-                                   (change)="setCorrectAnswerExam(eq.question!.id!, opt.id)">
-                            <input type="text" 
-                                   [ngModel]="opt.content" 
-                                   (ngModelChange)="updateQuestionOption(eq.question!.id!, opt.id, $event)"
-                                   placeholder="Option">
-                          </div>
-                        }
-                        <button class="btn btn-sm btn-outline" (click)="addExamOption(eq.question!.id!)">
-                          <i class="fas fa-plus"></i> Add Option
-                        </button>
-                      </div>
-                    }
-                    @case ('linear-scale') {
-                      <div class="linear-scale">
-                        <span>1</span>
-                        <input type="range" min="1" max="5" value="3" disabled>
-                        <span>5</span>
-                      </div>
-                    }
-                    @case ('rating') {
-                      <div class="rating-input">
-                        @for (star of [1,2,3,4,5]; track star) {
-                          <i class="fas fa-star"></i>
-                        }
-                      </div>
-                    }
-                  }
-
-                  <div class="question-footer">
-                    <label class="required-toggle">
-                      <input type="checkbox" 
-                             [ngModel]="eq.question.required" 
-                             (ngModelChange)="updateQuestion({ ...eq.question, required: $event })">
-                      Required
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          }
-        </cdk-drop-list>
-
-        <div class="exam-stats">
-          <span>Questions: {{ exam().questions.length }}</span>
-          <span>Total Marks: {{ exam().questions.reduce((sum, q) => sum + (q.question?.marks || 0), 0) }}</span>
-        </div>
-
-        <div class="exam-actions">
-          <button class="btn btn-primary" (click)="saveExam()">
-            <i class="fas fa-save"></i> Save Exam
-          </button>
-          @if (exam().questions.length > 0) {
-            <button class="btn btn-success" (click)="publishExam()">
-              <i class="fas fa-rocket"></i> Publish Now
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- Right: Question Settings -->
-      @if (selectedQuestion) {
-        <div class="question-settings-panel">
-          <div class="settings-panel">
-            <h3>Question Settings</h3>
-            
-            <div class="setting-group">
+            <div class="filter-group">
               <label>Category</label>
-              <select [ngModel]="selectedQuestion.categoryId" 
-                      (ngModelChange)="updateQuestion({ ...selectedQuestion, categoryId: $event })">
-                @for (cat of categories(); track cat.id) {
-                  <option [ngValue]="cat.id">{{ cat.name }}</option>
+              <select
+                class="form-select"
+                [ngModel]="exam().categoryId"
+                (ngModelChange)="exam.update(item => ({ ...item, categoryId: $event }))"
+              >
+                @for (category of categories(); track category.id) {
+                  <option [ngValue]="category.id">{{ category.name }}</option>
+                }
+              </select>
+            </div>
+            <div class="filter-group wide">
+              <label>Description</label>
+              <textarea
+                class="form-control"
+                rows="2"
+                placeholder="Exam description"
+                [ngModel]="exam().description"
+                (ngModelChange)="exam.update(item => ({ ...item, description: $event }))"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <div class="exam-stats">
+              <span>Questions: <strong>{{ exam().questions.length }}</strong></span>
+              <span>Total Marks: <strong>{{ examTotalMarks() }}</strong></span>
+            </div>
+            <div class="action-group">
+              <button type="button" class="btn btn-outline" (click)="saveExam()">
+                <i class="fas fa-save"></i> Save Exam
+              </button>
+              <button type="button" class="btn btn-success" [disabled]="exam().questions.length === 0" (click)="publishExam()">
+                <i class="fas fa-rocket"></i> Publish Now
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">#</th>
+                <th>Question</th>
+                <th style="width: 140px;">Type</th>
+                <th style="width: 90px;">Marks</th>
+                <th style="width: 150px;">Correct Answers</th>
+                <th style="width: 220px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (isLoadingFullExam()) {
+                <tr>
+                  <td colspan="6" class="no-data">
+                    <i class="fas fa-spinner fa-spin"></i> Loading exam questions...
+                  </td>
+                </tr>
+              } @else if (exam().questions.length === 0) {
+                <tr>
+                  <td colspan="6" class="no-data">No questions added yet. Select questions from the Question Bank and add them here.</td>
+                </tr>
+              } @else {
+                <tbody cdkDropList [cdkDropListData]="exam().questions" (cdkDropListDropped)="drop($event)">
+                  @for (examQuestion of exam().questions; track examQuestion.questionId; let index = $index) {
+                    <tr cdkDrag [class.selected]="selectedQuestionId() === examQuestion.questionId" (click)="selectedQuestionId.set(examQuestion.questionId)">
+                      <td>{{ index + 1 }}</td>
+                      <td>
+                        <a class="link-btn" (click)="selectedQuestionId.set(examQuestion.questionId)">
+                          {{ examQuestion.question?.content || 'Question not loaded' }}
+                        </a>
+                      </td>
+                      <td>
+                        <span [ngClass]="getQuestionTypeBadgeClass(examQuestion.question?.type || 'multiple-choice')">
+                          {{ getQuestionTypeLabel(examQuestion.question?.type || 'multiple-choice') }}
+                        </span>
+                      </td>
+                      <td>{{ examQuestion.question?.marks || 0 }}</td>
+                      <td>{{ examQuestion.question?.correctAnswer?.length || 0 }}</td>
+                      <td>
+                        <div class="table-actions">
+                          <button type="button" class="btn btn-outline btn-sm" (click)="duplicateQuestion(examQuestion.question!)">
+                            <i class="fas fa-copy"></i>
+                          </button>
+                          <button type="button" class="btn btn-danger btn-sm" (click)="removeQuestion(examQuestion.questionId)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                          <span class="drag-handle" cdkDragHandle><i class="fas fa-grip-vertical"></i></span>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              }
+            </tbody>
+          </table>
+        </section>
+      </main>
+
+      <aside class="side-card">
+        <div class="side-header">
+          <h3>Question Settings</h3>
+          <p>Selected question</p>
+        </div>
+
+        @if (selectedQuestion(); as question) {
+          <div class="settings-panel">
+            <div class="filter-group">
+              <label>Category</label>
+              <select
+                class="form-select"
+                [ngModel]="question.categoryId"
+                (ngModelChange)="updateQuestion({ ...question, categoryId: $event })"
+              >
+                @for (category of categories(); track category.id) {
+                  <option [ngValue]="category.id">{{ category.name }}</option>
                 }
               </select>
             </div>
 
-            <div class="setting-row">
-              <div class="setting-group">
+            <div class="form-grid compact-grid">
+              <div class="filter-group">
                 <label>Marks</label>
-                <input type="number" 
-                       [ngModel]="selectedQuestion.marks" 
-                       (ngModelChange)="updateQuestion({ ...selectedQuestion, marks: $event })"
-                       min="0" max="100">
+                <input
+                  type="number"
+                  class="form-control"
+                  min="0"
+                  max="100"
+                  [ngModel]="question.marks"
+                  (ngModelChange)="updateQuestion({ ...question, marks: $event })"
+                />
               </div>
-
-              <div class="setting-group">
+              <div class="filter-group">
                 <label>Difficulty</label>
-                <select [ngModel]="selectedQuestion.difficulty" 
-                        (ngModelChange)="updateQuestion({ ...selectedQuestion, difficulty: $event })">
+                <select
+                  class="form-select"
+                  [ngModel]="question.difficulty"
+                  (ngModelChange)="updateQuestion({ ...question, difficulty: $event })"
+                >
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
                   <option value="hard">Hard</option>
                 </select>
               </div>
             </div>
+
+            <div class="filter-group">
+              <label>Tags</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Comma separated tags"
+                [ngModel]="question.tags.join(', ')"
+                (ngModelChange)="updateQuestionTags(question.id, $event)"
+              />
+            </div>
+
+            <label class="check-row">
+              <input
+                type="checkbox"
+                [ngModel]="question.required"
+                (ngModelChange)="updateQuestion({ ...question, required: $event })"
+              />
+              <span>Required in exam</span>
+            </label>
+
+            @if (isOptionsQuestion(question.type)) {
+              <div class="options-editor">
+                <div class="mini-header">
+                  <h4>Options</h4>
+                  <button type="button" class="btn btn-outline btn-sm" (click)="addExamOption(question.id)">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+
+                @for (option of question.options || []; track option.id) {
+                  <div class="option-row">
+                    <input
+                      [type]="question.type === 'checkbox' ? 'checkbox' : 'radio'"
+                      [name]="'correct-answer-' + question.id"
+                      [checked]="question.correctAnswer?.includes(option.id)"
+                      (change)="setCorrectAnswerExam(question.id, option.id)"
+                    />
+                    <input
+                      type="text"
+                      class="form-control"
+                      [ngModel]="option.content"
+                      (ngModelChange)="updateQuestionOption(question.id, option.id, $event)"
+                    />
+                    <button type="button" class="action-btn danger" (click)="removeOption(question.id, option.id)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </div>
+        } @else {
+          <div class="empty-state compact">
+            <i class="fas fa-mouse-pointer"></i>
+            <p>Select a question in the exam table to edit settings.</p>
+          </div>
+        }
+      </aside>
+    </section>
+  }
+
+  @if (showQuestionEditorModal(); as open) {
+    <div class="modal-overlay" (click)="closeQuestionEditor()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Edit Question</h3>
+            <p>Update question text, answers and category.</p>
+          </div>
+          <button type="button" class="close-btn" (click)="closeQuestionEditor()">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-      }
+
+        <div class="modal-body">
+          @if (editQuestion(); as question) {
+            <div class="form-grid">
+              <div class="filter-group wide">
+                <label>Category</label>
+                <select
+                  class="form-select"
+                  [ngModel]="question.categoryId"
+                  (ngModelChange)="updateEditQuestionField('categoryId', $event)"
+                >
+                  @for (category of categories(); track category.id) {
+                    <option [ngValue]="category.id">{{ category.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Marks</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  min="0"
+                  max="100"
+                  [ngModel]="question.marks"
+                  (ngModelChange)="updateEditQuestionField('marks', $event)"
+                />
+              </div>
+              <div class="filter-group">
+                <label>Difficulty</label>
+                <select
+                  class="form-select"
+                  [ngModel]="question.difficulty"
+                  (ngModelChange)="updateEditQuestionField('difficulty', $event)"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div class="filter-group wide">
+                <label>Question Text</label>
+                <textarea
+                  class="form-control"
+                  rows="4"
+                  placeholder="Enter question"
+                  [ngModel]="question.content"
+                  (ngModelChange)="updateEditQuestionField('content', $event)"
+                ></textarea>
+              </div>
+              <div class="filter-group wide">
+                <label>Explanation</label>
+                <textarea
+                  class="form-control"
+                  rows="2"
+                  placeholder="Optional explanation"
+                  [ngModel]="question.explanation"
+                  (ngModelChange)="updateEditQuestionField('explanation', $event)"
+                ></textarea>
+              </div>
+            </div>
+
+            @if (isOptionsQuestion(question.type)) {
+              <div class="options-editor">
+                <div class="mini-header">
+                  <h4>Options and Correct Answer</h4>
+                  <button type="button" class="btn btn-outline btn-sm" (click)="addEditOption()">
+                    <i class="fas fa-plus"></i> Add Option
+                  </button>
+                </div>
+
+                @for (option of question.options || []; track option.id) {
+                  <div class="option-row">
+                    <input
+                      [type]="question.type === 'checkbox' ? 'checkbox' : 'radio'"
+                      [name]="'editor-correct-answer-' + question.id"
+                      [checked]="question.correctAnswer?.includes(option.id)"
+                      (change)="setEditCorrectAnswer(option.id)"
+                    />
+                    <input
+                      type="text"
+                      class="form-control"
+                      [ngModel]="option.content"
+                      (ngModelChange)="updateEditOption(option.id, $event)"
+                    />
+                    <button type="button" class="action-btn danger" (click)="removeEditOption(option.id)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeQuestionEditor()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="saveQuestion()">Save Question</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showExamModal(); as open) {
+    <div class="modal-overlay" (click)="closeExamModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>{{ editExamData().id ? 'Edit Exam' : 'New Exam' }}</h3>
+            <p>Basic exam details.</p>
+          </div>
+          <button type="button" class="close-btn" (click)="closeExamModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          @if (editExamData(); as examData) {
+            <div class="form-grid">
+              <div class="filter-group wide">
+                <label>Exam Title *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Enter exam title"
+                  [ngModel]="examData.title"
+                  (ngModelChange)="editExamData.update(item => ({ ...item, title: $event }))"
+                />
+              </div>
+              <div class="filter-group">
+                <label>Category</label>
+                <select
+                  class="form-select"
+                  [ngModel]="examData.categoryId"
+                  (ngModelChange)="editExamData.update(item => ({ ...item, categoryId: $event }))"
+                >
+                  @for (category of categories(); track category.id) {
+                    <option [ngValue]="category.id">{{ category.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Duration</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  min="1"
+                  max="300"
+                  [ngModel]="examData.duration"
+                  (ngModelChange)="editExamData.update(item => ({ ...item, duration: $event }))"
+                />
+              </div>
+              <div class="filter-group wide">
+                <label>Description</label>
+                <textarea
+                  class="form-control"
+                  rows="3"
+                  placeholder="Optional description"
+                  [ngModel]="examData.description"
+                  (ngModelChange)="editExamData.update(item => ({ ...item, description: $event }))"
+                ></textarea>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeExamModal()">Cancel</button>
+          @if (editExamData().id) {
+            <button type="button" class="btn btn-primary" (click)="saveExamDetails()">Save Changes</button>
+          } @else {
+            <button type="button" class="btn btn-primary" (click)="createNewExam()">Create Exam</button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showCategoryModal(); as open) {
+    <div class="modal-overlay" (click)="closeCategoryModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Manage Categories</h3>
+            <p>Create and organize question categories.</p>
+          </div>
+          <button type="button" class="close-btn" (click)="closeCategoryModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="category-list">
+            @for (category of categories(); track category.id) {
+              <div class="category-row">
+                <span class="color-dot" [style.background-color]="category.color"></span>
+                <span>{{ category.name }}</span>
+                <div class="category-actions">
+                  <button type="button" class="action-btn" (click)="editExistingCategory(category)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="action-btn danger" (click)="deleteCategory(category.id)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            }
+            @if (categories().length === 0) {
+              <p class="text-muted">No categories available.</p>
+            }
+          </div>
+
+          @if (selectedCategory(); as category) {
+            <div class="form-grid">
+              <div class="filter-group">
+                <label>Category Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Category name"
+                  [ngModel]="category.name"
+                  (ngModelChange)="selectedCategory.update(item => ({ ...item, name: $event }))"
+                />
+              </div>
+              <div class="filter-group">
+                <label>Color</label>
+                <input
+                  type="color"
+                  class="form-control color-input"
+                  [ngModel]="category.color"
+                  (ngModelChange)="selectedCategory.update(item => ({ ...item, color: $event }))"
+                />
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeCategoryModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="saveCategory()">{{ selectedCategory().id ? 'Update' : 'Add' }}</button>
+        </div>
+      </div>
     </div>
   }
 </div>

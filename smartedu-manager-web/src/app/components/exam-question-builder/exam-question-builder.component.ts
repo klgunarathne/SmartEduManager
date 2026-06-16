@@ -1,4 +1,4 @@
-import { Component, signal, OnInit, inject } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -9,11 +9,18 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 type QuestionType = 'multiple-choice' | 'checkbox' | 'dropdown' | 'short-answer' | 'paragraph' | 'linear-scale' | 'rating' | 'date' | 'time';
 type DifficultyLevel = 'easy' | 'medium' | 'hard';
 type ExamStatus = 'draft' | 'scheduled' | 'active' | 'completed';
+type BuilderPanel = 'question-bank' | 'exam-builder';
 
 interface Category {
   id: number;
   name: string;
   color: string;
+}
+
+interface QuestionOption {
+  id: string;
+  content: string;
+  isCorrect?: boolean;
 }
 
 interface Question {
@@ -30,10 +37,11 @@ interface Question {
   required: boolean;
 }
 
-interface QuestionOption {
-  id: string;
-  content: string;
-  isCorrect?: boolean;
+interface ExamQuestion {
+  id?: number;
+  questionId: number;
+  question?: Question;
+  order: number;
 }
 
 interface Exam {
@@ -43,18 +51,83 @@ interface Exam {
   categoryId: number;
   duration: number;
   status: ExamStatus;
-  scheduledAt?: Date | string;
-  availableFrom?: Date | string;
-  availableTo?: Date | string;
-  timeZone?: string;
   questions: ExamQuestion[];
 }
 
-interface ExamQuestion {
+interface ApiQuestionDto {
+  Id?: number;
   id?: number;
-  questionId: number;
-  question?: Question;
-  order: number;
+  Content?: string | null;
+  content?: string | null;
+  Type?: string | null;
+  type?: string | null;
+  Difficulty?: string | null;
+  difficulty?: string | null;
+  CategoryId?: number;
+  categoryId?: number;
+  Marks?: number;
+  marks?: number;
+  Options?: string[] | null;
+  options?: string[] | null;
+  CorrectAnswer?: string | null;
+  correctAnswer?: string | null;
+  Explanation?: string | null;
+  explanation?: string | null;
+  Tags?: string[] | null;
+  tags?: string[] | null;
+  Required?: boolean;
+  required?: boolean;
+}
+
+interface ApiExamQuestionDto {
+  Id?: number;
+  id?: number;
+  ExamId?: number;
+  examId?: number;
+  QuestionId?: number;
+  questionId?: number;
+  Order?: number;
+  order?: number;
+  Question?: ApiQuestionDto | null;
+  question?: ApiQuestionDto | null;
+}
+
+interface ApiExamDto {
+  Id?: number;
+  id?: number;
+  Title?: string | null;
+  title?: string | null;
+  Description?: string | null;
+  description?: string | null;
+  CategoryId?: number;
+  categoryId?: number;
+  CategoryName?: string | null;
+  categoryName?: string | null;
+  QuestionCount?: number;
+  questionCount?: number;
+  Duration?: number;
+  duration?: number;
+  IsActive?: boolean;
+  isActive?: boolean;
+  CreatedAt?: string | null;
+  createdAt?: string | null;
+  TotalMarks?: number;
+  totalMarks?: number;
+  Status?: string | null;
+  status?: string | null;
+  Questions?: ApiExamQuestionDto[] | null;
+  questions?: ApiExamQuestionDto[] | null;
+}
+
+interface ApiCategoryDto {
+  Id?: number;
+  id?: number;
+  Name?: string | null;
+  name?: string | null;
+  Color?: string | null;
+  color?: string | null;
+  QuestionCount?: number;
+  questionCount?: number;
 }
 
 @Component({
@@ -68,66 +141,884 @@ export class ExamQuestionBuilderComponent implements OnInit {
   private readonly API_URL = environment.apiUrl;
   private readonly toast = inject(ToastService);
 
-  // Active panel toggle
-  activePanel = signal<'question-bank' | 'exam-builder'>('question-bank');
-  
-  // View modes
+  activePanel = signal<BuilderPanel>('question-bank');
+  isLoadingQuestionBank = signal(false);
+  isLoadingExams = signal(false);
+  isLoadingFullExam = signal(false);
+
   selectedQuestionId = signal<number | null>(null);
   selectedBankQuestionId = signal<number | null>(null);
-  selectedExamId = signal<number | null>(null); // Track selected exam for question bank view
-  
-  // Modal states
+  selectedExamId = signal<number | null>(null);
+
   showQuestionEditorModal = signal(false);
   editQuestion = signal<Question | null>(null);
   showExamModal = signal(false);
-  editExamData = signal<Exam>({
-    id: 0,
-    title: '',
-    description: '',
-    categoryId: 0,
-    duration: 60,
-    status: 'draft',
-    questions: []
-  }); // For editing exam details
-  
-  // Filters
+  editExamData = signal<Exam>(this.emptyExam());
+
   selectedCategoryFilter = signal<number | null>(null);
   searchTerm = signal('');
-  
-  // Category modal
+
   showCategoryModal = signal(false);
   selectedCategory = signal<Category>({ id: 0, name: '', color: '#6366f1' });
 
-  // Data
   categories = signal<Category[]>([]);
   banks = signal<Question[]>([]);
   exams = signal<Exam[]>([]);
 
-  // Current exam being built
-  exam = signal<Exam>({
-    id: 0,
-    title: '',
-    description: '',
-    categoryId: 0,
-    duration: 60,
-    status: 'draft',
-    questions: []
-  });
+  exam = signal<Exam>(this.emptyExam());
 
-  // Question types available in palette
-  questionTypes: { type: QuestionType; icon: string; label: string }[] = [
-    { type: 'multiple-choice', icon: 'fa-circle-dot', label: 'Multiple choice' },
-    { type: 'checkbox', icon: 'fa-square-check', label: 'Checkboxes' },
-    { type: 'dropdown', icon: 'fa-chevron-down', label: 'Dropdown' },
-    { type: 'short-answer', icon: 'fa-pen', label: 'Short answer' },
-    { type: 'paragraph', icon: 'fa-align-left', label: 'Paragraph' },
-    { type: 'linear-scale', icon: 'fa-sliders', label: 'Linear scale' },
-    { type: 'rating', icon: 'fa-star', label: 'Rating' },
-    { type: 'date', icon: 'fa-calendar', label: 'Date' },
-    { type: 'time', icon: 'fa-clock', label: 'Time' }
+  questionTypes: { type: QuestionType; icon: string; label: string; description: string }[] = [
+    { type: 'multiple-choice', icon: 'fa-circle-dot', label: 'Multiple Choice', description: 'One correct answer' },
+    { type: 'checkbox', icon: 'fa-square-check', label: 'Checkbox', description: 'Multiple correct answers' },
+    { type: 'dropdown', icon: 'fa-chevron-down', label: 'Dropdown', description: 'Select from list' },
+    { type: 'short-answer', icon: 'fa-pen', label: 'Short Answer', description: 'Brief text response' },
+    { type: 'paragraph', icon: 'fa-align-left', label: 'Paragraph', description: 'Long text response' },
+    { type: 'linear-scale', icon: 'fa-sliders', label: 'Linear Scale', description: '1 to 5 scale' },
+    { type: 'rating', icon: 'fa-star', label: 'Rating', description: 'Star rating' },
+    { type: 'date', icon: 'fa-calendar', label: 'Date', description: 'Date answer' },
+    { type: 'time', icon: 'fa-clock', label: 'Time', description: 'Time answer' }
   ];
 
+  filteredBankQuestions = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    const selectedCategory = this.selectedCategoryFilter();
+
+    return this.banks().filter(question => {
+      const matchesCategory = !selectedCategory || question.categoryId === selectedCategory;
+      const matchesSearch = !term ||
+        question.content.toLowerCase().includes(term) ||
+        question.tags.some(tag => tag.toLowerCase().includes(term));
+
+      return matchesCategory && matchesSearch;
+    });
+  });
+
+  selectedQuestion = computed(() => {
+    const selectedId = this.selectedQuestionId();
+    const examQuestion = this.exam().questions.find(item => item.questionId === selectedId);
+    return examQuestion?.question || null;
+  });
+
+  examTotalMarks = computed(() =>
+    this.exam().questions.reduce((sum, item) => sum + (item.question?.marks || 0), 0)
+  );
+
   constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.loadCategories();
+    this.loadQuestionBank();
+    this.loadExams();
+  }
+
+  loadCategories(): void {
+    this.http.get<ApiCategoryDto[]>(`${this.API_URL}/question-categories`).subscribe({
+      next: data => this.categories.set(data.map(item => this.toCategory(item))),
+      error: () => this.categories.set([])
+    });
+  }
+
+  loadQuestionBank(): void {
+    this.isLoadingQuestionBank.set(true);
+    this.http.get<ApiQuestionDto[]>(`${this.API_URL}/questions`).subscribe({
+      next: data => this.banks.set(data.map(item => this.toQuestion(item))),
+      error: () => this.banks.set([]),
+      complete: () => this.isLoadingQuestionBank.set(false)
+    });
+  }
+
+  loadExams(): void {
+    this.isLoadingExams.set(true);
+    this.http.get<ApiExamDto[]>(`${this.API_URL}/exams`).subscribe({
+      next: data => this.exams.set(data.map(item => this.toExam(item))),
+      error: () => this.exams.set([]),
+      complete: () => this.isLoadingExams.set(false)
+    });
+  }
+
+  loadFullExam(examId: number): void {
+    this.isLoadingFullExam.set(true);
+    this.http.get<ApiExamDto>(`${this.API_URL}/exams/${examId}/questions`).subscribe({
+      next: data => {
+        const questions = (data.Questions || data.questions || []).map(item => this.toExamQuestion(item));
+        this.exam.set(this.toExam(data, questions));
+        this.selectedExamId.set(this.exam().id);
+        this.showExamBuilder();
+      },
+      error: err => {
+        console.error('Load exam error:', err);
+        this.toast.error(`Failed to load exam: ${err.status || 'Unknown error'}`);
+      },
+      complete: () => this.isLoadingFullExam.set(false)
+    });
+  }
+
+  showQuestionBank(): void {
+    this.activePanel.set('question-bank');
+  }
+
+  showExamBuilder(): void {
+    this.activePanel.set('exam-builder');
+  }
+
+  openNewExamModal(): void {
+    this.editExamData.set({
+      ...this.emptyExam(),
+      categoryId: this.categories()[0]?.id || 0
+    });
+    this.showExamModal.set(true);
+  }
+
+  editExamDetails(exam: Exam): void {
+    this.editExamData.set({ ...exam });
+    this.showExamModal.set(true);
+  }
+
+  closeExamModal(): void {
+    this.showExamModal.set(false);
+  }
+
+  createNewExam(): void {
+    const exam = this.editExamData();
+    if (!exam.title.trim()) {
+      this.toast.error('Exam title is required');
+      return;
+    }
+
+    this.http.post<ApiExamDto>(`${this.API_URL}/exams`, {
+      Title: exam.title,
+      Description: exam.description,
+      CategoryId: exam.categoryId,
+      Duration: exam.duration
+    }).subscribe({
+      next: result => {
+        const created = this.toExam(result);
+        this.exam.set(created);
+        this.exams.update(items => [created, ...items]);
+        this.closeExamModal();
+        this.showExamBuilder();
+        this.persistExamQuestions(created.id);
+        this.toast.success('Exam created');
+      },
+      error: err => {
+        console.error('Create exam error:', err);
+        this.toast.error(`Failed to create exam: ${err.status || 'Unknown error'}`);
+      }
+    });
+  }
+
+  saveExamDetails(): void {
+    const exam = this.editExamData();
+    if (!exam.title.trim()) {
+      this.toast.error('Exam title is required');
+      return;
+    }
+
+    this.http.put(`${this.API_URL}/exams/${exam.id}`, {
+      Title: exam.title,
+      Description: exam.description,
+      CategoryId: exam.categoryId,
+      Duration: exam.duration
+    }, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        const updated = { ...exam };
+        this.exams.update(items => items.map(item => item.id === exam.id ? { ...item, ...updated } : item));
+        this.exam.update(item => item.id === exam.id ? { ...item, ...updated } : item);
+        this.closeExamModal();
+        this.toast.success('Exam updated');
+      },
+      error: err => {
+        console.error('Update exam error:', err);
+        this.toast.error(`Failed to update exam: ${err.status || 'Unknown error'}`);
+      }
+    });
+  }
+
+  saveExam(): void {
+    const exam = this.exam();
+    if (!exam.title.trim()) {
+      this.toast.error('Exam title is required');
+      return;
+    }
+
+    const payload = {
+      Title: exam.title,
+      Description: exam.description,
+      CategoryId: exam.categoryId,
+      Duration: exam.duration
+    };
+
+    const saveNext = () => {
+      if (exam.id) {
+        this.persistExamQuestions(exam.id);
+      }
+      this.toast.success('Exam saved');
+      this.loadExams();
+    };
+
+    if (exam.id) {
+      this.http.put(`${this.API_URL}/exams/${exam.id}`, payload, { responseType: 'text' as any }).subscribe({
+        next: saveNext,
+        error: () => this.toast.error('Failed to save exam')
+      });
+      return;
+    }
+
+    this.http.post<ApiExamDto>(`${this.API_URL}/exams`, payload).subscribe({
+      next: result => {
+        const created = this.toExam(result);
+        this.exam.set(created);
+        this.exams.update(items => [created, ...items]);
+        this.persistExamQuestions(created.id);
+        this.toast.success('Exam created');
+        this.loadExams();
+      },
+      error: () => this.toast.error('Failed to create exam')
+    });
+  }
+
+  addQuestionToBank(type: QuestionType): void {
+    const payload = {
+      Content: '',
+      Type: this.mapQuestionTypeToApi(type),
+      Difficulty: this.mapDifficultyToApi('medium'),
+      CategoryId: this.categories()[0]?.id || 0,
+      Marks: 1,
+      Tags: [],
+      Options: this.getDefaultOptions(type).map(option => option.content),
+      CorrectAnswer: '',
+      Explanation: '',
+      Required: true
+    };
+
+    this.http.post<ApiQuestionDto>(`${this.API_URL}/questions`, payload).subscribe({
+      next: result => {
+        const question = this.toQuestion(result);
+        this.banks.update(items => [...items, question]);
+        this.openQuestionEditor(question.id);
+        this.toast.success('Question added to bank');
+      },
+      error: err => {
+        console.error('Add question error:', err);
+        this.toast.error(`Failed to add question: ${err.status || 'Unknown error'}`);
+      }
+    });
+  }
+
+  openQuestionEditor(questionId: number): void {
+    const question = this.banks().find(item => item.id === questionId);
+    if (!question) {
+      return;
+    }
+
+    this.editQuestion.set({
+      ...question,
+      options: [...(question.options || [])],
+      correctAnswer: [...(question.correctAnswer || [])],
+      tags: [...question.tags]
+    });
+    this.selectedBankQuestionId.set(questionId);
+    this.showQuestionEditorModal.set(true);
+  }
+
+  closeQuestionEditor(): void {
+    this.showQuestionEditorModal.set(false);
+    this.editQuestion.set(null);
+  }
+
+  saveQuestion(): void {
+    const question = this.editQuestion();
+    if (!question) {
+      return;
+    }
+
+    if (!question.content.trim()) {
+      this.toast.error('Question text is required');
+      return;
+    }
+
+    this.updateBankQuestion(question);
+    this.toast.success('Question saved');
+    this.closeQuestionEditor();
+  }
+
+  updateBankQuestion(question: Question): void {
+    const options = question.options || [];
+    const correctAnswerText = (question.correctAnswer || [])
+      .map(id => options.find(option => option.id === id)?.content || '')
+      .filter(Boolean)
+      .join(',');
+
+    this.http.put(`${this.API_URL}/questions/${question.id}`, {
+      Content: question.content,
+      Type: this.mapQuestionTypeToApi(question.type),
+      Difficulty: this.mapDifficultyToApi(question.difficulty),
+      CategoryId: question.categoryId,
+      Marks: question.marks,
+      Tags: question.tags,
+      Options: options.map(option => option.content),
+      CorrectAnswer: correctAnswerText,
+      Explanation: question.explanation,
+      Required: question.required
+    }, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.banks.update(items => items.map(item => item.id === question.id ? question : item));
+        this.exam.update(exam => ({
+          ...exam,
+          questions: exam.questions.map(item => item.questionId === question.id ? { ...item, question } : item)
+        }));
+      },
+      error: err => {
+        console.error('Update question error:', err);
+        this.toast.error(`Failed to update question: ${err.status || 'Unknown error'}`);
+      }
+    });
+  }
+
+  deleteQuestionFromBank(questionId: number): void {
+    this.http.delete(`${this.API_URL}/questions/${questionId}`, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.banks.update(items => items.filter(item => item.id !== questionId));
+        this.exam.update(exam => ({
+          ...exam,
+          questions: exam.questions.filter(item => item.questionId !== questionId)
+        }));
+        if (this.selectedBankQuestionId() === questionId) {
+          this.selectedBankQuestionId.set(null);
+        }
+        if (this.selectedQuestionId() === questionId) {
+          this.selectedQuestionId.set(null);
+        }
+        this.toast.success('Question deleted');
+      },
+      error: err => {
+        console.error('Delete question error:', err);
+        this.toast.error(`Failed to delete question: ${err.status || 'Unknown error'}`);
+      }
+    });
+  }
+
+  addBankQuestionToExam(question: Question): void {
+    if (this.exam().id) {
+      this.addPersistedQuestionToExam(question);
+      return;
+    }
+
+    this.addLocalQuestionToExam(question);
+    this.showExamBuilder();
+    this.toast.success('Question added to draft exam');
+  }
+
+  addLocalQuestionToExam(question: Question): void {
+    this.exam.update(exam => ({
+      ...exam,
+      questions: [
+        ...exam.questions,
+        { questionId: question.id, question, order: exam.questions.length }
+      ]
+    }));
+  }
+
+  addPersistedQuestionToExam(question: Question): void {
+    this.http.post<ApiExamQuestionDto>(`${this.API_URL}/exams/${this.exam().id}/questions`, {
+      QuestionId: question.id
+    }).subscribe({
+      next: result => {
+        this.exam.update(exam => ({
+          ...exam,
+          questions: [...exam.questions, this.toExamQuestion(result)]
+        }));
+        this.toast.success('Question added to exam');
+      },
+      error: err => {
+        console.error('Add question to exam error:', err);
+        this.toast.error(`Failed to add question to exam: ${err.status || 'Unknown error'}`);
+      }
+    });
+  }
+
+  removeQuestion(questionId: number): void {
+    if (this.exam().id) {
+      this.http.delete(`${this.API_URL}/exams/${this.exam().id}/questions/${questionId}`, { responseType: 'text' as any }).subscribe({
+        next: () => this.removeLocalQuestion(questionId),
+        error: () => this.removeLocalQuestion(questionId)
+      });
+      return;
+    }
+
+    this.removeLocalQuestion(questionId);
+  }
+
+  removeLocalQuestion(questionId: number): void {
+    this.exam.update(exam => ({
+      ...exam,
+      questions: exam.questions.filter(item => item.questionId !== questionId)
+    }));
+    if (this.selectedQuestionId() === questionId) {
+      this.selectedQuestionId.set(null);
+    }
+    this.toast.success('Question removed from exam');
+  }
+
+  duplicateQuestion(question: Question): void {
+    this.http.post<ApiQuestionDto>(`${this.API_URL}/questions`, {
+      Content: `${question.content} (Copy)`,
+      Type: this.mapQuestionTypeToApi(question.type),
+      Difficulty: this.mapDifficultyToApi(question.difficulty),
+      CategoryId: question.categoryId,
+      Marks: question.marks,
+      Tags: question.tags,
+      Options: (question.options || []).map(option => option.content),
+      CorrectAnswer: this.correctAnswerToText(question),
+      Explanation: question.explanation,
+      Required: question.required
+    }).subscribe({
+      next: result => {
+        const newQuestion = this.toQuestion(result);
+        this.banks.update(items => [...items, newQuestion]);
+        if (this.exam().id) {
+          this.addPersistedQuestionToExam(newQuestion);
+        } else {
+          this.addLocalQuestionToExam(newQuestion);
+          this.showExamBuilder();
+        }
+        this.toast.success('Question duplicated');
+      },
+      error: err => {
+        console.error('Duplicate question error:', err);
+        this.toast.error(`Failed to duplicate question: ${err.status || 'Unknown error'}`);
+      }
+    });
+  }
+
+  updateQuestion(question: Question): void {
+    this.banks.update(items => items.map(item => item.id === question.id ? question : item));
+    this.exam.update(exam => ({
+      ...exam,
+      questions: exam.questions.map(item => item.questionId === question.id ? { ...item, question } : item)
+    }));
+  }
+
+  updateQuestionOption(questionId: number, optionId: string, content: string): void {
+    const updated = this.withUpdatedOption(questionId, optionId, content);
+    this.updateQuestion(updated);
+  }
+
+  addExamOption(questionId: number): void {
+    const question = this.banks().find(item => item.id === questionId) || this.selectedQuestion();
+    if (!question) {
+      return;
+    }
+
+    const options = [...(question.options || [])];
+    options.push({ id: `opt${Date.now()}`, content: `Option ${options.length + 1}` });
+    this.updateQuestion({ ...question, options });
+  }
+
+  removeOption(questionId: number, optionId: string): void {
+    const question = this.banks().find(item => item.id === questionId) || this.selectedQuestion();
+    if (!question) {
+      return;
+    }
+
+    const options = (question.options || []).filter(option => option.id !== optionId);
+    const correctAnswer = (question.correctAnswer || []).filter(id => id !== optionId);
+    this.updateQuestion({ ...question, options, correctAnswer });
+  }
+
+  setCorrectAnswerExam(questionId: number, optionId: string): void {
+    const question = this.banks().find(item => item.id === questionId) || this.selectedQuestion();
+    if (!question) {
+      return;
+    }
+
+    const currentCorrect = question.correctAnswer || [];
+    const correctAnswer = question.type === 'checkbox'
+      ? currentCorrect.includes(optionId)
+        ? currentCorrect.filter(id => id !== optionId)
+        : [...currentCorrect, optionId]
+      : [optionId];
+
+    this.updateQuestion({ ...question, correctAnswer });
+  }
+
+  updateQuestionTags(questionId: number, value: string): void {
+    const question = this.banks().find(item => item.id === questionId) || this.selectedQuestion();
+    if (!question) {
+      return;
+    }
+
+    const tags = value.split(',').map(tag => tag.trim()).filter(Boolean);
+    this.updateQuestion({ ...question, tags });
+  }
+
+  drop(event: CdkDragDrop<ExamQuestion[]>): void {
+    this.exam.update(exam => {
+      const questions = [...exam.questions];
+      moveItemInArray(questions, event.previousIndex, event.currentIndex);
+      return { ...exam, questions };
+    });
+  }
+
+  scheduleExam(): void {
+    const exam = this.exam();
+    if (!exam.id) {
+      this.toast.error('Save the exam before scheduling');
+      return;
+    }
+
+    this.http.patch(`${this.API_URL}/exams/${exam.id}/schedule`, {}, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.exam.update(item => ({ ...item, status: 'scheduled' }));
+        this.toast.success('Exam scheduled');
+      },
+      error: () => this.toast.error('Failed to schedule exam')
+    });
+  }
+
+  publishExam(): void {
+    const exam = this.exam();
+    if (!exam.id) {
+      this.toast.error('Save the exam before publishing');
+      return;
+    }
+
+    this.http.patch(`${this.API_URL}/exams/${exam.id}/publish`, {}, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.exam.update(item => ({ ...item, status: 'active' }));
+        this.toast.success('Exam published');
+      },
+      error: () => this.toast.error('Failed to publish exam')
+    });
+  }
+
+  editExistingCategory(category: Category): void {
+    this.selectedCategory.set({ ...category });
+  }
+
+  cancelEdit(): void {
+    this.selectedCategory.set({ id: 0, name: '', color: '#6366f1' });
+  }
+
+  openCategoryManager(): void {
+    this.cancelEdit();
+    this.showCategoryModal.set(true);
+  }
+
+  closeCategoryModal(): void {
+    this.showCategoryModal.set(false);
+    this.cancelEdit();
+  }
+
+  saveCategory(): void {
+    const category = this.selectedCategory();
+    if (!category.name.trim()) {
+      this.toast.error('Category name is required');
+      return;
+    }
+
+    const payload = {
+      Name: category.name,
+      Color: category.color
+    };
+
+    const success = () => {
+      this.categories.update(items => {
+        if (category.id) {
+          return items.map(item => item.id === category.id ? { ...item, ...payload } : item);
+        }
+        return [...items, { ...category, ...payload, id: Date.now() }];
+      });
+      this.cancelEdit();
+      this.toast.success('Category saved');
+    };
+
+    if (category.id) {
+      this.http.put(`${this.API_URL}/question-categories/${category.id}`, payload, { responseType: 'text' as any }).subscribe({
+        next: success,
+        error: err => this.toast.error(`Failed to update category: ${err.status || 'Unknown error'}`)
+      });
+      return;
+    }
+
+    this.http.post<ApiCategoryDto>(`${this.API_URL}/question-categories`, payload).subscribe({
+      next: result => {
+        this.categories.update(items => [...items, this.toCategory(result)]);
+        this.cancelEdit();
+        this.toast.success('Category created');
+      },
+      error: err => this.toast.error(`Failed to create category: ${err.status || 'Unknown error'}`)
+    });
+  }
+
+  deleteCategory(categoryId: number): void {
+    if (!confirm('Are you sure you want to delete this category?')) {
+      return;
+    }
+
+    this.http.delete(`${this.API_URL}/question-categories/${categoryId}`, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.categories.update(items => items.filter(item => item.id !== categoryId));
+        if (this.selectedCategoryFilter() === categoryId) {
+          this.selectedCategoryFilter.set(null);
+        }
+        this.toast.success('Category deleted');
+      },
+      error: err => this.toast.error(`Failed to delete category: ${err.status || 'Unknown error'}`)
+    });
+  }
+
+  deleteExam(examId: number): void {
+    if (!confirm('Are you sure you want to delete this exam?')) {
+      return;
+    }
+
+    this.http.delete(`${this.API_URL}/exams/${examId}`, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.exams.update(items => items.filter(item => item.id !== examId));
+        if (this.exam().id === examId) {
+          this.exam.set(this.emptyExam());
+          this.selectedQuestionId.set(null);
+        }
+        this.toast.success('Exam deleted');
+      },
+      error: err => this.toast.error(`Failed to delete exam: ${err.status || 'Unknown error'}`)
+    });
+  }
+
+  duplicateExam(exam: Exam): void {
+    this.http.post<ApiExamDto>(`${this.API_URL}/exams`, {
+      Title: `${exam.title} (Copy)`,
+      Description: exam.description,
+      CategoryId: exam.categoryId,
+      Duration: exam.duration,
+      Questions: exam.questions.map((item, index) => ({ QuestionId: item.questionId, Order: index }))
+    }).subscribe({
+      next: result => {
+        const created = this.toExam(result);
+        this.exams.update(items => [created, ...items]);
+        this.toast.success('Exam duplicated');
+      },
+      error: err => this.toast.error(`Failed to duplicate exam: ${err.status || 'Unknown error'}`)
+    });
+  }
+
+  updateEditQuestionField(field: keyof Question, value: any): void {
+    const question = this.editQuestion();
+    if (question) {
+      this.editQuestion.set({ ...question, [field]: value });
+    }
+  }
+
+  addEditOption(): void {
+    const question = this.editQuestion();
+    if (!question) {
+      return;
+    }
+
+    const options = [...(question.options || [])];
+    options.push({ id: `opt${Date.now()}`, content: 'New Option' });
+    this.editQuestion.set({ ...question, options });
+  }
+
+  updateEditOption(optionId: string, content: string): void {
+    const question = this.editQuestion();
+    if (!question || !question.options) {
+      return;
+    }
+
+    this.editQuestion.set({
+      ...question,
+      options: question.options.map(option => option.id === optionId ? { ...option, content } : option)
+    });
+  }
+
+  removeEditOption(optionId: string): void {
+    const question = this.editQuestion();
+    if (!question || !question.options) {
+      return;
+    }
+
+    this.editQuestion.set({
+      ...question,
+      options: question.options.filter(option => option.id !== optionId),
+      correctAnswer: (question.correctAnswer || []).filter(id => id !== optionId)
+    });
+  }
+
+  setEditCorrectAnswer(optionId: string): void {
+    const question = this.editQuestion();
+    if (!question) {
+      return;
+    }
+
+    const currentCorrect = question.correctAnswer || [];
+    const correctAnswer = question.type === 'checkbox'
+      ? currentCorrect.includes(optionId)
+        ? currentCorrect.filter(id => id !== optionId)
+        : [...currentCorrect, optionId]
+      : [optionId];
+
+    this.editQuestion.set({ ...question, correctAnswer });
+  }
+
+  getQuestionTypeIcon(type: QuestionType): string {
+    return this.questionTypes.find(item => item.type === type)?.icon || 'fa-question';
+  }
+
+  getQuestionTypeLabel(type: QuestionType): string {
+    return this.questionTypes.find(item => item.type === type)?.label || type;
+  }
+
+  getQuestionTypeBadgeClass(type: QuestionType): string {
+    const map: Record<QuestionType, string> = {
+      'multiple-choice': 'badge-type-primary',
+      'checkbox': 'badge-type-info',
+      'dropdown': 'badge-type-purple',
+      'short-answer': 'badge-type-success',
+      'paragraph': 'badge-type-warning',
+      'linear-scale': 'badge-type-orange',
+      'rating': 'badge-type-yellow',
+      'date': 'badge-type-blue',
+      'time': 'badge-type-gray'
+    };
+
+    return map[type] || 'badge-type-gray';
+  }
+
+  getStatusClass(status: ExamStatus): string {
+    return `status-badge ${status}`;
+  }
+
+  getCategoryById(categoryId: number): Category | undefined {
+    return this.categories().find(category => category.id === categoryId);
+  }
+
+  getCategoryName(categoryId: number): string {
+    return this.getCategoryById(categoryId)?.name || 'Uncategorized';
+  }
+
+  getCorrectAnswerText(question: Question): string {
+    if (!question.correctAnswer?.length || !question.options?.length) {
+      return '-';
+    }
+
+    const answers = question.correctAnswer
+      .map(id => question.options?.find(option => option.id === id)?.content)
+      .filter(Boolean);
+
+    return answers.join(', ') || '-';
+  }
+
+  isOptionsQuestion(type: QuestionType): boolean {
+    return type === 'multiple-choice' || type === 'checkbox' || type === 'dropdown';
+  }
+
+  private emptyExam(): Exam {
+    return {
+      id: 0,
+      title: '',
+      description: '',
+      categoryId: 0,
+      duration: 60,
+      status: 'draft',
+      questions: []
+    };
+  }
+
+  private toCategory(category: ApiCategoryDto): Category {
+    return {
+      id: category.Id ?? category.id ?? 0,
+      name: category.Name ?? category.name ?? '',
+      color: category.Color ?? category.color ?? '#6366f1'
+    };
+  }
+
+  private toQuestion(question: ApiQuestionDto): Question {
+    const options = (question.Options ?? question.options ?? [])
+      .map((option, index) => ({
+        id: `opt${index + 1}`,
+        content: option
+      }));
+
+    const correctAnswer = (question.CorrectAnswer ?? question.correctAnswer ?? '')
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean)
+      .map(value => options.find(option => option.content === value)?.id)
+      .filter((value): value is string => Boolean(value));
+
+    return {
+      id: question.Id ?? question.id ?? 0,
+      content: question.Content ?? question.content ?? '',
+      type: this.mapQuestionTypeFromApi(question.Type ?? question.type ?? 'MultipleChoice'),
+      difficulty: this.mapDifficultyFromApi(question.Difficulty ?? question.difficulty ?? 'Medium'),
+      categoryId: question.CategoryId ?? question.categoryId ?? 0,
+      marks: question.Marks ?? question.marks ?? 1,
+      options,
+      correctAnswer,
+      explanation: question.Explanation ?? question.explanation ?? '',
+      tags: question.Tags ?? question.tags ?? [],
+      required: question.Required ?? question.required ?? true
+    };
+  }
+
+  private toExam(exam: ApiExamDto, questions: ExamQuestion[] = []): Exam {
+    return {
+      id: exam.Id ?? exam.id ?? 0,
+      title: exam.Title ?? exam.title ?? '',
+      description: exam.Description ?? exam.description ?? '',
+      categoryId: exam.CategoryId ?? exam.categoryId ?? 0,
+      duration: exam.Duration ?? exam.duration ?? 60,
+      status: this.mapStatusFromApi(exam.Status ?? exam.status ?? 'Draft'),
+      questions
+    };
+  }
+
+  private toExamQuestion(examQuestion: ApiExamQuestionDto): ExamQuestion {
+    return {
+      id: examQuestion.Id ?? examQuestion.id,
+      questionId: examQuestion.QuestionId ?? examQuestion.questionId ?? 0,
+      order: examQuestion.Order ?? examQuestion.order ?? 0,
+      question: examQuestion.Question ? this.toQuestion(examQuestion.Question) : undefined
+    };
+  }
+
+  private persistExamQuestions(examId: number): void {
+    const questions = this.exam().questions;
+    if (!examId || questions.length === 0) {
+      return;
+    }
+
+    questions.forEach(question => {
+      this.http.post<ApiExamQuestionDto>(`${this.API_URL}/exams/${examId}/questions`, {
+        QuestionId: question.questionId
+      }).subscribe({
+        next: () => this.loadFullExam(examId),
+        error: err => console.error('Persist exam question error:', err)
+      });
+    });
+  }
+
+  private withUpdatedOption(questionId: number, optionId: string, content: string): Question {
+    const question = this.banks().find(item => item.id === questionId) || this.selectedQuestion();
+    if (!question) {
+      return this.emptyQuestion();
+    }
+
+    return {
+      ...question,
+      options: (question.options || []).map(option => option.id === optionId ? { ...option, content } : option)
+    };
+  }
+
+  private correctAnswerToText(question: Question): string {
+    const options = question.options || [];
+    return (question.correctAnswer || [])
+      .map(id => options.find(option => option.id === id)?.content || '')
+      .filter(Boolean)
+      .join(',');
+  }
 
   private mapQuestionTypeToApi(type: QuestionType): string {
     const map: Record<QuestionType, string> = {
@@ -141,731 +1032,97 @@ export class ExamQuestionBuilderComponent implements OnInit {
       'date': 'Date',
       'time': 'Time'
     };
+
     return map[type];
   }
 
-  private mapDifficultyToApi(diff: DifficultyLevel): string {
-    const map: Record<DifficultyLevel, string> = {
-      'easy': 'Easy',
-      'medium': 'Medium',
-      'hard': 'Hard'
-    };
-    return map[diff];
-  }
-
   private mapQuestionTypeFromApi(type: string): QuestionType {
-    const map: Record<string, QuestionType> = {
-      'MultipleChoice': 'multiple-choice',
-      'Checkbox': 'checkbox',
-      'Dropdown': 'dropdown',
-      'ShortAnswer': 'short-answer',
-      'Essay': 'paragraph',
-      'LinearScale': 'linear-scale',
-      'Rating': 'rating',
-      'Date': 'date',
-      'Time': 'time'
-    };
-    return map[type] || 'multiple-choice';
-  }
+    const normalized = type.replace(/\s+/g, '').toLowerCase();
 
-  ngOnInit(): void {
-    this.loadCategories();
-    this.loadQuestionBank();
-    this.loadExams();
-  }
-
-  loadCategories(): void {
-    this.http.get<Category[]>(`${this.API_URL}/question-categories`).subscribe({
-      next: (data) => this.categories.set(data),
-      error: () => this.categories.set([])
-    });
-  }
-
-  loadQuestionBank(): void {
-    this.http.get<any[]>(`${this.API_URL}/questions`).subscribe({
-      next: (data) => {
-        const questions = data.map((q: any) => {
-          const opts = ((q.options as any) || []).map((opt: string, i: number) => ({ id: `opt${i + 1}`, content: opt }));
-          const correctAns = (q.correctAnswer ? (q.correctAnswer as string).split(',').map((s: string) => s.trim()).filter(Boolean) : []);
-          const correctIds = correctAns.map((c: string) => {
-            const found = opts.find((o: any) => o.content === c);
-            return found ? found.id : null;
-          }).filter(Boolean);
-          return {
-            ...q,
-            type: this.mapQuestionTypeFromApi(q.type),
-            options: opts,
-            correctAnswer: correctIds,
-            required: q.required ?? true,
-            tags: q.tags ?? []
-          };
-        });
-        this.banks.set(questions);
-      },
-      error: () => this.banks.set([])
-    });
-  }
-
-  loadExams(): void {
-    this.http.get<Exam[]>(`${this.API_URL}/exams`).subscribe({
-      next: (data) => this.exams.set(data),
-      error: () => this.exams.set([])
-    });
-  }
-
-  // Filter questions by category
-  get filteredBankQuestions(): Question[] {
-    const term = this.searchTerm().toLowerCase();
-    return this.banks().filter(q => {
-      const matchesCategory = !this.selectedCategoryFilter() || q.categoryId === this.selectedCategoryFilter();
-      const matchesSearch = !term || q.content.toLowerCase().includes(term) || q.tags.some(t => t.toLowerCase().includes(term));
-      return matchesCategory && matchesSearch;
-    });
-  }
-
-  // Switch panels
-  showQuestionBank(): void {
-    this.activePanel.set('question-bank');
-  }
-
-  showExamBuilder(): void {
-    this.activePanel.set('exam-builder');
-  }
-
-  // Question Bank CRUD
-  addQuestionToBank(type: QuestionType): void {
-    const payload = {
-      content: '',
-      type: this.mapQuestionTypeToApi(type),
-      difficulty: this.mapDifficultyToApi('medium'),
-      categoryId: this.categories()[0]?.id || 0,
-      marks: 1,
-      tags: [],
-      options: (this.getDefaultOptions(type) || []).map((o: QuestionOption) => o.content)
-    };
-
-    this.http.post<Question>(`${this.API_URL}/questions`, payload).subscribe({
-      next: (result) => {
-        const opts = ((result.options as any) || []).map((opt: string, i: number) => ({ id: `opt${i + 1}`, content: opt }));
-        const correctAns = result.correctAnswer ? (result.correctAnswer as any).split(',').map((s: string) => s.trim()).filter(Boolean) : [];
-        const correctIds = correctAns.map((c: string) => opts.find((o: any) => o.content === c)?.id || null).filter(Boolean);
-        const newQuestion = { ...result, type: this.mapQuestionTypeFromApi(result.type), tags: [], options: opts, correctAnswer: correctIds, required: result.required ?? true };
-        this.banks.set([...this.banks(), newQuestion]);
-        this.openQuestionEditor(result.id);
-        this.toast.success('Question added to bank');
-      },
-      error: (err) => {
-        console.error('Add question error:', err);
-        this.toast.error(`Failed to add question: ${err.status} ${err.error || ''}`);
-      }
-    });
-  }
-
-  deleteQuestionFromBank(questionId: number): void {
-    this.http.delete(`${this.API_URL}/questions/${questionId}`, { responseType: 'text' as any }).subscribe({
-      next: () => {
-        this.banks.set(this.banks().filter(q => q.id !== questionId));
-        if (this.selectedBankQuestionId() === questionId) {
-          this.selectedBankQuestionId.set(null);
-        }
-        this.toast.success('Question deleted');
-      },
-      error: (err) => {
-        console.error('Delete question error:', err);
-        this.toast.error(`Failed to delete question: ${err.status} ${err.error || ''}`);
-      }
-    });
-  }
-
-  updateBankQuestion(updated: Question): void {
-    const opts = updated.options || [];
-    const correctAns = (updated.correctAnswer || []).map(id => {
-      const opt = opts.find(o => o.id === id);
-      return opt ? opt.content : '';
-    }).filter(Boolean);
-    const payload = {
-      content: updated.content,
-      type: this.mapQuestionTypeToApi(updated.type),
-      difficulty: this.mapDifficultyToApi(updated.difficulty),
-      categoryId: updated.categoryId,
-      marks: updated.marks,
-      tags: updated.tags || [],
-      options: opts.map(o => o.content),
-      correctAnswer: correctAns.join(','),
-      required: updated.required,
-      explanation: updated.explanation
-    };
-this.http.put(`${this.API_URL}/questions/${updated.id}`, payload, { responseType: 'text' as any }).subscribe({
-      next: () => {
-        this.banks.update(questions => questions.map(q => q.id === updated.id ? updated : q));
-      },
-      error: (err) => {
-        console.error('Update question error:', err);
-        console.error('Error body:', err.error);
-        this.toast.error(`Failed to update question: ${err.status} ${err.error || ''}`);
-      }
-    });
-  }
-
-  getDefaultOptions(type: QuestionType): QuestionOption[] {
-    switch (type) {
+    switch (normalized) {
+      case 'multiplechoice':
       case 'multiple-choice':
+        return 'multiple-choice';
       case 'checkbox':
+        return 'checkbox';
       case 'dropdown':
-        return [
-          { id: 'opt1', content: 'Option 1' },
-          { id: 'opt2', content: 'Option 2' }
-        ];
-      case 'linear-scale':
-        return Array.from({ length: 5 }, (_, i) => ({ id: `scale${i+1}`, content: `${i+1}` }));
+        return 'dropdown';
+      case 'shortanswer':
+        return 'short-answer';
+      case 'essay':
+      case 'paragraph':
+        return 'paragraph';
+      case 'linearscale':
+        return 'linear-scale';
+      case 'rating':
+        return 'rating';
+      case 'date':
+        return 'date';
+      case 'time':
+        return 'time';
       default:
-        return [];
+        return 'multiple-choice';
     }
   }
 
-  // Question editor modal
-  openQuestionEditor(questionId: number): void {
-    const question = this.banks().find(q => q.id === questionId);
-    if (question) {
-      let edited = { ...question };
-      if (!edited.options && (edited.type === 'multiple-choice' || edited.type === 'checkbox' || edited.type === 'dropdown')) {
-        edited.options = this.getDefaultOptions(edited.type);
-      }
-      this.editQuestion.set(edited);
-      this.showQuestionEditorModal.set(true);
+  private mapDifficultyToApi(difficulty: DifficultyLevel): string {
+    return difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+  }
+
+  private mapDifficultyFromApi(difficulty: string): DifficultyLevel {
+    const normalized = difficulty.toLowerCase();
+
+    if (normalized === 'easy') {
+      return 'easy';
     }
-  }
 
-  closeQuestionEditor(): void {
-    this.showQuestionEditorModal.set(false);
-    this.editQuestion.set(null);
-  }
-
-  saveQuestion(): void {
-    const q = this.editQuestion();
-    if (q) {
-      this.updateBankQuestion(q);
-      this.toast.success('Question saved');
-      this.closeQuestionEditor();
+    if (normalized === 'hard') {
+      return 'hard';
     }
+
+    return 'medium';
   }
 
-  updateEditQuestionField(field: keyof Question, value: any): void {
-    const q = this.editQuestion();
-    if (q) {
-      this.editQuestion.set({ ...q, [field]: value });
+  private mapStatusFromApi(status: string): ExamStatus {
+    const normalized = status.toLowerCase();
+
+    if (normalized === 'scheduled' || normalized === 'active' || normalized === 'completed') {
+      return normalized;
     }
+
+    return 'draft';
   }
 
-  addEditOption(): void {
-    const q = this.editQuestion();
-    if (q) {
-      const newId = `opt${Date.now()}`;
-      const options = q.options || [];
-      this.editQuestion.set({ ...q, options: [...options, { id: newId, content: 'New Option' }] });
+  private getDefaultOptions(type: QuestionType): QuestionOption[] {
+    if (type === 'multiple-choice' || type === 'checkbox' || type === 'dropdown') {
+      return [
+        { id: 'opt1', content: 'Option 1' },
+        { id: 'opt2', content: 'Option 2' }
+      ];
     }
-  }
 
-  updateEditOption(optId: string, content: string): void {
-    const q = this.editQuestion();
-    if (q && q.options) {
-      this.editQuestion.set({ ...q, options: q.options.map(o => o.id === optId ? { ...o, content } : o) });
+    if (type === 'linear-scale') {
+      return Array.from({ length: 5 }, (_, index) => ({
+        id: `scale${index + 1}`,
+        content: `${index + 1}`
+      }));
     }
+
+    return [];
   }
 
-  removeEditOption(optId: string): void {
-    const q = this.editQuestion();
-    if (q && q.options) {
-      this.editQuestion.set({ ...q, options: q.options.filter(o => o.id !== optId) });
-    }
-  }
-
-  updateTagsInput(value: string): void {
-    const q = this.editQuestion();
-    if (q) {
-      this.editQuestion.set({ ...q, tags: value.split(',').map(t => t.trim()).filter(Boolean) });
-    }
-  }
-
-  updateExamQuestionTags(questionId: number, value: string): void {
-    const tags = value.split(',').map(t => t.trim()).filter(Boolean);
-    this.updateQuestion({ ...this.selectedQuestion!, tags });
-  }
-
-  setEditCorrectAnswer(optId: string): void {
-    const q = this.editQuestion();
-    if (!q) return;
-    const currentCorrect = q.correctAnswer || [];
-    let updatedCorrect: string[];
-    if (q.type === 'checkbox') {
-      if (currentCorrect.includes(optId)) {
-        updatedCorrect = currentCorrect.filter(id => id !== optId);
-      } else {
-        updatedCorrect = [...currentCorrect, optId];
-      }
-    } else {
-      updatedCorrect = [optId];
-    }
-    this.editQuestion.set({ ...q, correctAnswer: updatedCorrect });
-  }
-
-  // Add question from bank to exam
-  addBankQuestionToExam(question: Question): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: [...e.questions, { questionId: question.id, question, order: e.questions.length }]
-    }));
-  }
-
-// Create new exam (opens modal, doesn't navigate yet)
-  openNewExamModal(): void {
-    this.editExamData.set({
+  private emptyQuestion(): Question {
+    return {
       id: 0,
-      title: '',
-      description: '',
-      categoryId: this.categories()[0]?.id || 0,
-      duration: 60,
-      status: 'draft',
-      questions: []
-    });
-    this.showExamModal.set(true);
-  }
-
-  // Exam CRUD
-  saveExam(): void {
-    const payload = {
-      title: this.exam().title,
-      description: this.exam().description,
-      categoryId: this.exam().categoryId,
-      duration: this.exam().duration,
-      questions: this.exam().questions.map((q, i) => ({
-        questionId: q.questionId,
-        order: i
-      }))
+      content: '',
+      type: 'multiple-choice',
+      difficulty: 'medium',
+      categoryId: 0,
+      marks: 1,
+      options: [],
+      correctAnswer: [],
+      tags: [],
+      required: true
     };
-
-    if (this.exam().id) {
-      this.http.put(`${this.API_URL}/exams/${this.exam().id}`, payload, { responseType: 'text' as any }).subscribe({
-        next: () => this.toast.success('Exam saved'),
-        error: () => this.toast.error('Failed to save exam')
-      });
-    } else {
-      this.http.post<Exam>(`${this.API_URL}/exams`, payload).subscribe({
-        next: (result) => {
-          this.exam.set({ ...this.exam(), id: result.id });
-          this.exams.set([...this.exams(), result]);
-          this.toast.success('Exam created');
-        },
-        error: () => this.toast.error('Failed to create exam')
-      });
-    }
-  }
-
-  // Remove question from exam
-  removeQuestion(questionId: number): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: e.questions.filter(q => q.questionId !== questionId)
-    }));
-    if (this.selectedQuestionId() === questionId) {
-      this.selectedQuestionId.set(null);
-    }
-  }
-
-  duplicateQuestion(question: Question): void {
-    const payload = {
-      content: question.content,
-      type: this.mapQuestionTypeToApi(question.type),
-      difficulty: this.mapDifficultyToApi(question.difficulty),
-      categoryId: question.categoryId,
-      marks: question.marks,
-      tags: question.tags || [],
-      options: (question.options || []).map((o: QuestionOption) => o.content),
-      correctAnswer: (question.correctAnswer || []).map(id => {
-        const opt = question.options?.find(o => o.id === id);
-        return opt ? opt.content : '';
-      }).filter(Boolean).join(',')
-    };
-    this.http.post<Question>(`${this.API_URL}/questions`, payload).subscribe({
-      next: (result) => {
-        const opts = ((result.options as any) || []).map((opt: string, i: number) => ({ id: `opt${i + 1}`, content: opt }));
-        const newQuestion = { ...result, type: this.mapQuestionTypeFromApi(result.type), options: opts, tags: result.tags || [] };
-        this.exam.update(e => ({ ...e, questions: [...e.questions, { questionId: result.id, question: newQuestion, order: e.questions.length }] }));
-        this.banks.set([...this.banks(), newQuestion]);
-      }
-    });
-  }
-
-  updateQuestion(updated: Question): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: e.questions.map(eq => 
-        eq.questionId === updated.id ? { ...eq, question: updated } : eq
-      )
-    }));
-  }
-
-  drop(event: CdkDragDrop<ExamQuestion[]>): void {
-    this.exam.update(e => {
-      const questions = [...e.questions];
-      moveItemInArray(questions, event.previousIndex, event.currentIndex);
-      return { ...e, questions };
-    });
-  }
-
-  // Schedule exam
-  scheduleExam(): void {
-    const payload = {
-      availableFrom: this.exam().availableFrom,
-      availableTo: this.exam().availableTo,
-      timeZone: this.exam().timeZone
-    };
-
-    this.http.patch(`${this.API_URL}/exams/${this.exam().id}/schedule`, payload).subscribe({
-      next: () => {
-        this.exam.update(e => ({ ...e, status: 'scheduled' }));
-        this.toast.success('Exam scheduled');
-      },
-      error: () => this.toast.error('Failed to schedule exam')
-    });
-  }
-
-  publishExam(): void {
-    this.http.patch(`${this.API_URL}/exams/${this.exam().id}/publish`, {}).subscribe({
-      next: () => {
-        this.exam.update(e => ({ ...e, status: 'active' }));
-        this.toast.success('Exam published');
-      },
-      error: () => this.toast.error('Failed to publish exam')
-    });
-  }
-
-  // Helper methods
-  get selectedQuestion(): Question | null {
-    const id = this.selectedQuestionId();
-    const eq = this.exam().questions.find(q => q.questionId === id);
-    return eq?.question || null;
-  }
-
-  get selectedBankQuestion(): Question | null {
-    const id = this.selectedBankQuestionId();
-    return this.banks().find(q => q.id === id) || null;
-  }
-
-  getQuestionTypeIcon(type: QuestionType): string {
-    return this.questionTypes.find(qt => qt.type === type)?.icon || 'fa-question';
-  }
-
-  getQuestionTypeLabel(type: QuestionType): string {
-    return this.questionTypes.find(qt => qt.type === type)?.label || type;
-  }
-
-  getCategoryById(id: number): Category | undefined {
-    return this.categories().find(c => c.id === id);
-  }
-
-  addOption(questionId: number): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: e.questions.map(eq => {
-        if (eq.questionId === questionId && eq.question) {
-          const options = [...eq.question.options || []];
-          options.push({ id: `opt${Date.now()}`, content: `Option ${options.length + 1}` });
-          return { ...eq, question: { ...eq.question, options } };
-        }
-        return eq;
-      })
-    }));
-  }
-
-  removeOption(questionId: number, optionId: string): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: e.questions.map(eq => {
-        if (eq.questionId === questionId && eq.question?.options) {
-          return {
-            ...eq,
-            question: {
-              ...eq.question,
-              options: eq.question.options.filter(opt => opt.id !== optionId)
-            }
-          };
-        }
-        return eq;
-      })
-    }));
-  }
-
-deleteExam(examId: number): void {
-    if (confirm('Are you sure you want to delete this exam?')) {
-      this.http.delete(`${this.API_URL}/exams/${examId}`, { responseType: 'text' as any }).subscribe({
-        next: () => {
-          this.exams.set(this.exams().filter(e => e.id !== examId));
-          this.toast.success('Exam deleted');
-        },
-        error: (err) => {
-          console.error('Delete exam error:', err);
-          this.toast.error(`Failed to delete exam: ${err.status} ${err.error || ''}`);
-        }
-      });
-    }
-  }
-
-  editExamDetails(exam: Exam): void {
-    this.editExamData.set({ ...exam });
-    this.showExamModal.set(true);
-  }
-
-  closeExamModal(): void {
-    this.showExamModal.set(false);
-  }
-
-  saveExamDetails(): void {
-    const exam = this.editExamData();
-    if (!exam.title.trim()) {
-      this.toast.error('Exam title is required');
-      return;
-    }
-    this.http.put(`${this.API_URL}/exams/${exam.id}`, {
-      title: exam.title,
-      description: exam.description,
-      categoryId: exam.categoryId,
-      duration: exam.duration
-    }, { responseType: 'text' as any }).subscribe({
-      next: () => {
-        this.exams.set(this.exams().map(e => e.id === exam.id ? { ...e, ...exam } : e));
-        this.exam.update(e => e.id === exam.id ? { ...e, ...exam } : e);
-        this.closeExamModal();
-        this.toast.success('Exam updated');
-      },
-      error: (err) => {
-        console.error('Update exam error:', err);
-        this.toast.error(`Failed to update exam: ${err.status} ${err.error || ''}`);
-      }
-    });
-  }
-
-  duplicateExam(exam: Exam): void {
-    this.http.post<Exam>(`${this.API_URL}/exams`, {
-      title: `${exam.title} (Copy)`,
-      description: exam.description,
-      categoryId: exam.categoryId,
-      duration: exam.duration,
-      questions: exam.questions?.map((q: any, i: number) => ({ questionId: q.questionId, order: i })) || []
-    }).subscribe({
-      next: (result) => {
-        this.exams.set([...this.exams(), result]);
-        this.toast.success('Exam duplicated');
-      },
-      error: (err) => {
-        console.error('Duplicate exam error:', err);
-        this.toast.error(`Failed to duplicate exam: ${err.status} ${err.error || ''}`);
-      }
-    });
-  }
-
-  createNewExam(): void {
-    const exam = this.editExamData();
-    if (!exam.title.trim()) {
-      this.toast.error('Exam title is required');
-      return;
-    }
-    const payload = {
-      title: exam.title,
-      description: exam.description,
-      categoryId: exam.categoryId,
-      duration: exam.duration,
-      questions: []
-    };
-    this.http.post<Exam>(`${this.API_URL}/exams`, payload).subscribe({
-      next: (result) => {
-        this.closeExamModal();
-        this.exam.set(result);
-        this.exams.set([...this.exams(), result]);
-        this.showExamBuilder();
-        this.toast.success('Exam created');
-      },
-      error: (err) => {
-        console.error('Create exam error:', err);
-        this.toast.error(`Failed to create exam: ${err.status} ${err.error || ''}`);
-      }
-    });
-  }
-
-  // Open existing exam
-  openExistingExam(examId: number): void {
-    const exam = this.exams().find(e => e.id === examId);
-    if (exam && exam.questions && exam.questions.length > 0) {
-      this.exam.set(exam);
-      this.showExamBuilder();
-    } else {
-      this.loadFullExam(examId);
-    }
-  }
-
-  loadFullExam(examId: number): void {
-    this.http.get<any>(`${this.API_URL}/exams/${examId}/questions`).subscribe({
-      next: (fullExam) => {
-        const mappedQuestions = (fullExam.questions || []).map((eq: any) => ({
-          questionId: eq.questionId,
-          order: eq.order,
-          question: eq.question ? {
-            ...eq.question,
-            type: this.mapQuestionTypeFromApi(eq.question.type),
-            options: eq.question.options || [],
-            correctAnswer: eq.question.correctAnswer ? eq.question.correctAnswer.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
-            tags: eq.question.tags || []
-          } : undefined
-        }));
-        this.exam.set({
-          ...fullExam,
-          status: (fullExam.status || 'draft') as ExamStatus,
-          questions: mappedQuestions
-        });
-        this.showExamBuilder();
-      },
-      error: (err) => {
-        console.error('Load exam error:', err);
-        this.toast.error(`Failed to load exam: ${err.status}`);
-      }
-    });
-  }
-
-  // Category CRUD
-  openCategoryManager(): void {
-    this.selectedCategory.set({ id: 0, name: '', color: '#6366f1' });
-    this.showCategoryModal.set(true);
-  }
-
-  editExistingCategory(cat: Category): void {
-    this.selectedCategory.set({ ...cat });
-  }
-
-  cancelEdit(): void {
-    this.selectedCategory.set({ id: 0, name: '', color: '#6366f1' });
-  }
-
-  closeCategoryModal(): void {
-    this.showCategoryModal.set(false);
-    this.selectedCategory.set({ id: 0, name: '', color: '' });
-  }
-
-  saveCategory(): void {
-    const cat = this.selectedCategory();
-    if (!cat.name.trim()) {
-      this.toast.error('Category name is required');
-      return;
-    }
-
-    const payload = { name: cat.name, color: cat.color };
-
-    if (cat.id && cat.id > 0) {
-      this.http.put(`${this.API_URL}/question-categories/${cat.id}`, payload, { responseType: 'text' as any }).subscribe({
-        next: () => {
-          this.categories.set(this.categories().map(c => c.id === cat.id ? { ...c, ...payload } : c));
-          this.cancelEdit();
-          this.toast.success('Category updated');
-        },
-        error: (err) => {
-          console.error('Update error:', err);
-          this.toast.error(`Failed to update category: ${err.status} ${err.error || ''}`);
-        }
-      });
-    } else {
-      this.http.post<Category>(`${this.API_URL}/question-categories`, payload).subscribe({
-        next: (result) => {
-          this.categories.set([...this.categories(), result]);
-          this.cancelEdit();
-          this.toast.success('Category created');
-        },
-        error: (err) => {
-          console.error('Create error:', err);
-          this.toast.error(`Failed to create category: ${err.status} ${err.error || ''}`);
-        }
-      });
-    }
-  }
-
-  deleteCategory(catId: number): void {
-    if (confirm('Are you sure you want to delete this category?')) {
-      this.http.delete(`${this.API_URL}/question-categories/${catId}`).subscribe({
-        next: () => {
-          this.categories.set(this.categories().filter(c => c.id !== catId));
-          this.toast.success('Category deleted');
-        },
-        error: (err) => {
-          console.error('Delete error:', err);
-          this.toast.error(`Failed to delete category: ${err.status} ${err.error || ''}`);
-        }
-      });
-    }
-  }
-
-  updateBankQuestionOption(questionId: number, optId: string, content: string): void {
-    this.banks.update(questions => questions.map(q => {
-      if (q.id === questionId && q.options) {
-        return { ...q, options: q.options.map(o => o.id === optId ? { ...o, content } : o) };
-      }
-      return q;
-    }));
-    const question = this.banks().find(q => q.id === questionId);
-    if (question) {
-      this.updateBankQuestion(question);
-    }
-  }
-
-  updateQuestionOption(questionId: number, optId: string, content: string): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: e.questions.map(eq => {
-        if (eq.question?.id === questionId && eq.question.options) {
-          return {
-            ...eq,
-            question: {
-              ...eq.question,
-              options: eq.question.options.map(o => o.id === optId ? { ...o, content } : o)
-            }
-          };
-        }
-        return eq;
-      })
-    }));
-  }
-
-  addExamOption(questionId: number): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: e.questions.map(eq => {
-        if (eq.questionId === questionId && eq.question) {
-          const options = [...eq.question.options || []];
-          options.push({ id: `opt${Date.now()}`, content: `Option ${options.length + 1}` });
-          return { ...eq, question: { ...eq.question, options } };
-        }
-        return eq;
-      })
-    }));
-  }
-
-  setCorrectAnswerExam(questionId: number, optId: string): void {
-    this.exam.update(e => ({
-      ...e,
-      questions: e.questions.map(eq => {
-        if (eq.question?.id === questionId && eq.question.options) {
-          const currentCorrect = eq.question.correctAnswer || [];
-          let updatedCorrect: string[];
-          if (eq.question.type === 'checkbox') {
-            if (currentCorrect.includes(optId)) {
-              updatedCorrect = currentCorrect.filter(id => id !== optId);
-            } else {
-              updatedCorrect = [...currentCorrect, optId];
-            }
-          } else {
-            updatedCorrect = [optId];
-          }
-          return { ...eq, question: { ...eq.question, correctAnswer: updatedCorrect } };
-        }
-        return eq;
-      })
-    }));
   }
 }
