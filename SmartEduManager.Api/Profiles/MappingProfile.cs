@@ -144,14 +144,35 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.Options, opt => opt.MapFrom(src => src.Options != null ? string.Join("|", src.Options) : null));
 
 // Exam mapping
-           CreateMap<Exam, ExamDto>()
-               .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : "Uncategorized"))
-               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString().ToLowerInvariant()));
-           CreateMap<CreateExamDto, Exam>();
+            CreateMap<Exam, ExamDto>()
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : "Uncategorized"))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString().ToLowerInvariant()))
+                .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.ExamQuestions != null ? src.ExamQuestions.Count : 0))
+                .ForMember(dest => dest.TotalMarks, opt => opt.MapFrom(src => src.ExamQuestions != null ? src.ExamQuestions.Sum(eq => eq.Question != null ? eq.Question.Marks : 0) : 0));
 
-// ExamQuestion mapping
-           CreateMap<ExamQuestion, ExamQuestionDto>()
-               .ForMember(dest => dest.Question, opt => opt.MapFrom(src => src.Question));
-       }
- }
+            CreateMap<CreateExamDto, Exam>();
+            CreateMap<UpdateExamDto, Exam>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // ExamQuestion mapping
+            CreateMap<ExamQuestion, ExamQuestionDto>()
+                .ForMember(dest => dest.Question, opt => opt.MapFrom(src => src.Question));
+
+            // ExamAttempt mapping
+            CreateMap<ExamAttempt, ExamAttemptDto>()
+                .ForMember(dest => dest.Exam, opt => opt.MapFrom(src => src.Exam));
+
+            // ExamAnswer mapping
+            CreateMap<ExamAnswer, ExamAnswerDto>();
+            CreateMap<ExamAnswer, ExamAnswerResultDto>()
+                .ForMember(dest => dest.QuestionContent, opt => opt.Ignore())
+                .ForMember(dest => dest.CorrectAnswer, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalMarks, opt => opt.Ignore());
+
+            // ExamResult mapping
+            CreateMap<ExamAttempt, ExamResultDto>()
+                .ForMember(dest => dest.ExamTitle, opt => opt.MapFrom(src => src.Exam != null ? src.Exam.Title : string.Empty))
+                .ForMember(dest => dest.Percentage, opt => opt.MapFrom(src => src.TotalMarks > 0 ? (double)src.Score / src.TotalMarks * 100 : 0));
+        }
+    }

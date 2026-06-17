@@ -1,0 +1,303 @@
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using SmartEduManager.Api.Data;
+using SmartEduManager.Api.DTOs;
+using SmartEduManager.Api.Models;
+
+namespace SmartEduManager.Api.Services;
+
+public interface IExamService
+{
+    Task<ExamDto?> GetExamWithQuestionsAsync(int id);
+    Task<IEnumerable<ExamDto>> GetAllExamsAsync();
+    Task<IEnumerable<ExamDto>> GetStudentExamsAsync();
+    Task<ExamDto> CreateExamAsync(CreateExamDto createDto);
+    Task<bool> UpdateExamAsync(int id, UpdateExamDto updateDto);
+    Task<bool> DeleteExamAsync(int id);
+    Task<bool> AddQuestionToExamAsync(int examId, int questionId);
+    Task<bool> RemoveQuestionFromExamAsync(int examId, int questionId);
+    Task<bool> ScheduleExamAsync(int id, ScheduleExamDto dto);
+    Task<bool> PublishExamAsync(int id);
+    Task<ExamAttemptDto?> StartExamAsync(int examId, string studentId);
+    Task<ExamResultDto?> SubmitExamAsync(int attemptId, string studentId, List<ExamAnswerSubmission> answers);
+    Task<IEnumerable<ExamResultDto>> GetStudentResultsAsync(string studentId);
+    Task<ExamResultDto?> GetResultAsync(int resultId, string studentId);
+}
+
+public class ExamService : IExamService
+{
+    private readonly AppDbContext _context;
+    private readonly IMapper _mapper;
+
+    public ExamService(AppDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
+
+    public async Task<ExamDto?> GetExamWithQuestionsAsync(int id)
+    {
+        var exam = await _context.Exams
+            .Include(e => e.Category)
+            .Include(e => e.ExamQuestions)
+                .ThenInclude(eq => eq.Question)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        return exam == null ? null : _mapper.Map<ExamDto>(exam);
+    }
+
+    public async Task<IEnumerable<ExamDto>> GetAllExamsAsync()
+    {
+        var exams = await _context.Exams
+            .Include(e => e.Category)
+            .Include(e => e.ExamQuestions)
+                .ThenInclude(eq => eq.Question)
+            .ToListAsync();
+
+        return exams.Select(_mapper.Map<ExamDto>);
+    }
+
+    public async Task<IEnumerable<ExamDto>> GetStudentExamsAsync()
+    {
+        var exams = await _context.Exams
+            .Include(e => e.Category)
+            .Include(e => e.ExamQuestions)
+                .ThenInclude(eq => eq.Question)
+            .Where(e => e.Status == ExamStatus.Active || e.Status == ExamStatus.Scheduled)
+            .ToListAsync();
+
+        return exams.Select(_mapper.Map<ExamDto>);
+    }
+
+    public async Task<ExamDto> CreateExamAsync(CreateExamDto createDto)
+    {
+        var exam = _mapper.Map<Exam>(createDto);
+        exam.CreatedAt = DateTime.UtcNow;
+        
+        await _context.Exams.AddAsync(exam);
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<ExamDto>(exam);
+    }
+
+    public async Task<bool> UpdateExamAsync(int id, UpdateExamDto updateDto)
+    {
+        var exam = await _context.Exams.FindAsync(id);
+        if (exam == null)
+            return false;
+
+        _mapper.Map(updateDto, exam);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteExamAsync(int id)
+    {
+        var exam = await _context.Exams.FindAsync(id);
+        if (exam == null)
+            return false;
+
+        _context.Exams.Remove(exam);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> AddQuestionToExamAsync(int examId, int questionId)
+    {
+        var examExists = await _context.Exams.AnyAsync(e => e.Id == examId);
+        var questionExists = await _context.Questions.AnyAsync(q => q.Id == questionId);
+
+        if (!examExists || !questionExists)
+            return false;
+
+        var maxOrder = await _context.ExamQuestions
+            .Where(eq => eq.ExamId == examId)
+            .MaxAsync(eq => (int?)eq.Order) ?? 0;
+
+        var examQuestion = new ExamQuestion
+        {
+            ExamId = examId,
+            QuestionId = questionId,
+            Order = maxOrder + 1
+        };
+
+        await _context.ExamQuestions.AddAsync(examQuestion);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> RemoveQuestionFromExamAsync(int examId, int questionId)
+    {
+        var examQuestion = await _context.ExamQuestions
+            .FirstOrDefaultAsync(eq => eq.ExamId == examId && eq.QuestionId == questionId);
+
+        if (examQuestion == null)
+            return false;
+
+        _context.ExamQuestions.Remove(examQuestion);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ScheduleExamAsync(int id, ScheduleExamDto dto)
+    {
+        var exam = await _context.Exams.FindAsync(id);
+        if (exam == null)
+            return false;
+
+        exam.AvailableFrom = dto.AvailableFrom;
+        exam.AvailableTo = dto.AvailableTo;
+        exam.TimeZone = dto.TimeZone;
+        exam.Status = ExamStatus.Scheduled;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> PublishExamAsync(int id)
+    {
+        var exam = await _context.Exams.FindAsync(id);
+        if (exam == null)
+            return false;
+
+        exam.Status = ExamStatus.Active;
+        exam.PublishedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<ExamAttemptDto?> StartExamAsync(int examId, string studentId)
+    {
+        var exam = await _context.Exams
+            .Include(e => e.ExamQuestions)
+                .ThenInclude(eq => eq.Question)
+            .FirstOrDefaultAsync(e => e.Id == examId);
+
+        if (exam == null)
+            return null;
+
+        if (exam.Status != ExamStatus.Active && exam.Status != ExamStatus.Scheduled)
+            return null;
+
+        if (exam.AvailableFrom.HasValue && exam.AvailableFrom.Value > DateTime.UtcNow)
+            return null;
+
+        if (exam.AvailableTo.HasValue && exam.AvailableTo.Value < DateTime.UtcNow)
+            return null;
+
+        var existingAttempt = await _context.ExamAttempts
+            .Include(a => a.Exam)
+                .ThenInclude(e => e!.ExamQuestions)
+                    .ThenInclude(eq => eq.Question)
+            .FirstOrDefaultAsync(a => a.ExamId == examId && a.StudentId == studentId && !a.IsCompleted);
+
+        if (existingAttempt != null)
+        {
+            return _mapper.Map<ExamAttemptDto>(existingAttempt);
+        }
+
+        var attempt = new ExamAttempt
+        {
+            ExamId = examId,
+            StudentId = studentId,
+            StartedAt = DateTime.UtcNow,
+            Status = "InProgress",
+            TotalMarks = exam.ExamQuestions.Where(eq => eq.Question != null).Sum(eq => eq.Question!.Marks)
+        };
+
+        await _context.ExamAttempts.AddAsync(attempt);
+        await _context.SaveChangesAsync();
+
+        var examWithQuestions = await _context.ExamAttempts
+            .Include(a => a.Exam)
+                .ThenInclude(e => e!.ExamQuestions)
+                    .ThenInclude(eq => eq.Question)
+            .FirstOrDefaultAsync(a => a.Id == attempt.Id);
+
+        return examWithQuestions != null ? _mapper.Map<ExamAttemptDto>(examWithQuestions) : null;
+    }
+
+    public async Task<ExamResultDto?> SubmitExamAsync(int attemptId, string studentId, List<ExamAnswerSubmission> answers)
+    {
+        var attempt = await _context.ExamAttempts
+            .Include(a => a.Exam)
+            .Include(a => a.Answers)
+            .FirstOrDefaultAsync(a => a.Id == attemptId && a.StudentId == studentId);
+
+        if (attempt == null || attempt.IsCompleted)
+            return null;
+
+        var examQuestions = await _context.ExamQuestions
+            .Include(eq => eq.Question)
+            .Where(eq => eq.ExamId == attempt.ExamId)
+            .ToListAsync();
+
+        var questionMap = examQuestions.Where(eq => eq.Question != null).ToDictionary(eq => eq.QuestionId, eq => eq.Question!);
+
+        _context.ExamAnswers.RemoveRange(attempt.Answers);
+        
+        var newAnswers = answers.Select(answer =>
+        {
+            if (!questionMap.TryGetValue(answer.QuestionId, out var question))
+                return null;
+
+            var correctAnswers = (question.CorrectAnswer ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var selectedAnswers = (answer.SelectedAnswer ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var isCorrect = selectedAnswers.Length == correctAnswers.Length &&
+                selectedAnswers.All(ca => correctAnswers.Contains(ca));
+
+            return new ExamAnswer
+            {
+                ExamAttemptId = attempt.Id,
+                QuestionId = answer.QuestionId,
+                SelectedAnswer = answer.SelectedAnswer,
+                IsCorrect = isCorrect,
+                MarksObtained = isCorrect ? question.Marks : 0
+            };
+        }).Where(a => a != null).ToList();
+
+        if (newAnswers.Count > 0)
+        {
+            await _context.ExamAnswers.AddRangeAsync(newAnswers.Cast<ExamAnswer>());
+        }
+
+        attempt.SubmittedAt = DateTime.UtcNow;
+        attempt.IsCompleted = true;
+        attempt.Score = newAnswers.Sum(a => a.MarksObtained);
+        attempt.Status = "Completed";
+
+        await _context.SaveChangesAsync();
+
+        var savedAttempt = await _context.ExamAttempts
+            .Include(a => a.Exam)
+            .Include(a => a.Answers)
+            .FirstOrDefaultAsync(a => a.Id == attemptId);
+
+        return savedAttempt != null ? _mapper.Map<ExamResultDto>(savedAttempt) : null;
+    }
+
+    public async Task<IEnumerable<ExamResultDto>> GetStudentResultsAsync(string studentId)
+    {
+        var attempts = await _context.ExamAttempts
+            .Include(a => a.Exam)
+            .Where(a => a.StudentId == studentId && a.IsCompleted)
+            .OrderByDescending(a => a.SubmittedAt)
+            .ToListAsync();
+
+        return attempts.Select(_mapper.Map<ExamResultDto>);
+    }
+
+    public async Task<ExamResultDto?> GetResultAsync(int resultId, string studentId)
+    {
+        var attempt = await _context.ExamAttempts
+            .Include(a => a.Exam)
+            .Include(a => a.Answers)
+            .FirstOrDefaultAsync(a => a.Id == resultId && a.StudentId == studentId && a.IsCompleted);
+
+        return attempt == null ? null : _mapper.Map<ExamResultDto>(attempt);
+    }
+}

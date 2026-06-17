@@ -34,17 +34,17 @@
         <div class="question-card">
           <div class="question-header">
             <span class="question-number">Question {{ currentQuestionIndex() + 1 }} of {{ totalQuestions }}</span>
-            <span class="question-marks">{{ currentQuestion.question.marks }} marks</span>
+            <span class="question-marks">{{ currentQuestion.question!.marks }} marks</span>
           </div>
 
           <div class="question-content">
-            <span class="question-icon" [class]="getQuestionTypeIcon(currentQuestion.question.type)"></span>
-            <p class="question-text">{{ currentQuestion.question.content }}</p>
+            <span class="question-icon" [class]="getQuestionTypeIcon(currentQuestion.question!.type)"></span>
+            <p class="question-text">{{ currentQuestion.question!.content }}</p>
           </div>
 
-          @if (currentQuestion.question.type === 'multiple-choice' || currentQuestion.question.type === 'dropdown') {
+          @if (currentQuestion.question!.type === 'multiple-choice' || currentQuestion.question!.type === 'dropdown') {
             <div class="options-list">
-              @for (option of currentQuestion.question.options; track option; let i = $index) {
+              @for (option of currentQuestion.question!.options; track option; let i = $index) {
                 <label class="option-item" [class.selected]="selectedAnswer === option">
                   <input
                     type="radio"
@@ -57,9 +57,9 @@
                 </label>
               }
             </div>
-          } @else if (currentQuestion.question.type === 'checkbox') {
+          } @else if (currentQuestion.question!.type === 'checkbox') {
             <div class="options-list">
-              @for (option of currentQuestion.question.options; track option; let i = $index) {
+              @for (option of currentQuestion.question!.options; track option; let i = $index) {
                 <label class="option-item checkbox-option" [class.selected]="(selectedAnswer || '').includes(option)">
                   <input
                     type="checkbox"
@@ -71,7 +71,7 @@
                 </label>
               }
             </div>
-          } @else if (currentQuestion.question.type === 'true-false') {
+          } @else if (currentQuestion.question!.type === 'true-false') {
             <div class="options-list">
               <label class="option-item" [class.selected]="selectedAnswer === 'True'">
                 <input type="radio" [name]="'q' + currentQuestion.questionId" value="True" (change)="selectAnswer('True')" />

@@ -1,44 +1,8 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
-import { StudentAuthService } from '../../services/student-auth.service';
-import { environment } from '../../../environments/environment';
-
-interface ExamQuestion {
-  id: number;
-  questionId: number;
-  order: number;
-  question: {
-    id: number;
-    content: string;
-    type: string;
-    difficulty: string;
-    marks: number;
-    options: string[];
-    correctAnswer: string;
-  };
-}
-
-interface ExamAttempt {
-  id: number;
-  examId: number;
-  studentId: string;
-  startedAt: string;
-  submittedAt?: string;
-  score: number;
-  totalMarks: number;
-  isCompleted: boolean;
-  status: string;
-  exam: {
-    id: number;
-    title: string;
-    description: string;
-    duration: number;
-    questions: ExamQuestion[];
-  };
-}
+import { ExamService, ExamAttempt } from '../../services/exam.service';
 
 @Component({
   selector: 'app-exam-taking',
@@ -48,6 +12,10 @@ interface ExamAttempt {
   styleUrl: './exam-taking.component.scss'
 })
 export class ExamTakingComponent implements OnInit {
+  private readonly examService = inject(ExamService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
   attempt = signal<ExamAttempt | null>(null);
   currentQuestionIndex = signal(0);
   answers = signal<Map<number, string>>(new Map());
@@ -55,13 +23,6 @@ export class ExamTakingComponent implements OnInit {
   isSubmitting = signal(false);
   showConfirmSubmit = signal(false);
   private timerInterval: any;
-
-  constructor(
-    private authService: StudentAuthService,
-    private http: HttpClient,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {}
 
   ngOnInit(): void {
     const examId = Number(this.route.snapshot.paramMap.get('id'));
@@ -72,8 +33,8 @@ export class ExamTakingComponent implements OnInit {
     this.startExam(examId);
   }
 
-  get currentQuestion(): ExamQuestion {
-    return (this.attempt()!.exam.questions as ExamQuestion[])[this.currentQuestionIndex()]!;
+  get currentQuestion(): ExamAttempt['exam']['questions'][number] {
+    return (this.attempt()!.exam.questions as ExamAttempt['exam']['questions'])[this.currentQuestionIndex()]!;
   }
 
   get totalQuestions(): number {
@@ -112,7 +73,7 @@ export class ExamTakingComponent implements OnInit {
   }
 
   startExam(examId: number): void {
-    this.http.post<ExamAttempt>(`${environment.apiUrl}/exam-attempts/start`, { examId }).subscribe({
+    this.examService.startExam(examId).subscribe({
       next: (data) => {
         this.attempt.set(data);
         this.timeRemaining.set(data.exam.duration * 60);
@@ -195,16 +156,13 @@ export class ExamTakingComponent implements OnInit {
       selectedAnswer
     }));
 
-    this.http.post(`${environment.apiUrl}/exam-attempts/submit`, {
-      examAttemptId: this.attempt()!.id,
-      answers
-    }).subscribe({
-      next: (result: any) => {
+    this.examService.submitExam(this.attempt()!.id, answers).subscribe({
+      next: (result) => {
         this.router.navigate(['/exam', this.attempt()!.examId, 'result', result.id]);
       },
       error: (err) => {
         console.error('Failed to submit exam:', err);
-        this.toast.error('Failed to submit exam');
+        alert('Failed to submit exam');
         this.isSubmitting.set(false);
         if (!autoSubmit) {
           this.showConfirmSubmit.set(false);
@@ -234,10 +192,6 @@ export class ExamTakingComponent implements OnInit {
     };
     return icons[type] || 'fa-question-circle';
   }
-
-  private toast = {
-    error: (msg: string) => alert(msg)
-  };
 
   confirmExit(): void {
     if (confirm('Are you sure you want to exit? Your progress will be lost.')) {

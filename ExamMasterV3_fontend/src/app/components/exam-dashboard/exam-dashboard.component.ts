@@ -1,21 +1,9 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { StudentAuthService, StudentUser } from '../../services/student-auth.service';
+import { ExamService, Exam } from '../../services/exam.service';
 import { Router } from '@angular/router';
-import { environment } from '../../../environments/environment';
-
-interface Exam {
-  id: number;
-  title: string;
-  description?: string;
-  duration: number;
-  questionCount: number;
-  status: 'draft' | 'scheduled' | 'active' | 'completed';
-  availableFrom?: Date | string;
-  availableTo?: Date | string;
-  categoryId: number;
-}
 
 @Component({
   selector: 'app-exam-dashboard',
@@ -25,20 +13,18 @@ interface Exam {
   styleUrl: './exam-dashboard.component.scss'
 })
 export class ExamDashboardComponent implements OnInit {
-  studentUser = computed(() => this.authService.getStudentUser());
-  exams = signal<Exam[]>([]);
-  private readonly API_URL = environment.apiUrl;
+  private readonly authService = inject(StudentAuthService);
+  private readonly examService = inject(ExamService);
+  private readonly router = inject(Router);
 
-  constructor(
-    private authService: StudentAuthService,
-    private router: Router,
-    private http: HttpClient
-  ) {}
+  studentUser = computed(() => this.authService.getStudentUser());
+  exams = this.examService.exams;
+  isLoading = this.examService.isLoading;
 
   ngOnInit(): void {
-    const user = this.studentUser();
-    console.log('Student user data:', user);
-    this.loadExams();
+    this.examService.getExams().subscribe({
+      error: () => this.exams.set([])
+    });
   }
 
   get misNo(): string {
@@ -53,16 +39,9 @@ export class ExamDashboardComponent implements OnInit {
 
   get displayName(): string {
     const user = this.studentUser();
-    return user?.firstName && user?.lastName 
+    return user?.firstName && user?.lastName
       ? `${user.firstName} ${user.lastName}`
       : user?.fullName || 'Student';
-  }
-
-  loadExams(): void {
-    this.http.get<Exam[]>(`${this.API_URL}/exams/student`).subscribe({
-      next: (data) => this.exams.set(data),
-      error: () => this.exams.set([])
-    });
   }
 
   logout() {

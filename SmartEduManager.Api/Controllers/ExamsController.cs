@@ -5,10 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
-using SmartEduManager.Api.Repositories.Interfaces;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using SmartEduManager.Api.Services;
 
 namespace SmartEduManager.Api.Controllers;
 
@@ -17,18 +14,18 @@ namespace SmartEduManager.Api.Controllers;
 [Authorize(Roles = "Admin,Instructor")]
 public class ExamsController : ControllerBase
 {
-    private readonly IExamRepository _repository;
+    private readonly IExamService _examService;
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<ExamsController> _logger;
 
     public ExamsController(
-        IExamRepository repository,
+        IExamService examService,
         AppDbContext context,
         IMapper mapper,
         ILogger<ExamsController> logger)
     {
-        _repository = repository;
+        _examService = examService;
         _context = context;
         _mapper = mapper;
         _logger = logger;
@@ -39,28 +36,8 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exams = await _context.Exams
-                .Include(e => e.Category)
-                .Include(e => e.ExamQuestions)
-                    .ThenInclude(eq => eq.Question)
-                .ToListAsync();
-
-            var examsDto = exams.Select(e => new ExamDto
-            {
-                Id = e.Id,
-                Title = e.Title,
-                Description = e.Description,
-                CategoryId = e.CategoryId,
-                CategoryName = e.Category?.Name ?? "Uncategorized",
-                QuestionCount = e.ExamQuestions?.Count ?? 0,
-                Duration = e.Duration,
-                IsActive = e.Status == ExamStatus.Active,
-                CreatedAt = e.CreatedAt.ToString("yyyy-MM-dd"),
-                TotalMarks = e.ExamQuestions?.Sum(eq => eq.Question?.Marks ?? 0) ?? 0,
-                Status = e.Status.ToString().ToLowerInvariant()
-            });
-
-            return Ok(examsDto);
+            var exams = await _examService.GetAllExamsAsync();
+            return Ok(exams);
         }
         catch (Exception ex)
         {
@@ -85,37 +62,12 @@ public class ExamsController : ControllerBase
                 return NotFound("Exam not found");
             }
 
-            var examDto = new ExamDto
-            {
-                Id = exam.Id,
-                Title = exam.Title,
-                Description = exam.Description,
-                CategoryId = exam.CategoryId,
-                CategoryName = exam.Category?.Name ?? "Uncategorized",
-                QuestionCount = exam.ExamQuestions?.Count ?? 0,
-                Duration = exam.Duration,
-                IsActive = exam.Status == ExamStatus.Active,
-                CreatedAt = exam.CreatedAt.ToString("yyyy-MM-dd"),
-                TotalMarks = exam.ExamQuestions?.Sum(eq => eq.Question?.Marks ?? 0) ?? 0,
-                Status = exam.Status.ToString().ToLowerInvariant(),
-                Questions = exam.ExamQuestions?
-                    .OrderBy(eq => eq.Order)
-                    .Select(eq => new ExamQuestionDto
-                    {
-                        Id = eq.Id,
-                        ExamId = eq.ExamId,
-                        QuestionId = eq.QuestionId,
-                        Order = eq.Order,
-                        Question = eq.Question != null ? _mapper.Map<QuestionDto>(eq.Question) : null
-                    })
-                    .ToList() ?? []
-            };
-
+            var examDto = _mapper.Map<ExamDto>(exam);
             return Ok(examDto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error retrieving questions for exam {id}");
+            _logger.LogError(ex, "Error retrieving questions for exam {ExamId}", id);
             return StatusCode(500, "Internal server error");
         }
     }
@@ -126,32 +78,8 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exams = await _context.Exams
-                .Include(e => e.Category)
-                .Include(e => e.ExamQuestions)
-                    .ThenInclude(eq => eq.Question)
-                .Where(e => e.Status == ExamStatus.Active || e.Status == ExamStatus.Scheduled)
-                .ToListAsync();
-
-            var examsDto = exams.Select(e => new ExamDto
-            {
-                Id = e.Id,
-                Title = e.Title,
-                Description = e.Description,
-                CategoryId = e.CategoryId,
-                CategoryName = e.Category.Name,
-                QuestionCount = e.ExamQuestions.Count,
-                Duration = e.Duration,
-                IsActive = e.Status == ExamStatus.Active,
-                CreatedAt = e.CreatedAt.ToString("yyyy-MM-dd"),
-                TotalMarks = e.ExamQuestions.Sum(eq => eq.Question.Marks),
-                Status = e.Status.ToString().ToLowerInvariant(),
-                AvailableFrom = e.AvailableFrom,
-                AvailableTo = e.AvailableTo,
-                TimeZone = e.TimeZone
-            });
-
-            return Ok(examsDto);
+            var exams = await _examService.GetStudentExamsAsync();
+            return Ok(exams);
         }
         catch (Exception ex)
         {
@@ -165,16 +93,9 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var exam = _mapper.Map<Exam>(createDto);
-            await _repository.AddAsync(exam);
-            await _repository.SaveChangesAsync();
-
-            var examDto = _mapper.Map<ExamDto>(exam);
-            _logger.LogInformation($"Created exam with id {exam.Id}");
-            return CreatedAtAction(nameof(Get), new { id = exam.Id }, examDto);
+            var exam = await _examService.CreateExamAsync(createDto);
+            _logger.LogInformation("Created exam with id {ExamId}", exam.Id);
+            return CreatedAtAction(nameof(Get), new { id = exam.Id }, exam);
         }
         catch (Exception ex)
         {
@@ -188,38 +109,18 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exam = await _context.Exams
-                .Include(e => e.Category)
-                .Include(e => e.ExamQuestions)
-                    .ThenInclude(eq => eq.Question)
-                .FirstOrDefaultAsync(e => e.Id == id);
-            
+            var exam = await _examService.GetExamWithQuestionsAsync(id);
             if (exam == null)
             {
-                _logger.LogWarning($"Exam with id {id} not found");
+                _logger.LogWarning("Exam with id {ExamId} not found", id);
                 return NotFound("Exam not found");
             }
 
-            var examDto = new ExamDto
-            {
-                Id = exam.Id,
-                Title = exam.Title,
-                Description = exam.Description,
-                CategoryId = exam.CategoryId,
-                CategoryName = exam.Category?.Name ?? "Uncategorized",
-                QuestionCount = exam.ExamQuestions?.Count ?? 0,
-                Duration = exam.Duration,
-                IsActive = exam.Status == ExamStatus.Active,
-                CreatedAt = exam.CreatedAt.ToString("yyyy-MM-dd"),
-                TotalMarks = exam.ExamQuestions?.Sum(eq => eq.Question?.Marks ?? 0) ?? 0,
-                Status = exam.Status.ToString().ToLowerInvariant()
-            };
-            
-            return Ok(examDto);
+            return Ok(exam);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error retrieving exam with id {id}");
+            _logger.LogError(ex, "Error retrieving exam with id {ExamId}", id);
             return StatusCode(500, "Internal server error");
         }
     }
@@ -229,49 +130,28 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exam = await _context.Exams.FindAsync(examId);
-            if (exam == null)
+            var success = await _examService.AddQuestionToExamAsync(examId, dto.QuestionId);
+            
+            if (!success)
             {
-                return NotFound("Exam not found");
+                return NotFound("Exam or question not found");
             }
-
-            var question = await _context.Questions.FindAsync(dto.QuestionId);
-            if (question == null)
-            {
-                return NotFound("Question not found");
-            }
-
-            var maxOrder = await _context.ExamQuestions
-                .Where(eq => eq.ExamId == examId)
-                .MaxAsync(eq => (int?)eq.Order) ?? 0;
-
-            var examQuestion = new ExamQuestion
-            {
-                ExamId = examId,
-                QuestionId = dto.QuestionId,
-                Order = maxOrder + 1
-            };
-
-            _context.ExamQuestions.Add(examQuestion);
-            await _context.SaveChangesAsync();
 
             var savedExamQuestion = await _context.ExamQuestions
                 .Include(eq => eq.Question)
-                .FirstOrDefaultAsync(eq => eq.Id == examQuestion.Id);
+                .LastOrDefaultAsync(eq => eq.ExamId == examId && eq.QuestionId == dto.QuestionId);
 
-            var examQuestionDto = new ExamQuestionDto
+            if (savedExamQuestion == null)
             {
-                Id = savedExamQuestion!.Id,
-                ExamId = savedExamQuestion.ExamId,
-                QuestionId = savedExamQuestion.QuestionId,
-                Order = savedExamQuestion.Order,
-                Question = savedExamQuestion.Question != null ? _mapper.Map<QuestionDto>(savedExamQuestion.Question) : null
-            };
+                return NotFound("Question not found in exam");
+            }
+
+            var examQuestionDto = _mapper.Map<ExamQuestionDto>(savedExamQuestion);
             return Ok(examQuestionDto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error adding question to exam {examId}");
+            _logger.LogError(ex, "Error adding question to exam {ExamId}", examId);
             return StatusCode(500, "Internal server error");
         }
     }
@@ -281,22 +161,18 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var examQuestion = await _context.ExamQuestions
-                .FirstOrDefaultAsync(eq => eq.ExamId == examId && eq.QuestionId == questionId);
+            var success = await _examService.RemoveQuestionFromExamAsync(examId, questionId);
             
-            if (examQuestion == null)
+            if (!success)
             {
                 return NotFound("Question not found in exam");
             }
-
-            _context.ExamQuestions.Remove(examQuestion);
-            await _context.SaveChangesAsync();
 
             return Ok("Question removed from exam successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error removing question {questionId} from exam {examId}");
+            _logger.LogError(ex, "Error removing question {QuestionId} from exam {ExamId}", questionId, examId);
             return StatusCode(500, "Internal server error");
         }
     }
@@ -306,23 +182,18 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exam = await _context.Exams.FindAsync(id);
-            if (exam == null)
+            var success = await _examService.ScheduleExamAsync(id, dto);
+            
+            if (!success)
             {
                 return NotFound("Exam not found");
             }
-
-            exam.AvailableFrom = dto.AvailableFrom;
-            exam.AvailableTo = dto.AvailableTo;
-            exam.TimeZone = dto.TimeZone;
-            exam.Status = ExamStatus.Scheduled;
-
-            await _context.SaveChangesAsync();
+            
             return Ok("Exam scheduled successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error scheduling exam {id}");
+            _logger.LogError(ex, "Error scheduling exam {ExamId}", id);
             return StatusCode(500, "Internal server error");
         }
     }
@@ -332,23 +203,18 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exam = await _context.Exams.FindAsync(id);
-            if (exam == null)
+            var success = await _examService.UpdateExamAsync(id, updateDto);
+            
+            if (!success)
             {
                 return NotFound("Exam not found");
             }
 
-            exam.Title = updateDto.Title;
-            exam.Description = updateDto.Description;
-            exam.CategoryId = updateDto.CategoryId;
-            exam.Duration = updateDto.Duration;
-
-            await _context.SaveChangesAsync();
             return Ok("Exam updated successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error updating exam {id}");
+            _logger.LogError(ex, "Error updating exam {ExamId}", id);
             return StatusCode(500, "Internal server error");
         }
     }
@@ -358,19 +224,18 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exam = await _context.Exams.FindAsync(id);
-            if (exam == null)
+            var success = await _examService.DeleteExamAsync(id);
+            
+            if (!success)
             {
                 return NotFound("Exam not found");
             }
 
-            _context.Exams.Remove(exam);
-            await _context.SaveChangesAsync();
             return Ok("Exam deleted successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error deleting exam {id}");
+            _logger.LogError(ex, "Error deleting exam {ExamId}", id);
             return StatusCode(500, "Internal server error");
         }
     }
@@ -380,21 +245,18 @@ public class ExamsController : ControllerBase
     {
         try
         {
-            var exam = await _context.Exams.FindAsync(id);
-            if (exam == null)
+            var success = await _examService.PublishExamAsync(id);
+            
+            if (!success)
             {
                 return NotFound("Exam not found");
             }
 
-            exam.Status = ExamStatus.Active;
-            exam.PublishedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
             return Ok("Exam published successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error publishing exam {id}");
+            _logger.LogError(ex, "Error publishing exam {ExamId}", id);
             return StatusCode(500, "Internal server error");
         }
     }
