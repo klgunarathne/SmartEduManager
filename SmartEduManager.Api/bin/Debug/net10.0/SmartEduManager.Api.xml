@@ -16,6 +16,30 @@
         <member name="M:SmartEduManager.Api.Data.Migrations.AddQuestionOptions.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:SmartEduManager.Api.Data.Migrations.MakeCategoryIdNullableInExam">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.MakeCategoryIdNullableInExam.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.MakeCategoryIdNullableInExam.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.MakeCategoryIdNullableInExam.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:SmartEduManager.Api.Data.Migrations.AddExamAttemptTables">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.AddExamAttemptTables.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.AddExamAttemptTables.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:SmartEduManager.Api.Data.Migrations.AddExamAttemptTables.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:SmartEduManager.Api.Migrations.initialModel">
             <inheritdoc />
         </member>

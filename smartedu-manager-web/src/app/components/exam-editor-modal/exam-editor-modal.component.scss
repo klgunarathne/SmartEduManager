@@ -384,7 +384,7 @@
 
 .exam-editor-main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: 55% 45%;
   gap: 14px;
   align-items: start;
 }
@@ -465,7 +465,7 @@
 
 .bank-filters {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -481,7 +481,7 @@
 
 .bank-question-card {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   width: 100%;
@@ -772,6 +772,58 @@
   border-radius: 8px;
   color: #94a3b8;
   cursor: grab;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: #e2e8f0;
+    color: #6366f1;
+  }
+}
+
+.reorder-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #eef2ff;
+    border-color: #6366f1;
+    color: #6366f1;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.add-question-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #166534;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #bbf7d0;
+    transform: scale(1.05);
+  }
 }
 
 .action-btn {
@@ -963,4 +1015,94 @@
 
 .d-none {
   display: none;
+}
+
+.schedule-modal-card {
+  width: min(580px, calc(100vw - 48px));
+}
+
+.schedule-modal-header {
+  padding: 18px 22px;
+
+  h3 {
+    margin: 0;
+    font-size: 17px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 13px;
+  }
+}
+
+.schedule-modal-body {
+  padding: 20px 22px;
+}
+
+.schedule-mode-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+
+.schedule-tab {
+  flex: 1;
+  padding: 9px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.active {
+    background: white;
+    color: #6366f1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &:hover:not(.active) {
+    color: #6366f1;
+  }
+}
+
+.schedule-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+
+  .filter-group:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+.permanent-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #4338ca;
+
+  i {
+    font-size: 18px;
+    margin-top: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.schedule-modal-footer {
+  padding: 14px 22px;
 }

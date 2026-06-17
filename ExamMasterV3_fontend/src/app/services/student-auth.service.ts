@@ -49,7 +49,24 @@ export class StudentAuthService {
   studentUser = signal<StudentUser | null>(null);
   isAuthenticated = signal(false);
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.restoreSession();
+  }
+
+  private restoreSession(): void {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      this.isAuthenticated.set(true);
+      const stored = localStorage.getItem('student_user');
+      if (stored) {
+        try {
+          this.studentUser.set(JSON.parse(stored));
+        } catch {
+          this.studentUser.set(null);
+        }
+      }
+    }
+  }
 
   generateCredentials(dto: GenerateCredentialsDto): Observable<StudentCredentials[]> {
     return this.http.post<StudentCredentials[]>(`${this.API_URL}/students/generate-credentials`, dto).pipe(
@@ -115,6 +132,13 @@ export class StudentAuthService {
   }
 
   logout(): void {
+    this.studentUser.set(null);
+    this.isAuthenticated.set(false);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('student_user');
+  }
+
+  clearSession(): void {
     this.studentUser.set(null);
     this.isAuthenticated.set(false);
     localStorage.removeItem('access_token');

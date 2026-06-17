@@ -144,7 +144,11 @@ public class ExamsController : ControllerBase
                 Duration = e.Duration,
                 IsActive = e.Status == ExamStatus.Active,
                 CreatedAt = e.CreatedAt.ToString("yyyy-MM-dd"),
-                TotalMarks = e.ExamQuestions.Sum(eq => eq.Question.Marks)
+                TotalMarks = e.ExamQuestions.Sum(eq => eq.Question.Marks),
+                Status = e.Status.ToString().ToLowerInvariant(),
+                AvailableFrom = e.AvailableFrom,
+                AvailableTo = e.AvailableTo,
+                TimeZone = e.TimeZone
             });
 
             return Ok(examsDto);
@@ -251,13 +255,17 @@ public class ExamsController : ControllerBase
             _context.ExamQuestions.Add(examQuestion);
             await _context.SaveChangesAsync();
 
+            var savedExamQuestion = await _context.ExamQuestions
+                .Include(eq => eq.Question)
+                .FirstOrDefaultAsync(eq => eq.Id == examQuestion.Id);
+
             var examQuestionDto = new ExamQuestionDto
             {
-                Id = examQuestion.Id,
-                ExamId = examQuestion.ExamId,
-                QuestionId = examQuestion.QuestionId,
-                Order = examQuestion.Order,
-                Question = _mapper.Map<QuestionDto>(examQuestion.Question)
+                Id = savedExamQuestion!.Id,
+                ExamId = savedExamQuestion.ExamId,
+                QuestionId = savedExamQuestion.QuestionId,
+                Order = savedExamQuestion.Order,
+                Question = savedExamQuestion.Question != null ? _mapper.Map<QuestionDto>(savedExamQuestion.Question) : null
             };
             return Ok(examQuestionDto);
         }

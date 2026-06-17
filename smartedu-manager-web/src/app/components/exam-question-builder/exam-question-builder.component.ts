@@ -49,9 +49,12 @@ interface Exam {
   id: number;
   title: string;
   description: string;
-  categoryId: number;
+  categoryId: number | null;
   duration: number;
   status: ExamStatus;
+  availableFrom: string | null;
+  availableTo: string | null;
+  timeZone: string | null;
   questions: ExamQuestion[];
 }
 
@@ -116,6 +119,12 @@ interface ApiExamDto {
   totalMarks?: number;
   Status?: string | null;
   status?: string | null;
+  AvailableFrom?: string | null;
+  availableFrom?: string | null;
+  AvailableTo?: string | null;
+  availableTo?: string | null;
+  TimeZone?: string | null;
+  timeZone?: string | null;
   Questions?: ApiExamQuestionDto[] | null;
   questions?: ApiExamQuestionDto[] | null;
 }
@@ -867,9 +876,12 @@ export class ExamQuestionBuilderComponent implements OnInit {
       id: 0,
       title: '',
       description: '',
-      categoryId: 0,
+      categoryId: null,
       duration: 60,
       status: 'draft',
+      availableFrom: null,
+      availableTo: null,
+      timeZone: null,
       questions: []
     };
   }
@@ -916,19 +928,23 @@ export class ExamQuestionBuilderComponent implements OnInit {
       id: exam.Id ?? exam.id ?? 0,
       title: exam.Title ?? exam.title ?? '',
       description: exam.Description ?? exam.description ?? '',
-      categoryId: exam.CategoryId ?? exam.categoryId ?? 0,
+      categoryId: exam.CategoryId ?? exam.categoryId ?? null,
       duration: exam.Duration ?? exam.duration ?? 60,
       status: this.mapStatusFromApi(exam.Status ?? exam.status ?? 'Draft'),
+      availableFrom: exam.AvailableFrom ?? exam.availableFrom ?? null,
+      availableTo: exam.AvailableTo ?? exam.availableTo ?? null,
+      timeZone: exam.TimeZone ?? exam.timeZone ?? null,
       questions
     };
   }
 
   private toExamQuestion(examQuestion: ApiExamQuestionDto): ExamQuestion {
+    const questionData = examQuestion.Question || examQuestion.question;
     return {
       id: examQuestion.Id ?? examQuestion.id,
       questionId: examQuestion.QuestionId ?? examQuestion.questionId ?? 0,
       order: examQuestion.Order ?? examQuestion.order ?? 0,
-      question: examQuestion.Question ? this.toQuestion(examQuestion.Question) : undefined
+      question: questionData ? this.toQuestion(questionData) : undefined
     };
   }
 

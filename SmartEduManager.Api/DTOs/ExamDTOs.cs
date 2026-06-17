@@ -10,7 +10,7 @@ public class ExamDto
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public int CategoryId { get; set; }
+    public int? CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public int TotalMarks { get; set; }
     public int QuestionCount { get; set; }
@@ -18,6 +18,9 @@ public class ExamDto
     public bool IsActive { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public DateTime? AvailableFrom { get; set; }
+    public DateTime? AvailableTo { get; set; }
+    public string? TimeZone { get; set; }
     public ICollection<ExamQuestionDto>? Questions { get; set; }
 }
 
@@ -25,7 +28,7 @@ public class CreateExamDto
 {
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public int CategoryId { get; set; }
+    public int? CategoryId { get; set; }
     public int Duration { get; set; } = 60;
 }
 
@@ -48,12 +51,80 @@ public class ScheduleExamDto
     public DateTime? AvailableFrom { get; set; }
     public DateTime? AvailableTo { get; set; }
     public string? TimeZone { get; set; }
+    public string? ScheduleType { get; set; }
 }
 
 public class UpdateExamDto
 {
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public int CategoryId { get; set; }
+    public int? CategoryId { get; set; }
     public int Duration { get; set; } = 60;
+}
+
+public class StartExamDto
+{
+    public int ExamId { get; set; }
+}
+
+public class SubmitExamDto
+{
+    public int ExamAttemptId { get; set; }
+    public List<ExamAnswerSubmission> Answers { get; set; } = new();
+}
+
+public class ExamAnswerSubmission
+{
+    public int QuestionId { get; set; }
+    public string? SelectedAnswer { get; set; }
+}
+
+public class ExamAttemptDto
+{
+    public int Id { get; set; }
+    public int ExamId { get; set; }
+    public string StudentId { get; set; } = string.Empty;
+    public DateTime StartedAt { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public int Score { get; set; }
+    public int TotalMarks { get; set; }
+    public bool IsCompleted { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public ExamDto? Exam { get; set; }
+    public List<ExamAnswerDto>? Answers { get; set; }
+}
+
+public class ExamAnswerDto
+{
+    public int Id { get; set; }
+    public int ExamAttemptId { get; set; }
+    public int QuestionId { get; set; }
+    public string? SelectedAnswer { get; set; }
+    public bool IsCorrect { get; set; }
+    public int MarksObtained { get; set; }
+}
+
+public class ExamResultDto
+{
+    public int Id { get; set; }
+    public int ExamId { get; set; }
+    public string ExamTitle { get; set; } = string.Empty;
+    public int Score { get; set; }
+    public int TotalMarks { get; set; }
+    public double Percentage { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime StartedAt { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public List<ExamAnswerResultDto>? Answers { get; set; }
+}
+
+public class ExamAnswerResultDto
+{
+    public int QuestionId { get; set; }
+    public string QuestionContent { get; set; } = string.Empty;
+    public string? SelectedAnswer { get; set; }
+    public string? CorrectAnswer { get; set; }
+    public bool IsCorrect { get; set; }
+    public int MarksObtained { get; set; }
+    public int TotalMarks { get; set; }
 }

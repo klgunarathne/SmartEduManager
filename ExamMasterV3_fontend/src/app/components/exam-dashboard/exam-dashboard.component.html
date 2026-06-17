@@ -91,7 +91,7 @@
                 }
               </div>
               <button class="btn btn-start" 
-                      [disabled]="exam.status !== 'active'"
+                      [disabled]="exam.status !== 'active' && exam.status !== 'scheduled'"
                       (click)="startExam(exam.id)">
                 <i class="fas fa-play"></i> Start Exam
               </button>

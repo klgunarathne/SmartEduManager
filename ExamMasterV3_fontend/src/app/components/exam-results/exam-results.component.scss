@@ -1,0 +1,271 @@
+.results-container {
+  min-height: 100vh;
+  background: #f1f5f9;
+  padding: 24px;
+}
+
+.results-header {
+  max-width: 900px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    color: #475569;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f8fafc;
+      border-color: #6366f1;
+      color: #6366f1;
+    }
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+}
+
+.results-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.score-card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  display: flex;
+  gap: 32px;
+  align-items: center;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.score-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 6px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .score-value {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .grade-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+}
+
+.score-details {
+  flex: 1;
+
+  h2 {
+    margin: 0 0 16px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+}
+
+.score-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat {
+    text-align: center;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+
+    .stat-value {
+      display: block;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #64748b;
+    }
+  }
+}
+
+.result-time {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  h3 {
+    margin: 0 0 20px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    i {
+      color: #6366f1;
+    }
+  }
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  transition: all 0.2s;
+
+  &.correct {
+    border-color: #22c55e;
+    background: #f0fdf4;
+  }
+
+  &.wrong {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+
+  .q-number {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .q-status {
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &.correct {
+      color: #166534;
+    }
+
+    &.wrong {
+      color: #991b1b;
+    }
+  }
+}
+
+.q-content {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.q-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+
+  .answer-row {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+
+    .label {
+      color: #64748b;
+      min-width: 100px;
+    }
+
+    .value {
+      color: #1e293b;
+      font-weight: 500;
+
+      &.wrong {
+        color: #dc2626;
+        text-decoration: line-through;
+      }
+
+      &.correct-value {
+        color: #16a34a;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.q-marks {
+  font-size: 13px;
+  color: #64748b;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+  color: #64748b;
+
+  i {
+    font-size: 32px;
+    color: #6366f1;
+  }
+}

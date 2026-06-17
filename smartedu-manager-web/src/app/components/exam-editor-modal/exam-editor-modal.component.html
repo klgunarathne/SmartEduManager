@@ -45,6 +45,7 @@
                 [ngModel]="exam().categoryId"
                 (ngModelChange)="updateExamField('categoryId', $event)"
               >
+                <option [ngValue]="null">No Category</option>
                 @for (category of categories(); track category.id) {
                   <option [ngValue]="category.id">{{ category.name }}</option>
                 }
@@ -78,8 +79,8 @@
           <div class="exam-questions-panel">
             <div class="section-title-row compact-row">
               <div>
-                <h4>Question Paper</h4>
-                <p>Drag questions to reorder. Changes are saved with the exam.</p>
+                <h4>Exam Questions</h4>
+                <p>Drag to reorder. Use arrows or drag from bank.</p>
               </div>
             </div>
 
@@ -87,18 +88,17 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th style="width: 55px;">#</th>
+                    <th style="width: 40px;">#</th>
                     <th>Question</th>
                     <th style="width: 145px;">Type</th>
-                    <th style="width: 90px;">Marks</th>
-                    <th style="width: 160px;">Correct Answers</th>
-                    <th style="width: 190px;">Actions</th>
+                    <th style="width: 80px;">Marks</th>
+                    <th style="width: 120px;">Actions</th>
                   </tr>
                 </thead>
                 <tbody #paperList="cdkDropList" cdkDropList [cdkDropListData]="exam().questions" [cdkDropListConnectedTo]="[bankList]" (cdkDropListDropped)="drop($event)">
                   @if (exam().questions.length === 0) {
                     <tr>
-                      <td colspan="6" class="no-data">No questions added yet. Use Add Questions to build the paper.</td>
+                      <td colspan="5" class="no-data">No questions added yet. Drag questions from the bank or double-click to add.</td>
                     </tr>
                   } @else {
                     @for (examQuestion of exam().questions; track examQuestion.questionId; let index = $index) {
@@ -115,16 +115,18 @@
                           </span>
                         </td>
                         <td>{{ examQuestion.question?.marks || 0 }}</td>
-                        <td>{{ examQuestion.question?.correctAnswer?.length || 0 }}</td>
                         <td>
                           <div class="table-actions">
-                            <button type="button" class="btn btn-outline btn-sm" [disabled]="isCreateMode()" (click)="duplicateQuestion(examQuestion.question!)">
-                              <i class="fas fa-copy"></i>
+                            <button type="button" class="btn btn-outline btn-sm reorder-btn" [disabled]="index === 0" (click)="moveQuestionUp(examQuestion, index)" title="Move up">
+                              <i class="fas fa-arrow-up"></i>
                             </button>
-                            <button type="button" class="btn btn-danger btn-sm" [disabled]="isCreateMode()" (click)="removeQuestion(examQuestion.questionId)">
+                            <button type="button" class="btn btn-outline btn-sm reorder-btn" [disabled]="index === exam().questions.length - 1" (click)="moveQuestionDown(examQuestion, index)" title="Move down">
+                              <i class="fas fa-arrow-down"></i>
+                            </button>
+                            <span class="drag-handle" cdkDragHandle title="Drag to reorder"><i class="fas fa-grip-vertical"></i></span>
+                            <button type="button" class="btn btn-danger btn-sm" [disabled]="isCreateMode()" (click)="removeQuestion(examQuestion.questionId)" title="Remove">
                               <i class="fas fa-trash"></i>
                             </button>
-                            <span class="drag-handle" cdkDragHandle><i class="fas fa-grip-vertical"></i></span>
                           </div>
                         </td>
                       </tr>
@@ -140,7 +142,7 @@
               <div class="section-title-row compact-row">
                 <div>
                   <h4>Question Bank</h4>
-                  <p>Drag a question into the paper or double-click to add it.</p>
+                  <p>Drag to exam or double-click to add.</p>
                 </div>
               </div>
 
@@ -170,36 +172,39 @@
                 </div>
               </div>
 
-              <div
-                #bankList="cdkDropList"
-                class="bank-question-list"
-                cdkDropList
-                [cdkDropListData]="filteredBankQuestionsForExam()"
-                [cdkDropListConnectedTo]="[paperList]"
-                (cdkDropListDropped)="drop($event)"
-              >
-                @if (filteredBankQuestionsForExam().length === 0) {
-                  <div class="empty-state compact bank-empty">
-                    <i class="fas fa-folder-open"></i>
-                    <p>No available questions match the current filters.</p>
-                  </div>
-                } @else {
-                  @for (question of filteredBankQuestionsForExam(); track question.id) {
-                    <button type="button" class="bank-question-card" cdkDrag [cdkDragData]="question" (dblclick)="addSingleQuestionToExam(question)">
-                      <span class="bank-question-drag" cdkDragHandle title="Drag to exam">
-                        <i class="fas fa-grip-vertical"></i>
-                      </span>
-                      <span class="question-selection-icon bank-card-icon">
-                        <i class="fas {{ getQuestionTypeIcon(question.type) }}"></i>
-                      </span>
-                      <span class="bank-question-content">
-                        <strong>{{ question.content || 'Untitled Question' }}</strong>
-                        <small>{{ getQuestionTypeLabel(question.type) }} • {{ question.marks }} marks</small>
-                      </span>
-                    </button>
-                  }
-                }
-              </div>
+               <div
+                 #bankList="cdkDropList"
+                 class="bank-question-list"
+                 cdkDropList
+                 [cdkDropListData]="filteredBankQuestionsForExam()"
+                 [cdkDropListConnectedTo]="[paperList]"
+                 (cdkDropListDropped)="drop($event)"
+               >
+                 @if (filteredBankQuestionsForExam().length === 0) {
+                   <div class="empty-state compact bank-empty">
+                     <i class="fas fa-folder-open"></i>
+                     <p>No available questions match the current filters.</p>
+                   </div>
+                 } @else {
+                   @for (question of filteredBankQuestionsForExam(); track question.id) {
+                     <button type="button" class="bank-question-card" cdkDrag [cdkDragData]="question">
+                       <span class="bank-question-drag" cdkDragHandle title="Drag to exam">
+                         <i class="fas fa-grip-vertical"></i>
+                       </span>
+                       <span class="question-selection-icon bank-card-icon">
+                         <i class="fas {{ getQuestionTypeIcon(question.type) }}"></i>
+                       </span>
+                       <span class="bank-question-content">
+                         <strong>{{ question.content || 'Untitled Question' }}</strong>
+                         <small>{{ getQuestionTypeLabel(question.type) }} • {{ question.marks }} marks</small>
+                       </span>
+                       <button type="button" class="add-question-btn" (click)="addSingleQuestionToExam(question)" title="Add to exam">
+                         <i class="fas fa-plus"></i>
+                       </button>
+                     </button>
+                   }
+                 }
+               </div>
             </section>
 
             <section class="settings-sidebar-panel">
@@ -315,7 +320,7 @@
 
       <div class="modal-footer exam-editor-footer compact-editor-footer">
         <div class="footer-action-group">
-          <button type="button" class="btn btn-outline" [disabled]="isCreateMode()" (click)="scheduleExam()">
+          <button type="button" class="btn btn-outline" [disabled]="isCreateMode()" (click)="openScheduleModal()">
             <i class="fas fa-calendar-alt"></i> Schedule
           </button>
           <button type="button" class="btn btn-success" [disabled]="isCreateMode() || exam().questions.length === 0" (click)="publishExam()">
@@ -328,8 +333,82 @@
             <i class="fas fa-spinner fa-spin" [class.d-none]="!isSaving()"></i>
             <span>{{ isSaving() ? 'Saving...' : 'Save Exam' }}</span>
           </button>
-        </div>
       </div>
     </div>
   </div>
+
+  @if (showScheduleModal()) {
+    <div class="modal-overlay" (click)="closeScheduleModal()">
+      <div class="modal-card schedule-modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header schedule-modal-header">
+          <div>
+            <h3>Schedule Exam</h3>
+            <p>{{ exam().title || 'Untitled Exam' }}</p>
+          </div>
+          <button type="button" class="close-btn" (click)="closeScheduleModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="modal-body schedule-modal-body">
+          <div class="schedule-mode-tabs">
+            <button type="button" class="schedule-tab" [class.active]="scheduleMode() === 'range'" (click)="scheduleMode.set('range')">Date Range</button>
+            <button type="button" class="schedule-tab" [class.active]="scheduleMode() === 'permanent'" (click)="scheduleMode.set('permanent')">Permanent</button>
+          </div>
+
+          @if (scheduleMode() === 'range') {
+            <div class="schedule-form-grid">
+              <div class="filter-group">
+                <label>Available From *</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  [ngModel]="scheduleFrom()"
+                  (ngModelChange)="scheduleFrom.set($event)"
+                />
+              </div>
+              <div class="filter-group">
+                <label>Available To</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  [ngModel]="scheduleTo()"
+                  (ngModelChange)="scheduleTo.set($event)"
+                />
+              </div>
+              <div class="filter-group">
+                <label>Time Zone</label>
+                <select
+                  class="form-select"
+                  [ngModel]="scheduleTimeZone()"
+                  (ngModelChange)="scheduleTimeZone.set($event)"
+                >
+                  <option value="Asia/Colombo">Asia/Colombo (GMT+5:30)</option>
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">America/New_York</option>
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="Asia/Singapore">Asia/Singapore</option>
+                  <option value="Australia/Sydney">Australia/Sydney</option>
+                </select>
+              </div>
+            </div>
+          } @else {
+            <div class="permanent-note">
+              <i class="fas fa-infinity"></i>
+              <p>This exam will remain permanently available until manually unpublished or completed.</p>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer schedule-modal-footer">
+          <button type="button" class="btn btn-outline" (click)="closeScheduleModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="confirmSchedule()">
+            <i class="fas fa-spinner fa-spin" [class.d-none]="!isSaving()"></i>
+            <span>{{ isSaving() ? 'Scheduling...' : 'Schedule Exam' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
 }

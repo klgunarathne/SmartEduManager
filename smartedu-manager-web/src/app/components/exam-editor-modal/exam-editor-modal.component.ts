@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { finalize } from 'rxjs';
 import { ToastService } from '../../services/toast.service';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 
@@ -47,9 +48,12 @@ interface Exam {
   id: number;
   title: string;
   description: string;
-  categoryId: number;
+  categoryId: number | null;
   duration: number;
   status: ExamStatus;
+  availableFrom: string | null;
+  availableTo: string | null;
+  timeZone: string | null;
   questions: ExamQuestion[];
 }
 
@@ -114,6 +118,12 @@ interface ApiExamDto {
   totalMarks?: number;
   Status?: string | null;
   status?: string | null;
+  AvailableFrom?: string | null;
+  availableFrom?: string | null;
+  AvailableTo?: string | null;
+  availableTo?: string | null;
+  TimeZone?: string | null;
+  timeZone?: string | null;
   Questions?: ApiExamQuestionDto[] | null;
   questions?: ApiExamQuestionDto[] | null;
 }
@@ -146,8 +156,13 @@ export class ExamEditorModalComponent implements OnChanges {
 
   isLoading = signal(true);
   isSaving = signal(false);
-  showQuestionSelectionModal = signal(false);
   activeExamId = signal(0);
+
+  showScheduleModal = signal(false);
+  scheduleFrom = signal('');
+  scheduleTo = signal('');
+  scheduleTimeZone = signal('Asia/Colombo');
+  scheduleMode = signal<'range' | 'permanent'>('range');
 
   categories = signal<Category[]>([]);
   banks = signal<Question[]>([]);
@@ -156,7 +171,6 @@ export class ExamEditorModalComponent implements OnChanges {
   persistingQuestionIds = signal<Set<number>>(new Set());
 
   selectedQuestionId = signal<number | null>(null);
-  selectedQuestionIds = signal<Set<number>>(new Set());
   addSearchTerm = signal('');
   addCategoryFilter = signal<number | null>(null);
 
@@ -216,7 +230,7 @@ export class ExamEditorModalComponent implements OnChanges {
     if (!this.activeExamId()) {
       this.exam.set({
         ...this.emptyExam(),
-        categoryId: this.categories()[0]?.id || 0
+        categoryId: this.categories()[0]?.id || null
       });
       this.persistedQuestionIds.set(new Set());
       this.selectedQuestionId.set(null);
@@ -254,89 +268,20 @@ export class ExamEditorModalComponent implements OnChanges {
   }
 
   openQuestionSelectionModal(): void {
-    if (!this.activeExamId()) {
-      this.toast.error('Save the exam before adding questions');
-      return;
-    }
-
-    this.selectedQuestionIds.set(new Set());
-    this.addSearchTerm.set('');
-    this.addCategoryFilter.set(null);
-    this.showQuestionSelectionModal.set(true);
+    this.toast.info('Double-click or click + to add questions from the bank');
   }
 
-  closeQuestionSelectionModal(): void {
-    this.selectedQuestionIds.set(new Set());
-    this.showQuestionSelectionModal.set(false);
-  }
-
-  toggleSelectableQuestion(questionId: number): void {
-    this.selectedQuestionIds.update(ids => {
-      const next = new Set(ids);
-      next.has(questionId) ? next.delete(questionId) : next.add(questionId);
-      return next;
-    });
+  toggleSelectableQuestion(): void {
   }
 
   selectAllVisibleQuestions(): void {
-    const selectedIds = new Set(this.selectedQuestionIds());
-    this.filteredSelectableQuestions().forEach(question => selectedIds.add(question.id));
-    this.selectedQuestionIds.set(selectedIds);
   }
 
   clearQuestionSelection(): void {
-    this.selectedQuestionIds.set(new Set());
   }
 
   addSelectedQuestionsToExam(): void {
-    if (!this.activeExamId()) {
-      this.toast.error('Save the exam before adding questions');
-      return;
-    }
-
-    const questionIds = Array.from(this.selectedQuestionIds()).filter(id => !this.isQuestionAlreadyInExam(id));
-
-    if (questionIds.length === 0) {
-      this.toast.error('Selected questions are already in this exam');
-      return;
-    }
-
-    this.persistingQuestionIds.update(ids => new Set([...ids, ...questionIds]));
-
-    let completedRequests = 0;
-    const finishRequest = (questionId: number) => {
-      this.persistingQuestionIds.update(ids => {
-        const next = new Set(ids);
-        next.delete(questionId);
-        return next;
-      });
-
-      completedRequests++;
-      if (completedRequests === questionIds.length) {
-        this.selectedQuestionIds.set(new Set());
-        this.closeQuestionSelectionModal();
-      }
-    };
-
-    questionIds.forEach(questionId => {
-      this.http.post<ApiExamQuestionDto>(`${this.API_URL}/exams/${this.activeExamId()}/questions`, {
-        QuestionId: questionId
-      }).subscribe({
-        next: result => {
-          const examQuestion = this.toExamQuestion(result);
-          this.exam.update(exam => ({
-            ...exam,
-            questions: [...exam.questions, examQuestion]
-          }));
-          this.persistedQuestionIds.update(ids => new Set([...ids, questionId]));
-        },
-        error: err => {
-          console.error('Add question to exam error:', err);
-          this.toast.error(`Failed to add question: ${err.status || 'Unknown error'}`);
-        },
-        complete: () => finishRequest(questionId)
-      });
-    });
+    this.toast.info('Double-click or click + to add questions from the bank');
   }
 
   removeQuestion(questionId: number): void {
@@ -435,6 +380,27 @@ export class ExamEditorModalComponent implements OnChanges {
     });
   }
 
+  moveQuestionUp(examQuestion: ExamQuestion, currentIndex: number): void {
+    if (currentIndex <= 0) return;
+    this.exam.update(exam => {
+      const questions = [...exam.questions];
+      [questions[currentIndex - 1], questions[currentIndex]] = [questions[currentIndex], questions[currentIndex - 1]];
+      return { ...exam, questions };
+    });
+    this.toast.success('Question moved up');
+  }
+
+  moveQuestionDown(examQuestion: ExamQuestion, currentIndex: number): void {
+    const maxIndex = this.exam().questions.length - 1;
+    if (currentIndex >= maxIndex) return;
+    this.exam.update(exam => {
+      const questions = [...exam.questions];
+      [questions[currentIndex], questions[currentIndex + 1]] = [questions[currentIndex + 1], questions[currentIndex]];
+      return { ...exam, questions };
+    });
+    this.toast.success('Question moved down');
+  }
+
   saveExam(): void {
     if (this.isSaving()) {
       return;
@@ -497,13 +463,59 @@ export class ExamEditorModalComponent implements OnChanges {
       this.toast.error('Save the exam before scheduling');
       return;
     }
+    this.toast.info('Use the schedule form in the exam settings to set availability');
+  }
 
-    this.http.patch(`${this.API_URL}/exams/${this.activeExamId()}/schedule`, {}, { responseType: 'text' as any }).subscribe({
+  openScheduleModal(): void {
+    if (!this.activeExamId()) {
+      this.toast.error('Save the exam before scheduling');
+      return;
+    }
+    this.showScheduleModal.set(true);
+  }
+
+  closeScheduleModal(): void {
+    this.showScheduleModal.set(false);
+  }
+
+  confirmSchedule(): void {
+    const tz = this.scheduleTimeZone();
+
+    if (this.scheduleMode() === 'range' && !this.scheduleFrom()) {
+      this.toast.error('Start date/time is required');
+      return;
+    }
+
+    const payload: any = {
+      TimeZone: tz
+    };
+
+    if (this.scheduleMode() === 'range') {
+      payload.AvailableFrom = this.scheduleFrom();
+      payload.AvailableTo = this.scheduleTo();
+    } else {
+      payload.AvailableFrom = new Date().toISOString();
+      payload.AvailableTo = null;
+    }
+
+    this.isSaving.set(true);
+    this.http.patch(`${this.API_URL}/exams/${this.activeExamId()}/schedule`, payload, { responseType: 'text' as any }).subscribe({
       next: () => {
-        this.exam.update(item => ({ ...item, status: 'scheduled' }));
+        this.exam.update(item => ({
+          ...item,
+          status: 'scheduled',
+          availableFrom: payload.AvailableFrom,
+          availableTo: payload.AvailableTo,
+          timeZone: tz
+        }));
+        this.isSaving.set(false);
+        this.closeScheduleModal();
         this.toast.success('Exam scheduled');
       },
-      error: () => this.toast.error('Failed to schedule exam')
+      error: () => {
+        this.toast.error('Failed to schedule exam');
+        this.isSaving.set(false);
+      }
     });
   }
 
@@ -690,23 +702,24 @@ export class ExamEditorModalComponent implements OnChanges {
       }
     };
 
+    if (questions.length === 0) {
+      this.isSaving.set(false);
+      this.saved.emit(exam);
+      this.closeModal();
+      return;
+    }
+
     questions.forEach(question => {
       this.persistingQuestionIds.update(ids => new Set([...ids, question.questionId]));
       this.http.post<ApiExamQuestionDto>(`${this.API_URL}/exams/${this.activeExamId()}/questions`, {
         QuestionId: question.questionId
-      }).subscribe({
+      }).pipe(
+        finalize(() => finish())
+      ).subscribe({
         next: () => this.persistedQuestionIds.update(ids => new Set([...ids, question.questionId])),
         error: err => {
           failedRequests++;
           console.error('Persist exam question error:', err);
-        },
-        complete: () => {
-          this.persistingQuestionIds.update(ids => {
-            const next = new Set(ids);
-            next.delete(question.questionId);
-            return next;
-          });
-          finish();
         }
       });
     });
@@ -721,9 +734,12 @@ export class ExamEditorModalComponent implements OnChanges {
       id: 0,
       title: '',
       description: '',
-      categoryId: 0,
+      categoryId: null,
       duration: 60,
       status: 'draft',
+      availableFrom: null,
+      availableTo: null,
+      timeZone: null,
       questions: []
     };
   }
@@ -770,19 +786,23 @@ export class ExamEditorModalComponent implements OnChanges {
       id: exam.Id ?? exam.id ?? 0,
       title: exam.Title ?? exam.title ?? '',
       description: exam.Description ?? exam.description ?? '',
-      categoryId: exam.CategoryId ?? exam.categoryId ?? 0,
+      categoryId: exam.CategoryId ?? exam.categoryId ?? null,
       duration: exam.Duration ?? exam.duration ?? 60,
       status: this.mapStatusFromApi(exam.Status ?? exam.status ?? 'Draft'),
+      availableFrom: exam.AvailableFrom ?? exam.availableFrom ?? null,
+      availableTo: exam.AvailableTo ?? exam.availableTo ?? null,
+      timeZone: exam.TimeZone ?? exam.timeZone ?? null,
       questions
     };
   }
 
   private toExamQuestion(examQuestion: ApiExamQuestionDto): ExamQuestion {
+    const questionData = examQuestion.Question || examQuestion.question;
     return {
       id: examQuestion.Id ?? examQuestion.id,
       questionId: examQuestion.QuestionId ?? examQuestion.questionId ?? 0,
       order: examQuestion.Order ?? examQuestion.order ?? 0,
-      question: examQuestion.Question ? this.toQuestion(examQuestion.Question) : undefined
+      question: questionData ? this.toQuestion(questionData) : undefined
     };
   }
 

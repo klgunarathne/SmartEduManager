@@ -1,0 +1,178 @@
+<div class="exam-container">
+  @if (!attempt()) {
+    <div class="loading">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Loading exam...</p>
+    </div>
+  } @else {
+    <!-- Header -->
+    <header class="exam-header">
+      <div class="exam-title">
+        <button class="back-btn" (click)="confirmExit()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h1>{{ attempt()!.exam.title }}</h1>
+          <p class="exam-desc">{{ attempt()!.exam.description }}</p>
+        </div>
+      </div>
+      <div class="exam-timer" [class.warning]="timeRemaining() < 300" [class.danger]="timeRemaining() < 60">
+        <i class="fas fa-clock"></i>
+        <span>{{ formatTime(timeRemaining()) }}</span>
+      </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+      <div class="progress-fill" [style.width.%]="progress"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="exam-content">
+      <!-- Question Panel -->
+      <div class="question-panel">
+        <div class="question-card">
+          <div class="question-header">
+            <span class="question-number">Question {{ currentQuestionIndex() + 1 }} of {{ totalQuestions }}</span>
+            <span class="question-marks">{{ currentQuestion.question.marks }} marks</span>
+          </div>
+
+          <div class="question-content">
+            <span class="question-icon" [class]="getQuestionTypeIcon(currentQuestion.question.type)"></span>
+            <p class="question-text">{{ currentQuestion.question.content }}</p>
+          </div>
+
+          @if (currentQuestion.question.type === 'multiple-choice' || currentQuestion.question.type === 'dropdown') {
+            <div class="options-list">
+              @for (option of currentQuestion.question.options; track option; let i = $index) {
+                <label class="option-item" [class.selected]="selectedAnswer === option">
+                  <input
+                    type="radio"
+                    [name]="'q' + currentQuestion.questionId"
+                    [value]="option"
+                    (change)="selectAnswer(option)"
+                  />
+                  <span class="option-marker">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] || (i + 1) }}</span>
+                  <span class="option-text">{{ option }}</span>
+                </label>
+              }
+            </div>
+          } @else if (currentQuestion.question.type === 'checkbox') {
+            <div class="options-list">
+              @for (option of currentQuestion.question.options; track option; let i = $index) {
+                <label class="option-item checkbox-option" [class.selected]="(selectedAnswer || '').includes(option)">
+                  <input
+                    type="checkbox"
+                    [value]="option"
+                    (change)="onCheckboxChange(option, $event)"
+                  />
+                  <span class="option-marker">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] || (i + 1) }}</span>
+                  <span class="option-text">{{ option }}</span>
+                </label>
+              }
+            </div>
+          } @else if (currentQuestion.question.type === 'true-false') {
+            <div class="options-list">
+              <label class="option-item" [class.selected]="selectedAnswer === 'True'">
+                <input type="radio" [name]="'q' + currentQuestion.questionId" value="True" (change)="selectAnswer('True')" />
+                <span class="option-marker">A</span>
+                <span class="option-text">True</span>
+              </label>
+              <label class="option-item" [class.selected]="selectedAnswer === 'False'">
+                <input type="radio" [name]="'q' + currentQuestion.questionId" value="False" (change)="selectAnswer('False')" />
+                <span class="option-marker">B</span>
+                <span class="option-text">False</span>
+              </label>
+            </div>
+          }
+
+          <div class="question-nav">
+            <button class="btn btn-outline" [disabled]="currentQuestionIndex() === 0" (click)="previousQuestion()">
+              <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            <button class="btn btn-primary" [disabled]="currentQuestionIndex() === totalQuestions - 1" (click)="nextQuestion()">
+              Next <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question Navigator Sidebar -->
+      <div class="navigator-panel">
+        <div class="navigator-card">
+          <h3>Questions</h3>
+          <div class="question-grid">
+            @for (q of attempt()!.exam.questions; track q.questionId; let i = $index) {
+              <button
+                class="q-btn"
+                [class.active]="currentQuestionIndex() === i"
+                [class.answered]="isAnswered(q.questionId)"
+                (click)="goToQuestion(i)"
+                [title]="isAnswered(q.questionId) ? 'Answered' : 'Not answered'"
+              >
+                {{ i + 1 }}
+              </button>
+            }
+          </div>
+
+          <div class="navigator-legend">
+            <div class="legend-item">
+              <span class="legend-dot answered"></span>
+              <span>Answered</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot current"></span>
+              <span>Current</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot"></span>
+              <span>Not answered</span>
+            </div>
+          </div>
+
+          <button class="btn btn-submit" (click)="confirmSubmit()">
+            <i class="fas fa-paper-plane"></i> Submit Exam
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Confirmation Modal -->
+    @if (showConfirmSubmit()) {
+      <div class="modal-overlay" (click)="showConfirmSubmit.set(false)">
+        <div class="modal-card confirm-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle"></i> Submit Exam?</h3>
+          </div>
+          <div class="modal-body">
+            <p>You are about to submit your exam. This action cannot be undone.</p>
+            <div class="submit-stats">
+              <div class="stat">
+                <span class="stat-value">{{ answers().size }}</span>
+                <span class="stat-label">Answered</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">{{ totalQuestions - answers().size }}</span>
+                <span class="stat-label">Unanswered</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">{{ totalQuestions }}</span>
+                <span class="stat-label">Total</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline" (click)="showConfirmSubmit.set(false)" [disabled]="isSubmitting()">Go Back</button>
+            <button class="btn btn-submit" [disabled]="isSubmitting()" (click)="submitExam()">
+              @if (isSubmitting()) {
+                <i class="fas fa-spinner fa-spin"></i> Submitting...
+              } @else {
+                <i class="fas fa-check"></i> Confirm Submit
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</div>

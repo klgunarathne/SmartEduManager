@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartEduManager.Api.Data;
 
 #nullable disable
 
-namespace SmartEduManager.Api.Migrations
+namespace SmartEduManager.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260616102006_MakeCategoryIdNullableInExam")]
+    partial class MakeCategoryIdNullableInExam
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -544,77 +547,6 @@ namespace SmartEduManager.Api.Migrations
                     b.ToTable("Exams");
                 });
 
-            modelBuilder.Entity("SmartEduManager.Api.Models.ExamAnswer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ExamAttemptId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsCorrect")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MarksObtained")
-                        .HasColumnType("int");
-
-                    b.Property<int>("QuestionId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SelectedAnswer")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExamAttemptId");
-
-                    b.ToTable("ExamAnswers");
-                });
-
-            modelBuilder.Entity("SmartEduManager.Api.Models.ExamAttempt", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ExamId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Score")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("StartedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StudentId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("SubmittedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TotalMarks")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExamId");
-
-                    b.ToTable("ExamAttempts");
-                });
-
             modelBuilder.Entity("SmartEduManager.Api.Models.ExamQuestion", b =>
                 {
                     b.Property<int>("Id")
@@ -1117,28 +1049,6 @@ namespace SmartEduManager.Api.Migrations
                     b.Navigation("Category");
                 });
 
-            modelBuilder.Entity("SmartEduManager.Api.Models.ExamAnswer", b =>
-                {
-                    b.HasOne("SmartEduManager.Api.Models.ExamAttempt", "ExamAttempt")
-                        .WithMany("Answers")
-                        .HasForeignKey("ExamAttemptId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ExamAttempt");
-                });
-
-            modelBuilder.Entity("SmartEduManager.Api.Models.ExamAttempt", b =>
-                {
-                    b.HasOne("SmartEduManager.Api.Models.Exam", "Exam")
-                        .WithMany()
-                        .HasForeignKey("ExamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Exam");
-                });
-
             modelBuilder.Entity("SmartEduManager.Api.Models.ExamQuestion", b =>
                 {
                     b.HasOne("SmartEduManager.Api.Models.Exam", "Exam")
@@ -1258,11 +1168,6 @@ namespace SmartEduManager.Api.Migrations
             modelBuilder.Entity("SmartEduManager.Api.Models.Exam", b =>
                 {
                     b.Navigation("ExamQuestions");
-                });
-
-            modelBuilder.Entity("SmartEduManager.Api.Models.ExamAttempt", b =>
-                {
-                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("SmartEduManager.Api.Models.Instructor", b =>

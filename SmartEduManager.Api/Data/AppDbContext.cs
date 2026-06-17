@@ -28,8 +28,10 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
        public DbSet<AssignmentMarks> AssignmentMarks { get; set; } = null!;
        public DbSet<QuestionCategory> QuestionCategories { get; set; } = null!;
        public DbSet<Question> Questions { get; set; } = null!;
-       public DbSet<Exam> Exams { get; set; } = null!;
-       public DbSet<ExamQuestion> ExamQuestions { get; set; } = null!;
+        public DbSet<Exam> Exams { get; set; } = null!;
+        public DbSet<ExamQuestion> ExamQuestions { get; set; } = null!;
+        public DbSet<ExamAttempt> ExamAttempts { get; set; } = null!;
+        public DbSet<ExamAnswer> ExamAnswers { get; set; } = null!;
 
      protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -178,10 +180,22 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
              .HasForeignKey(eq => eq.ExamId)
              .OnDelete(DeleteBehavior.Cascade);
 
-         builder.Entity<ExamQuestion>()
-             .HasOne(eq => eq.Question)
-             .WithMany(q => q.ExamQuestions)
-             .HasForeignKey(eq => eq.QuestionId)
-             .OnDelete(DeleteBehavior.Restrict);
-     }
- }
+          builder.Entity<ExamQuestion>()
+              .HasOne(eq => eq.Question)
+              .WithMany(q => q.ExamQuestions)
+              .HasForeignKey(eq => eq.QuestionId)
+              .OnDelete(DeleteBehavior.Restrict);
+
+          builder.Entity<ExamAttempt>()
+              .HasOne(a => a.Exam)
+              .WithMany()
+              .HasForeignKey(a => a.ExamId)
+              .OnDelete(DeleteBehavior.Cascade);
+
+          builder.Entity<ExamAnswer>()
+              .HasOne(a => a.ExamAttempt)
+              .WithMany(ea => ea.Answers)
+              .HasForeignKey(a => a.ExamAttemptId)
+              .OnDelete(DeleteBehavior.Cascade);
+      }
+  }

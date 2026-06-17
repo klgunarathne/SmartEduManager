@@ -28,8 +28,8 @@ namespace SmartEduManager.Api.Models
         public string? TimeZone { get; set; }
 
         // Navigation properties
-        public int CategoryId { get; set; }
-        public QuestionCategory Category { get; set; } = null!;
+        public int? CategoryId { get; set; }
+        public QuestionCategory? Category { get; set; }
         
         public ICollection<ExamQuestion> ExamQuestions { get; set; } = [];
     }
