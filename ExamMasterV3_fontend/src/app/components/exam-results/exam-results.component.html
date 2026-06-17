@@ -1,84 +1,93 @@
-<div class="results-container" *ngIf="result(); else loading">
-  <header class="results-header">
-    <button class="back-btn" (click)="router.navigate(['/exam'])">
-      <i class="fas fa-arrow-left"></i> Back to Dashboard
-    </button>
-    <h1>Exam Results</h1>
-  </header>
-
-  <div class="results-content">
-    <!-- Score Card -->
-    <div class="score-card">
-      <div class="score-circle" [style.borderColor]="gradeColor">
-        <span class="score-value" [style.color]="gradeColor">{{ result()!.percentage.toFixed(1) }}%</span>
-        <span class="grade-label">{{ gradeLabel }}</span>
+<div class="results-shell">
+  @if (isLoading()) {
+    <div class="loading-panel">
+      <span class="spinner"></span>
+      <p>Loading result...</p>
+    </div>
+  } @else if (error()) {
+    <div class="message error">{{ error() }}</div>
+  } @else if (result(); as result) {
+    <header class="results-header">
+      <button class="ghost-btn" type="button" (click)="backToDashboard()">← Back to dashboard</button>
+      <div>
+        <span class="top-kicker">Result summary</span>
+        <h1>{{ result.examTitle }}</h1>
       </div>
+    </header>
+
+    <section class="score-card">
+      <div class="score-circle" [style.borderColor]="gradeColor">
+        <strong [style.color]="gradeColor">{{ result.percentage.toFixed(1) }}%</strong>
+        <span>{{ gradeLabel }}</span>
+      </div>
+
       <div class="score-details">
-        <h2>{{ result()!.examTitle }}</h2>
         <div class="score-stats">
-          <div class="stat">
-            <span class="stat-value">{{ result()!.score }}</span>
-            <span class="stat-label">Score</span>
+          <div>
+            <span>{{ result.score }}</span>
+            <small>Score</small>
           </div>
-          <div class="stat">
-            <span class="stat-value">{{ result()!.totalMarks }}</span>
-            <span class="stat-label">Total Marks</span>
+          <div>
+            <span>{{ result.totalMarks }}</span>
+            <small>Total marks</small>
           </div>
-          <div class="stat">
-            <span class="stat-value">{{ correctCount }}</span>
-            <span class="stat-label">Correct</span>
+          <div>
+            <span>{{ correctCount }}</span>
+            <small>Correct</small>
           </div>
-          <div class="stat">
-            <span class="stat-value">{{ wrongCount }}</span>
-            <span class="stat-label">Wrong</span>
+          <div>
+            <span>{{ wrongCount }}</span>
+            <small>Wrong</small>
           </div>
         </div>
-        <p class="result-time">
-          <i class="fas fa-clock"></i> 
-          Submitted: {{ result()!.submittedAt | date:'medium' }}
-        </p>
-      </div>
-    </div>
 
-    <!-- Answer Review -->
-    <div class="review-section">
-      <h3><i class="fas fa-list-check"></i> Answer Review</h3>
-      <div class="review-list">
-        @for (answer of result()!.answers; track answer.questionId; let i = $index) {
-          <div class="review-card" [class.correct]="answer.isCorrect" [class.wrong]="!answer.isCorrect">
-            <div class="review-header">
-              <span class="q-number">Q{{ i + 1 }}</span>
-              <span class="q-status" [class]="answer.isCorrect ? 'correct' : 'wrong'">
-                <i class="fas {{ answer.isCorrect ? 'fa-check-circle' : 'fa-times-circle' }}"></i>
-                {{ answer.isCorrect ? 'Correct' : 'Incorrect' }}
-              </span>
-            </div>
-            <p class="q-content">{{ answer.questionContent }}</p>
-            <div class="q-answers">
-              <div class="answer-row">
-                <span class="label">Your Answer:</span>
-                <span class="value" [class.wrong]="!answer.isCorrect">{{ answer.selectedAnswer || 'Not answered' }}</span>
+        <p>Submitted: {{ formatDate(result.submittedAt) }}</p>
+      </div>
+    </section>
+
+    <section class="review-section">
+      <div class="section-heading">
+        <div>
+          <span class="section-label">Review</span>
+          <h2>Answer review</h2>
+        </div>
+      </div>
+
+      @if (result.answers.length === 0) {
+        <div class="empty-state">
+          <h3>No answer details available</h3>
+          <p>The exam was submitted, but the server did not return answer-level details.</p>
+        </div>
+      } @else {
+        <div class="review-list">
+          @for (answer of result.answers; track answer.questionId; let i = $index) {
+            <article class="review-card" [class.correct]="answer.isCorrect" [class.wrong]="!answer.isCorrect">
+              <div class="review-head">
+                <span>Q{{ i + 1 }}</span>
+                <strong>{{ answer.isCorrect ? 'Correct' : 'Incorrect' }}</strong>
               </div>
-              @if (!answer.isCorrect) {
+
+              <p>{{ answer.questionContent }}</p>
+
+              <div class="answer-row">
+                <span>Your answer</span>
+                <strong [class.wrong-text]="!answer.isCorrect">{{ answerLabel(answer) }}</strong>
+              </div>
+
+              @if (!answer.isCorrect && answer.correctAnswer) {
                 <div class="answer-row">
-                  <span class="label">Correct Answer:</span>
-                  <span class="value correct-value">{{ answer.correctAnswer }}</span>
+                  <span>Correct answer</span>
+                  <strong>{{ answer.correctAnswer }}</strong>
                 </div>
               }
-            </div>
-            <div class="q-marks">
-              <span>{{ answer.marksObtained }} / {{ answer.totalMarks }} marks</span>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
-</div>
 
-<ng-template #loading>
-  <div class="loading">
-    <i class="fas fa-spinner fa-spin"></i>
-    <p>Loading results...</p>
-  </div>
-</ng-template>
+              <div class="marks">
+                {{ answer.marksObtained }} / {{ answer.totalMarks }} marks
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>

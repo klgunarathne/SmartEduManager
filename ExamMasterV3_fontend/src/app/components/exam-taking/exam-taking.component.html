@@ -1,177 +1,208 @@
-<div class="exam-container">
+<div class="exam-shell">
   @if (!attempt()) {
-    <div class="loading">
-      <i class="fas fa-spinner fa-spin"></i>
-      <p>Loading exam...</p>
+    <div class="loading-panel">
+      <span class="spinner"></span>
+      <p>Loading exam paper...</p>
+      @if (submitError()) {
+        <small>{{ submitError() }}</small>
+      }
     </div>
   } @else {
-    <!-- Header -->
     <header class="exam-header">
-      <div class="exam-title">
-        <button class="back-btn" (click)="confirmExit()">
-          <i class="fas fa-arrow-left"></i>
-        </button>
+      <div class="exam-heading">
+        <button class="icon-btn" type="button" (click)="confirmExit()" aria-label="Exit exam">←</button>
         <div>
-          <h1>{{ attempt()!.exam.title }}</h1>
-          <p class="exam-desc">{{ attempt()!.exam.description }}</p>
+          <span class="top-kicker">Question {{ currentQuestionIndex() + 1 }} of {{ totalQuestions }}</span>
+          <h1>{{ examTitle }}</h1>
+          @if (examDescription) {
+            <p>{{ examDescription }}</p>
+          }
         </div>
       </div>
-      <div class="exam-timer" [class.warning]="timeRemaining() < 300" [class.danger]="timeRemaining() < 60">
-        <i class="fas fa-clock"></i>
-        <span>{{ formatTime(timeRemaining()) }}</span>
+
+      <div class="timer-card" [class.warning]="timeRemaining() <= 300" [class.danger]="timeRemaining() <= 60">
+        <span>Time left</span>
+        <strong>{{ formatTime(timeRemaining()) }}</strong>
       </div>
     </header>
 
-    <!-- Progress Bar -->
-    <div class="progress-bar">
-      <div class="progress-fill" [style.width.%]="progress"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar" [style.width.%]="progress"></div>
     </div>
 
-    <!-- Main Content -->
-    <div class="exam-content">
-      <!-- Question Panel -->
-      <div class="question-panel">
-        <div class="question-card">
-          <div class="question-header">
-            <span class="question-number">Question {{ currentQuestionIndex() + 1 }} of {{ totalQuestions }}</span>
-            <span class="question-marks">{{ currentQuestion.question!.marks }} marks</span>
-          </div>
+    <main class="exam-layout">
+      <section class="question-panel">
+        @if (currentQuestion; as question) {
+          @if (question.question; as item) {
+            <article class="question-card">
+              <div class="question-meta">
+                <span>{{ questionTypeLabel(item.type) }}</span>
+                <span>{{ item.marks }} marks</span>
+              </div>
 
-          <div class="question-content">
-            <span class="question-icon" [class]="getQuestionTypeIcon(currentQuestion.question!.type)"></span>
-            <p class="question-text">{{ currentQuestion.question!.content }}</p>
-          </div>
+              <h2>{{ item.content }}</h2>
 
-          @if (currentQuestion.question!.type === 'multiple-choice' || currentQuestion.question!.type === 'dropdown') {
-            <div class="options-list">
-              @for (option of currentQuestion.question!.options; track option; let i = $index) {
-                <label class="option-item" [class.selected]="selectedAnswer === option">
-                  <input
-                    type="radio"
-                    [name]="'q' + currentQuestion.questionId"
-                    [value]="option"
-                    (change)="selectAnswer(option)"
-                  />
-                  <span class="option-marker">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] || (i + 1) }}</span>
-                  <span class="option-text">{{ option }}</span>
-                </label>
+              @if (isOptionQuestion(item.type)) {
+                <div class="options-grid">
+                  @for (option of item.options; track option; let i = $index) {
+                    <label class="option-card" [class.selected]="selectedAnswer === option">
+                      <input
+                        type="radio"
+                        [name]="'question-' + question.questionId"
+                        [value]="option"
+                        [checked]="selectedAnswer === option"
+                        (change)="selectAnswer(option)"
+                      >
+                      <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][i] || i + 1 }}</span>
+                      <span class="option-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (isCheckboxQuestion(item.type)) {
+                <div class="options-grid">
+                  @for (option of item.options; track option; let i = $index) {
+                    <label class="option-card" [class.selected]="(selectedAnswer || '').split(',').includes(option)">
+                      <input
+                        type="checkbox"
+                        [value]="option"
+                        [checked]="(selectedAnswer || '').split(',').includes(option)"
+                        (change)="onCheckboxChange(option, $event)"
+                      >
+                      <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][i] || i + 1 }}</span>
+                      <span class="option-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (isTrueFalseQuestion(item.type)) {
+                <div class="option-grid-two">
+                  @for (option of ['True', 'False']; track option) {
+                    <label class="option-card" [class.selected]="selectedAnswer === option">
+                      <input type="radio" [name]="'question-' + question.questionId" [value]="option" [checked]="selectedAnswer === option" (change)="selectAnswer(option)">
+                      <span class="option-letter">{{ option === 'True' ? 'T' : 'F' }}</span>
+                      <span class="option-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (isScaleQuestion(item.type)) {
+                <input
+                  class="range-input"
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="1"
+                  [ngModel]="selectedAnswer || '3'"
+                  (ngModelChange)="onTextInput(question.questionId, $event)"
+                >
+                <div class="scale-labels">
+                  <span>1</span>
+                  <span>2</span>
+                  <span>3</span>
+                  <span>4</span>
+                  <span>5</span>
+                </div>
+              } @else if (isDateQuestion(item.type)) {
+                <input class="answer-input" type="date" [ngModel]="selectedAnswer || ''" (ngModelChange)="onTextInput(question.questionId, $event)">
+              } @else if (isTimeQuestion(item.type)) {
+                <input class="answer-input" type="time" [ngModel]="selectedAnswer || ''" (ngModelChange)="onTextInput(question.questionId, $event)">
+              } @else {
+                <textarea
+                  class="answer-input answer-textarea"
+                  rows="6"
+                  placeholder="Type your answer here..."
+                  [ngModel]="selectedAnswer || ''"
+                  (ngModelChange)="onTextInput(question.questionId, $event)"
+                ></textarea>
               }
-            </div>
-          } @else if (currentQuestion.question!.type === 'checkbox') {
-            <div class="options-list">
-              @for (option of currentQuestion.question!.options; track option; let i = $index) {
-                <label class="option-item checkbox-option" [class.selected]="(selectedAnswer || '').includes(option)">
-                  <input
-                    type="checkbox"
-                    [value]="option"
-                    (change)="onCheckboxChange(option, $event)"
-                  />
-                  <span class="option-marker">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] || (i + 1) }}</span>
-                  <span class="option-text">{{ option }}</span>
-                </label>
+
+              @if (item.explanation) {
+                <details class="hint-box">
+                  <summary>Hint</summary>
+                  <p>{{ item.explanation }}</p>
+                </details>
               }
-            </div>
-          } @else if (currentQuestion.question!.type === 'true-false') {
-            <div class="options-list">
-              <label class="option-item" [class.selected]="selectedAnswer === 'True'">
-                <input type="radio" [name]="'q' + currentQuestion.questionId" value="True" (change)="selectAnswer('True')" />
-                <span class="option-marker">A</span>
-                <span class="option-text">True</span>
-              </label>
-              <label class="option-item" [class.selected]="selectedAnswer === 'False'">
-                <input type="radio" [name]="'q' + currentQuestion.questionId" value="False" (change)="selectAnswer('False')" />
-                <span class="option-marker">B</span>
-                <span class="option-text">False</span>
-              </label>
-            </div>
+            </article>
           }
+        }
 
-          <div class="question-nav">
-            <button class="btn btn-outline" [disabled]="currentQuestionIndex() === 0" (click)="previousQuestion()">
-              <i class="fas fa-chevron-left"></i> Previous
-            </button>
-            <button class="btn btn-primary" [disabled]="currentQuestionIndex() === totalQuestions - 1" (click)="nextQuestion()">
-              Next <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
+        <div class="question-nav">
+          <button class="secondary-btn" type="button" [disabled]="currentQuestionIndex() === 0" (click)="previousQuestion()">Previous</button>
+          <button class="primary-btn" type="button" [disabled]="currentQuestionIndex() === totalQuestions - 1" (click)="nextQuestion()">Next</button>
         </div>
-      </div>
 
-      <!-- Question Navigator Sidebar -->
-      <div class="navigator-panel">
+        @if (submitError()) {
+          <div class="message error">{{ submitError() }}</div>
+        }
+      </section>
+
+      <aside class="navigator-panel">
         <div class="navigator-card">
-          <h3>Questions</h3>
+          <div class="navigator-head">
+            <div>
+              <span class="section-label">Progress</span>
+              <h2>Questions</h2>
+            </div>
+            <strong>{{ answeredCount }}/{{ totalQuestions }}</strong>
+          </div>
+
           <div class="question-grid">
-            @for (q of attempt()!.exam.questions; track q.questionId; let i = $index) {
+            @for (q of questions; track q.questionId; let i = $index) {
               <button
                 class="q-btn"
+                type="button"
                 [class.active]="currentQuestionIndex() === i"
                 [class.answered]="isAnswered(q.questionId)"
                 (click)="goToQuestion(i)"
-                [title]="isAnswered(q.questionId) ? 'Answered' : 'Not answered'"
               >
                 {{ i + 1 }}
               </button>
             }
           </div>
 
-          <div class="navigator-legend">
-            <div class="legend-item">
-              <span class="legend-dot answered"></span>
-              <span>Answered</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot current"></span>
-              <span>Current</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot"></span>
-              <span>Not answered</span>
-            </div>
+          <div class="legend">
+            <span><i></i> Answered</span>
+            <span><i class="current"></i> Current</span>
+            <span><i></i> Pending</span>
           </div>
 
-          <button class="btn btn-submit" (click)="confirmSubmit()">
-            <i class="fas fa-paper-plane"></i> Submit Exam
+          <button class="submit-btn" type="button" [disabled]="isSubmitting() || totalQuestions === 0" (click)="confirmSubmit()">
+            {{ isSubmitting() ? 'Submitting...' : 'Submit exam' }}
           </button>
         </div>
-      </div>
-    </div>
+      </aside>
+    </main>
 
-    <!-- Submit Confirmation Modal -->
     @if (showConfirmSubmit()) {
-      <div class="modal-overlay" (click)="showConfirmSubmit.set(false)">
-        <div class="modal-card confirm-card" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h3><i class="fas fa-exclamation-triangle"></i> Submit Exam?</h3>
+      <div class="modal-backdrop" (click)="showConfirmSubmit.set(false)">
+        <section class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <span class="section-label">Final check</span>
+            <h2>Submit exam?</h2>
           </div>
-          <div class="modal-body">
-            <p>You are about to submit your exam. This action cannot be undone.</p>
-            <div class="submit-stats">
-              <div class="stat">
-                <span class="stat-value">{{ answers().size }}</span>
-                <span class="stat-label">Answered</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value">{{ totalQuestions - answers().size }}</span>
-                <span class="stat-label">Unanswered</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value">{{ totalQuestions }}</span>
-                <span class="stat-label">Total</span>
-              </div>
+
+          <p>You will not be able to change answers after submission.</p>
+
+          <div class="submit-stats">
+            <div>
+              <strong>{{ answeredCount }}</strong>
+              <span>Answered</span>
+            </div>
+            <div>
+              <strong>{{ unansweredCount }}</strong>
+              <span>Unanswered</span>
+            </div>
+            <div>
+              <strong>{{ totalQuestions }}</strong>
+              <span>Total</span>
             </div>
           </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline" (click)="showConfirmSubmit.set(false)" [disabled]="isSubmitting()">Go Back</button>
-            <button class="btn btn-submit" [disabled]="isSubmitting()" (click)="submitExam()">
-              @if (isSubmitting()) {
-                <i class="fas fa-spinner fa-spin"></i> Submitting...
-              } @else {
-                <i class="fas fa-check"></i> Confirm Submit
-              }
+
+          <div class="modal-actions">
+            <button class="secondary-btn" type="button" (click)="showConfirmSubmit.set(false)" [disabled]="isSubmitting()">Review answers</button>
+            <button class="primary-btn" type="button" (click)="submitExam()" [disabled]="isSubmitting()">
+              {{ isSubmitting() ? 'Submitting...' : 'Confirm submit' }}
             </button>
           </div>
-        </div>
+        </section>
       </div>
     }
   }

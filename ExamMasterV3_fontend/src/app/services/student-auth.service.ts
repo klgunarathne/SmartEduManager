@@ -1,161 +1,157 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { catchError, finalize, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-
-export interface StudentCredentials {
-  studentId: number;
-  studentName: string;
-  username: string;
-  password: string;
-  email: string;
-  status: string;
-}
-
-export interface GenerateCredentialsDto {
-  batchId?: number;
-  studentIds?: number[];
-  defaultPassword?: string;
-  generateRandomPassword?: boolean;
-  sendEmail?: boolean;
-}
-
-export interface StudentLoginDto {
-  username: string;
-  password: string;
-  isStudentLogin?: boolean;
-}
-
-export interface StudentUser {
-  id?: number;
-  studentId?: number;
-  firstName?: string;
-  lastName?: string;
-  nameWithInitials?: string;
-  fullName?: string;
-  email?: string;
-  username?: string;
-  misNo?: string;
-  batchId?: number;
-  batchCode?: string;
-}
+import {
+  ApiLoginResponse,
+  ApiUserDto,
+  StudentUser
+} from '../models/exam.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class StudentAuthService {
   private readonly API_URL = environment.apiUrl;
+  private readonly tokenKey = 'exam-master-access-token';
+  private readonly refreshTokenKey = 'exam-master-refresh-token';
+  private readonly userKey = 'exam-master-student-user';
 
-  studentUser = signal<StudentUser | null>(null);
+  currentUser = signal<StudentUser | null>(null);
   isAuthenticated = signal(false);
+  isLoading = signal(false);
+  error = signal<string | null>(null);
 
   constructor(private http: HttpClient) {
     this.restoreSession();
   }
 
-  private restoreSession(): void {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      this.isAuthenticated.set(true);
-      const stored = localStorage.getItem('student_user');
-      if (stored) {
-        try {
-          this.studentUser.set(JSON.parse(stored));
-        } catch {
-          this.studentUser.set(null);
-        }
-      }
-    }
-  }
+  login(username: string, password: string): Observable<StudentUser> {
+    this.isLoading.set(true);
+    this.error.set(null);
 
-  generateCredentials(dto: GenerateCredentialsDto): Observable<StudentCredentials[]> {
-    return this.http.post<StudentCredentials[]>(`${this.API_URL}/students/generate-credentials`, dto).pipe(
-      catchError(error => {
-        console.error('Error generating credentials:', error);
-        return throwError(() => error);
-      })
-    );
-  }
-
-  login(credentials: StudentLoginDto): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/auth/login`, {
-      email: credentials.username,
-      password: credentials.password,
+    return this.http.post<ApiLoginResponse>(`${this.API_URL}/auth/login`, {
+      email: username.trim(),
+      password,
       isStudentLogin: true
     }).pipe(
-      tap((response) => {
+      tap(response => {
+        const user = this.mapUser(response.user ?? response.User);
         const baseUser: StudentUser = {
-          id: response.user?.id,
-          firstName: response.user?.firstName,
-          lastName: response.user?.lastName,
-          fullName: response.user?.fullName,
-          email: response.user?.email,
-          username: response.user?.username,
+          ...user,
+          username: username.trim(),
+          misNo: username.trim()
         };
-        this.studentUser.set(baseUser);
+
+        this.currentUser.set(baseUser);
         this.isAuthenticated.set(true);
-        localStorage.setItem('access_token', response.accessToken);
-        
-        this.fetchStudentDetails(credentials.username, baseUser).subscribe({
-          next: (student) => {
-            const fullUser = { ...baseUser, ...student };
-            this.studentUser.set(fullUser);
-            localStorage.setItem('student_user', JSON.stringify(fullUser));
-          },
-          error: (err) => {
-            console.log('Could not fetch student details:', err);
-            localStorage.setItem('student_user', JSON.stringify(baseUser));
-          }
-        });
+        localStorage.setItem(this.tokenKey, response.accessToken ?? response.AccessToken ?? '');
+        localStorage.setItem(this.refreshTokenKey, response.refreshToken ?? response.RefreshToken ?? '');
+        localStorage.setItem(this.userKey, JSON.stringify(baseUser));
+      }),
+      switchMap(response => {
+        const baseUser = this.currentUser();
+
+        return this.fetchStudentDetails(username).pipe(
+          map(student => {
+            const mergedUser = { ...(baseUser ?? {}), ...student };
+            this.currentUser.set(mergedUser);
+            localStorage.setItem(this.userKey, JSON.stringify(mergedUser));
+            return mergedUser;
+          }),
+          catchError(() => {
+            const mergedUser = { ...(baseUser ?? {}), username: username.trim(), misNo: username.trim() };
+            this.currentUser.set(mergedUser);
+            localStorage.setItem(this.userKey, JSON.stringify(mergedUser));
+            return of(mergedUser);
+          })
+        );
       }),
       catchError(error => {
-        console.error('Login error:', error);
+        this.error.set(this.extractErrorMessage(error));
         return throwError(() => error);
-      })
+      }),
+      finalize(() => this.isLoading.set(false))
     );
   }
 
-  fetchStudentDetails(username: string, baseUser: StudentUser): Observable<Partial<StudentUser>> {
-    return this.http.get<any>(`${this.API_URL}/students/by-nic/${username}`).pipe(
-      catchError(() => {
-        return this.http.get<any>(`${this.API_URL}/students/by-mis/${baseUser.id}`);
-      })
-    );
-  }
-
-  checkBackend(): Observable<any> {
-    return this.http.get(`${this.API_URL}/health`).pipe(
-      catchError(error => {
-        return throwError(() => new Error('Backend not reachable'));
-      })
-    );
+  fetchStudentDetails(username: string): Observable<Partial<StudentUser>> {
+    return this.http.get<Partial<StudentUser>>(`${this.API_URL}/students/by-nic/${encodeURIComponent(username.trim())}`);
   }
 
   logout(): void {
-    this.studentUser.set(null);
+    this.currentUser.set(null);
     this.isAuthenticated.set(false);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('student_user');
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+    localStorage.removeItem(this.userKey);
   }
 
   clearSession(): void {
-    this.studentUser.set(null);
-    this.isAuthenticated.set(false);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('student_user');
+    this.logout();
   }
 
   getToken(): string | null {
-    return localStorage.getItem('access_token');
+    return localStorage.getItem(this.tokenKey);
   }
 
-  getStudentUser(): StudentUser | null {
-    if (!this.studentUser()) {
-      const stored = localStorage.getItem('student_user');
+  getCurrentUser(): StudentUser | null {
+    if (!this.currentUser()) {
+      const stored = localStorage.getItem(this.userKey);
       if (stored) {
-        this.studentUser.set(JSON.parse(stored));
+        try {
+          this.currentUser.set(JSON.parse(stored));
+        } catch {
+          this.currentUser.set(null);
+          this.isAuthenticated.set(false);
+        }
       }
     }
-    return this.studentUser();
+
+    return this.currentUser();
+  }
+
+  private restoreSession(): void {
+    const token = localStorage.getItem(this.tokenKey);
+
+    if (!token) {
+      return;
+    }
+
+    this.isAuthenticated.set(true);
+    this.getCurrentUser();
+  }
+
+  private mapUser(user: ApiUserDto | undefined): StudentUser {
+    return {
+      id: user?.id ?? user?.Id,
+      firstName: user?.firstName ?? user?.FirstName,
+      lastName: user?.lastName ?? user?.LastName,
+      email: user?.email ?? user?.Email,
+      username: user?.username ?? user?.Username,
+      roles: user?.roles ?? user?.Roles
+    };
+  }
+
+  private extractErrorMessage(error: HttpErrorResponse | unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 0) {
+        return 'Unable to connect to the exam server. Please check your network or API URL.';
+      }
+
+      if (typeof error.error === 'string') {
+        return error.error;
+      }
+
+      if (error.error?.message) {
+        return error.error.message;
+      }
+
+      if (Array.isArray(error.error?.errors)) {
+        return error.error.errors.map((item: { description?: string }) => item.description).filter(Boolean).join(' ');
+      }
+    }
+
+    return 'Something went wrong. Please try again.';
   }
 }

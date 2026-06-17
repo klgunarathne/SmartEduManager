@@ -1,104 +1,108 @@
-<div class="dashboard">
-  <!-- Header -->
-  <header class="dashboard-header">
-    <div class="header-content">
-      <h1><i class="fas fa-graduation-cap"></i> ExamMaster</h1>
-      <div class="user-info">
-        <span class="welcome-text">Welcome, {{ displayName }}</span>
-        <button class="btn btn-logout" (click)="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
+<div class="dashboard-shell">
+  <header class="dashboard-top">
+    <div>
+      <span class="top-kicker">ExamMaster</span>
+      <h1>Your exam dashboard</h1>
+    </div>
+
+    <div class="profile-actions">
+      <div class="profile-pill">
+        <span class="avatar">{{ displayName.charAt(0) }}</span>
+        <div>
+          <strong>{{ displayName }}</strong>
+          <small>{{ batchCode }}</small>
+        </div>
       </div>
+      <button class="ghost-btn" type="button" (click)="logout()">Logout</button>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="dashboard-content">
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-id-badge"></i>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">MIS No</span>
-          <span class="stat-value">{{ misNo }}</span>
-        </div>
+  <section class="student-strip">
+    <div class="student-tile">
+      <span>MIS No</span>
+      <strong>{{ misNo }}</strong>
+    </div>
+    <div class="student-tile">
+      <span>Batch</span>
+      <strong>{{ batchCode }}</strong>
+    </div>
+    <div class="student-tile wide">
+      <span>Email</span>
+      <strong>{{ email }}</strong>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="section-heading">
+      <div>
+        <span class="section-label">Live exams</span>
+        <h2>Available exams</h2>
       </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-users"></i>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">Batch</span>
-          <span class="stat-value">{{ batchCode }}</span>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-envelope"></i>
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">Email</span>
-          <span class="stat-value email">{{ studentUser()?.email || 'N/A' }}</span>
-        </div>
-      </div>
+      <span class="count-pill">{{ exams().length }} found</span>
     </div>
 
-    <!-- Exams Section -->
-    <section class="exams-section">
-      <div class="section-header">
-        <h2><i class="fas fa-clipboard-list"></i> Available Exams</h2>
+    @if (isLoading()) {
+      <div class="loading-panel">
+        <span class="spinner"></span>
+        <p>Loading your exams...</p>
       </div>
-      
-      <div class="exams-grid">
-        @if (exams().length === 0) {
-          <div class="empty-state">
-            <i class="fas fa-folder-open"></i>
-            <p>No exams available at the moment. Please check back later.</p>
-          </div>
-        } @else {
-          @for (exam of exams(); track exam.id) {
-            <div class="exam-card" [class.active]="exam.status === 'active'" [class.scheduled]="exam.status === 'scheduled'">
-              <div class="exam-header">
+    } @else if (error()) {
+      <div class="message error">
+        {{ error() }}
+      </div>
+    } @else if (exams().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">E</div>
+        <h3>No exams available</h3>
+        <p>There are no active or scheduled exams for your student account right now.</p>
+      </div>
+    } @else {
+      <div class="exam-grid">
+        @for (exam of exams(); track exam.id) {
+          <article class="exam-card" [class.ready]="canStart(exam)" [class.soon]="!canStart(exam)">
+            <div class="exam-card-head">
+              <div>
+                <span class="category">{{ exam.categoryName }}</span>
                 <h3>{{ exam.title }}</h3>
-                <span class="exam-status" [class]="exam.status">
-                  {{ exam.status === 'active' ? 'Available Now' : 'Scheduled' }}
-                </span>
               </div>
-              <div class="exam-meta">
-                <div class="meta-item">
-                  <i class="fas fa-clock"></i>
-                  <span>{{ exam.duration }} minutes</span>
-                </div>
-                <div class="meta-item">
-                  <i class="fas fa-question-circle"></i>
-                  <span>{{ exam.questionCount }} questions</span>
-                </div>
-                @if (exam.availableFrom) {
-                  <div class="meta-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Starts: {{ exam.availableFrom | date:'short' }}</span>
-                  </div>
-                }
-                @if (exam.availableTo) {
-                  <div class="meta-item">
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Ends: {{ exam.availableTo | date:'short' }}</span>
-                  </div>
-                }
-              </div>
-              <button class="btn btn-start" 
-                      [disabled]="exam.status !== 'active' && exam.status !== 'scheduled'"
-                      (click)="startExam(exam.id)">
-                <i class="fas fa-play"></i> Start Exam
-              </button>
+              <span class="status" [class.active]="exam.status === 'active'" [class.scheduled]="exam.status === 'scheduled'">
+                {{ examStatusLabel(exam) }}
+              </span>
             </div>
-          }
+
+            @if (exam.description) {
+              <p class="exam-description">{{ exam.description }}</p>
+            }
+
+            <div class="exam-meta">
+              <span>{{ exam.questionCount }} questions</span>
+              <span>{{ exam.duration }} min</span>
+              <span>{{ exam.totalMarks }} marks</span>
+            </div>
+
+            <div class="time-window">
+              @if (exam.availableFrom) {
+                <span>From: {{ formatDate(exam.availableFrom) }}</span>
+              }
+              @if (exam.availableTo) {
+                <span>To: {{ formatDate(exam.availableTo) }}</span>
+              }
+              @if (!exam.availableFrom && !exam.availableTo) {
+                <span>No scheduled window published</span>
+              }
+            </div>
+
+            <button
+              class="primary-btn"
+              type="button"
+              [disabled]="!canStart(exam)"
+              (click)="startExam(exam.id)"
+            >
+              {{ startButtonText(exam) }}
+            </button>
+          </article>
         }
       </div>
-    </section>
-  </main>
+    }
+  </section>
 </div>

@@ -1,31 +1,8 @@
-import { Component, signal, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Router, ActivatedRoute } from '@angular/router';
-import { environment } from '../../../environments/environment';
-
-interface ExamAnswerResultDto {
-  questionId: number;
-  questionContent: string;
-  selectedAnswer?: string;
-  correctAnswer: string;
-  isCorrect: boolean;
-  marksObtained: number;
-  totalMarks: number;
-}
-
-interface ExamResult {
-  id: number;
-  examId: number;
-  examTitle: string;
-  score: number;
-  totalMarks: number;
-  percentage: number;
-  status: string;
-  startedAt: string;
-  submittedAt: string;
-  answers: ExamAnswerResultDto[];
-}
+import { ActivatedRoute, Router } from '@angular/router';
+import { ExamAnswerResult, ExamResult } from '../../models/exam.models';
+import { ExamService } from '../../services/exam.service';
 
 @Component({
   selector: 'app-exam-results',
@@ -35,51 +12,114 @@ interface ExamResult {
   styleUrl: './exam-results.component.scss'
 })
 export class ExamResultsComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly examService = inject(ExamService);
+
   result = signal<ExamResult | null>(null);
-  router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private http = inject(HttpClient);
+  isLoading = signal(true);
+  error = signal<string | null>(null);
 
   ngOnInit(): void {
     const resultId = Number(this.route.snapshot.paramMap.get('resultId'));
+
     if (!resultId) {
       this.router.navigate(['/exam']);
       return;
     }
+
     this.loadResult(resultId);
   }
 
   loadResult(resultId: number): void {
-    this.http.get<ExamResult>(`${environment.apiUrl}/exam-attempts/results/${resultId}`).subscribe({
-      next: (data) => this.result.set(data),
-      error: (err) => {
-        console.error('Failed to load result:', err);
-        this.router.navigate(['/exam']);
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    this.examService.getResult(resultId).subscribe({
+      next: data => {
+        this.result.set(data);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.error.set('Unable to load result. Please return to the dashboard and try again.');
+        this.isLoading.set(false);
       }
     });
   }
 
   get gradeColor(): string {
-    const pct = this.result()?.percentage || 0;
-    if (pct >= 80) return '#10b981';
-    if (pct >= 60) return '#3b82f6';
-    if (pct >= 40) return '#f59e0b';
-    return '#ef4444';
+    const percentage = this.result()?.percentage ?? 0;
+
+    if (percentage >= 80) {
+      return '#16a34a';
+    }
+
+    if (percentage >= 60) {
+      return '#2563eb';
+    }
+
+    if (percentage >= 40) {
+      return '#d97706';
+    }
+
+    return '#dc2626';
   }
 
   get gradeLabel(): string {
-    const pct = this.result()?.percentage || 0;
-    if (pct >= 80) return 'Excellent';
-    if (pct >= 60) return 'Good';
-    if (pct >= 40) return 'Pass';
-    return 'Fail';
+    const percentage = this.result()?.percentage ?? 0;
+
+    if (percentage >= 80) {
+      return 'Excellent';
+    }
+
+    if (percentage >= 60) {
+      return 'Good';
+    }
+
+    if (percentage >= 40) {
+      return 'Pass';
+    }
+
+    return 'Needs improvement';
   }
 
   get correctCount(): number {
-    return this.result()?.answers.filter(a => a.isCorrect).length || 0;
+    return this.result()?.answers.filter(answer => answer.isCorrect).length ?? 0;
   }
 
   get wrongCount(): number {
-    return (this.result()?.answers.length || 0) - this.correctCount;
+    return (this.result()?.answers.length ?? 0) - this.correctCount;
+  }
+
+  formatDate(value: string | null | undefined): string {
+    if (!value) {
+      return 'Not submitted';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return 'Not submitted';
+    }
+
+    return date.toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  answerLabel(answer: ExamAnswerResult): string {
+    if (answer.selectedAnswer === null || answer.selectedAnswer === undefined || answer.selectedAnswer.trim() === '') {
+      return 'Not answered';
+    }
+
+    return answer.selectedAnswer;
+  }
+
+  backToDashboard(): void {
+    this.router.navigate(['/exam']);
   }
 }
