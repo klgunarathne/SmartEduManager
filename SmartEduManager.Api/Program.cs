@@ -51,7 +51,7 @@ if (jwtKeyBytes.Length < 32)
 // Configure EF Core and Identity
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    var connectionString = builder.Configuration.GetConnectionString("ServerConnection")
         ?? Environment.GetEnvironmentVariable("SMARTEDU_DB_CONNECTION_STRING")
         ?? "Server=localhost;Database=SmartEduManager;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
 
