@@ -308,6 +308,15 @@ export interface ExamResult {
 
 export function normalizeQuestionType(value: string | null | undefined): QuestionType {
   const normalized = (value ?? 'text').toLowerCase().trim();
+  const aliases: Record<string, QuestionType> = {
+    multiplechoice: 'multiple-choice',
+    'single-choice': 'multiple-choice',
+    mcq: 'multiple-choice',
+    truefalse: 'true-false',
+    boolean: 'true-false'
+  };
+  const canonical = aliases[normalized] ?? normalized;
+
   const knownTypes: QuestionType[] = [
     'multiple-choice',
     'checkbox',
@@ -322,8 +331,8 @@ export function normalizeQuestionType(value: string | null | undefined): Questio
     'text'
   ];
 
-  if (knownTypes.includes(normalized as QuestionType)) {
-    return normalized as QuestionType;
+  if (knownTypes.includes(canonical as QuestionType)) {
+    return canonical as QuestionType;
   }
 
   return 'text';

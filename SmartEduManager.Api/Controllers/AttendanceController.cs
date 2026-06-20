@@ -12,7 +12,7 @@ namespace SmartEduManager.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Instructor")]
+[Authorize]
 public class AttendanceController : ControllerBase
 {
     private readonly IAttendanceRepository _repository;
@@ -45,6 +45,7 @@ public class AttendanceController : ControllerBase
     }
 
     [HttpGet("student/{studentId}")]
+    [Authorize(Roles = "Admin,Instructor,Student")]
     public async Task<IActionResult> GetAttendanceByStudent(int studentId)
     {
         try

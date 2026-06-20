@@ -10,7 +10,7 @@ using System.Security.Claims;
 
 namespace SmartEduManager.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/exam-attempts")]
 [ApiController]
 [Authorize]
 public class ExamAttemptsController : ControllerBase

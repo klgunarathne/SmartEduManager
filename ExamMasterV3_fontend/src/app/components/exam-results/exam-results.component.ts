@@ -83,12 +83,48 @@ export class ExamResultsComponent implements OnInit {
     return 'Needs improvement';
   }
 
+  get answeredCount(): number {
+    return this.result()?.answers.filter(answer => this.hasAnswer(answer)).length ?? 0;
+  }
+
+  get submittedDate(): string {
+    return this.formatDate(this.result()?.submittedAt);
+  }
+
   get correctCount(): number {
     return this.result()?.answers.filter(answer => answer.isCorrect).length ?? 0;
   }
 
   get wrongCount(): number {
     return (this.result()?.answers.length ?? 0) - this.correctCount;
+  }
+
+  answerStatusClass(answer: ExamAnswerResult): 'correct' | 'wrong' {
+    return answer.isCorrect ? 'correct' : 'wrong';
+  }
+
+  answerStatusLabel(answer: ExamAnswerResult): string {
+    return answer.isCorrect ? 'Correct' : 'Incorrect';
+  }
+
+  hasAnswer(answer: ExamAnswerResult): boolean {
+    return answer.selectedAnswer !== null && answer.selectedAnswer !== undefined && answer.selectedAnswer.trim().length > 0;
+  }
+
+  answerLabel(answer: ExamAnswerResult): string {
+    if (!this.hasAnswer(answer)) {
+      return 'Not answered';
+    }
+
+    return answer.selectedAnswer ?? '';
+  }
+
+  correctAnswerLabel(answer: ExamAnswerResult): string {
+    if (!answer.correctAnswer || answer.correctAnswer.trim() === '') {
+      return 'Not provided';
+    }
+
+    return answer.correctAnswer;
   }
 
   formatDate(value: string | null | undefined): string {
@@ -110,15 +146,6 @@ export class ExamResultsComponent implements OnInit {
       minute: '2-digit'
     });
   }
-
-  answerLabel(answer: ExamAnswerResult): string {
-    if (answer.selectedAnswer === null || answer.selectedAnswer === undefined || answer.selectedAnswer.trim() === '') {
-      return 'Not answered';
-    }
-
-    return answer.selectedAnswer;
-  }
-
   backToDashboard(): void {
     this.router.navigate(['/exam']);
   }

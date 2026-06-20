@@ -169,6 +169,7 @@ public class ExamService : IExamService
     public async Task<ExamAttemptDto?> StartExamAsync(int examId, string studentId)
     {
         var exam = await _context.Exams
+            .Include(e => e.Category)
             .Include(e => e.ExamQuestions)
                 .ThenInclude(eq => eq.Question)
             .FirstOrDefaultAsync(e => e.Id == examId);
@@ -186,6 +187,8 @@ public class ExamService : IExamService
             return null;
 
         var existingAttempt = await _context.ExamAttempts
+            .Include(a => a.Exam)
+                .ThenInclude(e => e!.Category)
             .Include(a => a.Exam)
                 .ThenInclude(e => e!.ExamQuestions)
                     .ThenInclude(eq => eq.Question)
@@ -209,6 +212,8 @@ public class ExamService : IExamService
         await _context.SaveChangesAsync();
 
         var examWithQuestions = await _context.ExamAttempts
+            .Include(a => a.Exam)
+                .ThenInclude(e => e!.Category)
             .Include(a => a.Exam)
                 .ThenInclude(e => e!.ExamQuestions)
                     .ThenInclude(eq => eq.Question)

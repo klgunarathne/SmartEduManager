@@ -149,7 +149,8 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString().ToLowerInvariant()))
                 .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.ExamQuestions != null ? src.ExamQuestions.Count : 0))
-                .ForMember(dest => dest.TotalMarks, opt => opt.MapFrom(src => src.ExamQuestions != null ? src.ExamQuestions.Sum(eq => eq.Question != null ? eq.Question.Marks : 0) : 0));
+                .ForMember(dest => dest.TotalMarks, opt => opt.MapFrom(src => src.ExamQuestions != null ? src.ExamQuestions.Sum(eq => eq.Question != null ? eq.Question.Marks : 0) : 0))
+                .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.ExamQuestions));
 
             CreateMap<CreateExamDto, Exam>();
             CreateMap<UpdateExamDto, Exam>()

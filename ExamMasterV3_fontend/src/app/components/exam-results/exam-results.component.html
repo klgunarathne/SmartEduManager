@@ -1,93 +1,103 @@
-<div class="results-shell">
+<div class="results-wrapper">
   @if (isLoading()) {
-    <div class="loading-panel">
+    <div class="loading-state">
       <span class="spinner"></span>
-      <p>Loading result...</p>
+      <p>Loading your result...</p>
     </div>
   } @else if (error()) {
-    <div class="message error">{{ error() }}</div>
+    <div class="error-state">
+      <p>{{ error() }}</p>
+      <button class="action-btn" (click)="backToDashboard()">Go to Dashboard</button>
+    </div>
   } @else if (result(); as result) {
-    <header class="results-header">
-      <button class="ghost-btn" type="button" (click)="backToDashboard()">← Back to dashboard</button>
-      <div>
-        <span class="top-kicker">Result summary</span>
-        <h1>{{ result.examTitle }}</h1>
-      </div>
-    </header>
+    <div class="result-container">
+      <header class="result-header">
+        <button class="back-btn" (click)="backToDashboard()">
+          ← Dashboard
+        </button>
+        <h1 class="exam-name">{{ result.examTitle }}</h1>
+        <p class="submit-time">Submitted: {{ submittedDate }}</p>
+      </header>
 
-    <section class="score-card">
-      <div class="score-circle" [style.borderColor]="gradeColor">
-        <strong [style.color]="gradeColor">{{ result.percentage.toFixed(1) }}%</strong>
-        <span>{{ gradeLabel }}</span>
-      </div>
-
-      <div class="score-details">
-        <div class="score-stats">
-          <div>
-            <span>{{ result.score }}</span>
-            <small>Score</small>
+      <div class="score-overview">
+        <div class="percentage-display">
+          <div class="circle" [style.border-color]="gradeColor">
+            <span class="percent" [style.color]="gradeColor">{{ result.percentage.toFixed(0) }}%</span>
           </div>
-          <div>
-            <span>{{ result.totalMarks }}</span>
-            <small>Total marks</small>
-          </div>
-          <div>
-            <span>{{ correctCount }}</span>
-            <small>Correct</small>
-          </div>
-          <div>
-            <span>{{ wrongCount }}</span>
-            <small>Wrong</small>
-          </div>
+          <span class="grade">{{ gradeLabel }}</span>
         </div>
 
-        <p>Submitted: {{ formatDate(result.submittedAt) }}</p>
-      </div>
-    </section>
-
-    <section class="review-section">
-      <div class="section-heading">
-        <div>
-          <span class="section-label">Review</span>
-          <h2>Answer review</h2>
+        <div class="stats-row">
+          <div class="stat">
+            <div class="stat-num">{{ result.score }}/{{ result.totalMarks }}</div>
+            <div class="stat-text">SCORE</div>
+          </div>
+          <div class="stat correct">
+            <div class="stat-num">{{ correctCount }}</div>
+            <div class="stat-text">RIGHT</div>
+          </div>
+          <div class="stat wrong">
+            <div class="stat-num">{{ wrongCount }}</div>
+            <div class="stat-text">WRONG</div>
+          </div>
         </div>
       </div>
 
-      @if (result.answers.length === 0) {
-        <div class="empty-state">
-          <h3>No answer details available</h3>
-          <p>The exam was submitted, but the server did not return answer-level details.</p>
-        </div>
-      } @else {
-        <div class="review-list">
+      <div class="feedback-box" [style.background]="gradeColor + '15'">
+        <p>
+          @if (result.percentage >= 80) {
+            Excellent! You've mastered this material.
+          } @else if (result.percentage >= 60) {
+            Good job! Review mistakes to improve.
+          } @else if (result.percentage >= 40) {
+            You passed. Keep studying.
+          } @else {
+            Don't give up. Practice makes progress.
+          }
+        </p>
+      </div>
+
+      <section class="answers-section">
+        <h2 class="section-title">Question Review</h2>
+
+        @if (result.answers.length === 0) {
+          <div class="empty-box">
+            <p>No answer details available.</p>
+          </div>
+        }
+
+        <div class="answers-list">
           @for (answer of result.answers; track answer.questionId; let i = $index) {
-            <article class="review-card" [class.correct]="answer.isCorrect" [class.wrong]="!answer.isCorrect">
-              <div class="review-head">
-                <span>Q{{ i + 1 }}</span>
-                <strong>{{ answer.isCorrect ? 'Correct' : 'Incorrect' }}</strong>
+            <div class="answer-item" [class.right]="answer.isCorrect" [class.wrong]="!answer.isCorrect">
+              <div class="item-header">
+                <span class="q-tag">Q{{ i + 1 }}</span>
+                <span class="result-tag" [class.right]="answer.isCorrect" [class.wrong]="!answer.isCorrect">
+                  {{ answer.isCorrect ? '✓ Correct' : '✗ Wrong' }}
+                </span>
               </div>
 
-              <p>{{ answer.questionContent }}</p>
+              <div class="q-text">{{ answer.questionContent }}</div>
 
-              <div class="answer-row">
-                <span>Your answer</span>
-                <strong [class.wrong-text]="!answer.isCorrect">{{ answerLabel(answer) }}</strong>
-              </div>
-
-              @if (!answer.isCorrect && answer.correctAnswer) {
-                <div class="answer-row">
-                  <span>Correct answer</span>
-                  <strong>{{ answer.correctAnswer }}</strong>
+              <div class="responses">
+                <div class="response your">
+                  <span class="resp-label">Your answer:</span>
+                  <span class="resp-text">{{ answerLabel(answer) }}</span>
                 </div>
-              }
-
-              <div class="marks">
-                {{ answer.marksObtained }} / {{ answer.totalMarks }} marks
+                @if (!answer.isCorrect) {
+                  <div class="response correct">
+                    <span class="resp-label">Correct answer:</span>
+                    <span class="resp-text">{{ correctAnswerLabel(answer) }}</span>
+                  </div>
+                }
               </div>
-            </article>
+
+              <div class="marks-info">
+                Marks: {{ answer.marksObtained }}/{{ answer.totalMarks }}
+              </div>
+            </div>
           }
         </div>
-      }
-    </section>
+      </section>
+    </div>
   }
 </div>

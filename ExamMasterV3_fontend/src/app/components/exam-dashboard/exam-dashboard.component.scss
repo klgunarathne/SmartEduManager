@@ -370,6 +370,11 @@
     border-radius: 20px;
   }
 
+  .student-strip .student-tile:nth-child(2),
+  .student-strip .student-tile:nth-child(3) {
+    display: none;
+  }
+
   .exam-card-head {
     flex-direction: column;
   }
