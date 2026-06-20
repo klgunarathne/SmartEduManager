@@ -923,7 +923,9 @@ export class ExamQuestionBuilderComponent implements OnInit {
     };
   }
 
-  private toExam(exam: ApiExamDto, questions: ExamQuestion[] = []): Exam {
+  private toExam(exam: ApiExamDto, questions: ApiExamQuestionDto[] = []): Exam {
+    const examQuestions = exam.Questions ?? exam.questions ?? questions;
+
     return {
       id: exam.Id ?? exam.id ?? 0,
       title: exam.Title ?? exam.title ?? '',
@@ -934,7 +936,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
       availableFrom: exam.AvailableFrom ?? exam.availableFrom ?? null,
       availableTo: exam.AvailableTo ?? exam.availableTo ?? null,
       timeZone: exam.TimeZone ?? exam.timeZone ?? null,
-      questions
+      questions: examQuestions.map(item => this.toExamQuestion(item))
     };
   }
 

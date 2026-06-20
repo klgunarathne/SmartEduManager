@@ -241,7 +241,7 @@ export class ExamEditorModalComponent implements OnChanges {
     this.http.get<ApiExamDto>(`${this.API_URL}/exams/${this.activeExamId()}/questions`).subscribe({
       next: data => {
         const questions = (data.Questions || data.questions || []).map(item => this.toExamQuestion(item));
-        this.exam.set(this.toExam(data, questions));
+        this.exam.set(this.toExam(data));
         this.persistedQuestionIds.set(new Set(questions.map(item => item.questionId)));
         this.selectedQuestionId.set(null);
       },
@@ -781,7 +781,9 @@ export class ExamEditorModalComponent implements OnChanges {
     };
   }
 
-  private toExam(exam: ApiExamDto, questions: ExamQuestion[] = []): Exam {
+  private toExam(exam: ApiExamDto, questions: ApiExamQuestionDto[] = []): Exam {
+    const examQuestions = exam.Questions ?? exam.questions ?? questions;
+
     return {
       id: exam.Id ?? exam.id ?? 0,
       title: exam.Title ?? exam.title ?? '',
@@ -792,7 +794,7 @@ export class ExamEditorModalComponent implements OnChanges {
       availableFrom: exam.AvailableFrom ?? exam.availableFrom ?? null,
       availableTo: exam.AvailableTo ?? exam.availableTo ?? null,
       timeZone: exam.TimeZone ?? exam.timeZone ?? null,
-      questions
+      questions: examQuestions.map(item => this.toExamQuestion(item))
     };
   }
 
