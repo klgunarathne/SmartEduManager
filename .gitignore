@@ -6,6 +6,7 @@ obj/
 *.userosscache
 *.sln.docstates
 .vs/
+SmartEduManager.Api/bin/*
 
 # .NET Core
 **/bin/
