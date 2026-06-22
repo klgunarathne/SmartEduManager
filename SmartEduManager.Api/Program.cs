@@ -226,6 +226,13 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Initialize database and seed roles
-await Seeder.SeedDatabaseAsync(app);
+var shouldRunSeedOnly = args.Contains("--seed-only") || builder.Configuration["RunSeed"] == "true";
+await Seeder.SeedDatabaseAsync(app.Services, builder.Configuration);
+
+if (shouldRunSeedOnly)
+{
+    Log.Information("Seed completed. Exiting.");
+    return;
+}
 
 app.Run();
