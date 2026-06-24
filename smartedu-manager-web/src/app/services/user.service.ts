@@ -75,6 +75,17 @@ export class UserService {
     );
   }
 
+  checkDuplicateEmail(email: string): Observable<{ exists: boolean; message?: string }> {
+    return this.http.get<{ exists: boolean; message?: string }>(`${this.API_URL}/users/check-duplicate-email`, {
+      params: { email }
+    }).pipe(
+      catchError(error => {
+        console.error('Error checking duplicate email:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   updateUser(id: string, user: Partial<User>): Observable<User> {
     return this.http.put<User>(`${this.API_URL}/users/${id}`, user).pipe(
       tap(updatedUser => {

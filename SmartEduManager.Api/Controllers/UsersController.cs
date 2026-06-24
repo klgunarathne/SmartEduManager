@@ -77,12 +77,35 @@ public class UsersController : ControllerBase
         });
     }
 
+    [HttpGet("check-duplicate-email")]
+    public async Task<IActionResult> CheckDuplicateEmail([FromQuery] string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return BadRequest(new { message = "Email is required" });
+        }
+
+        var existingUser = await _userManager.Users.AnyAsync(u => u.Email == email);
+        if (existingUser)
+        {
+            return Conflict(new { exists = true, message = "Email already exists" });
+        }
+
+        return Ok(new { exists = false });
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto userDto)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
+        }
+
+        var duplicateCheck = await _userManager.Users.AnyAsync(u => u.Email == userDto.Email);
+        if (duplicateCheck)
+        {
+            return Conflict(new { message = "Email already exists" });
         }
 
         var user = new ApplicationUser
