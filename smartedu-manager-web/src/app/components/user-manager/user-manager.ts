@@ -77,18 +77,15 @@ export class UserManagerComponent implements OnInit {
         this.toast.warning('Passwords do not match');
         return;
       }
-
-      this.userService.checkDuplicateEmail(this.selectedUser.email).subscribe({
-        next: (res) => {
-          if (res.exists) {
-            this.toast.warning('Email already exists');
-            return;
-          }
-          this.doCreateUser();
+      
+      this.userService.createUser(this.selectedUser).subscribe({
+        next: () => {
+          this.closeModal();
+          this.toast.success('User created successfully');
         },
         error: (error) => {
-          console.error('Failed to check duplicate email:', error);
-          this.doCreateUser();
+          console.error('Failed to create user:', error);
+          this.toast.error('Failed to create user: ' + (error.error?.message || error.message));
         }
       });
     } else {
@@ -105,28 +102,11 @@ export class UserManagerComponent implements OnInit {
     }
   }
 
-  private doCreateUser(): void {
-    this.userService.createUser(this.selectedUser).subscribe({
-      next: () => {
-        this.closeModal();
-        this.toast.success('User created successfully');
-      },
-      error: (error) => {
-        console.error('Failed to create user:', error);
-        if (error.status === 409) {
-          this.toast.warning(error.error?.message || 'Email already exists');
-        } else {
-          this.toast.error('Failed to create user: ' + (error.error?.message || error.message));
-        }
-      }
-    });
-  }
-
   validatePassword(): boolean {
     const password = this.selectedUser.password || '';
     
-    if (password.length < 8) {
-      this.toast.warning('Password must be at least 8 characters long');
+    if (password.length < 6) {
+      this.toast.warning('Password must be at least 6 characters long');
       return false;
     }
     if (!/\d/.test(password)) {
@@ -152,7 +132,7 @@ export class UserManagerComponent implements OnInit {
   get passwordRequirements() {
     const password = this.selectedUser.password || '';
     return {
-      minLength: password.length >= 8,
+      minLength: password.length >= 6,
       digit: /\d/.test(password),
       lowercase: /[a-z]/.test(password),
       uppercase: /[A-Z]/.test(password),

@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://smartedumanagerapi.somee.com/api',
+  apiUrl: 'http://smartedumanagerapi.runasp.net/api'
 };
