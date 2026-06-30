@@ -228,7 +228,14 @@ app.MapControllers();
 
 // Initialize database and seed roles
 var shouldRunSeedOnly = args.Contains("--seed-only") || builder.Configuration["RunSeed"] == "true";
-await Seeder.SeedDatabaseAsync(app.Services, builder.Configuration);
+try
+{
+    await Seeder.SeedDatabaseAsync(app.Services, builder.Configuration);
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "Database seeding failed during startup. The application will continue without seeding.");
+}
 
 if (shouldRunSeedOnly)
 {
