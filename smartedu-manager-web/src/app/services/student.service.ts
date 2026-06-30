@@ -17,6 +17,7 @@ export interface Student {
   batchCode: string;
   gsDivision: string;
   agDivision: string;
+  studentNumber: number | null;
 }
 
 export interface CreateStudentDto {
@@ -31,6 +32,7 @@ export interface CreateStudentDto {
   batchId: number;
   gsDivision?: string;
   agDivision?: string;
+  studentNumber?: number | null;
 }
 
 export interface CsvStudentRow {
@@ -51,7 +53,8 @@ export const STUDENT_FIELDS = [
   { name: 'Telephone', label: 'Telephone', required: false },
   { name: 'Email', label: 'Email', required: false },
   { name: 'GSDivision', label: 'GS Division', required: false },
-  { name: 'AGDivision', label: 'AG Division', required: false }
+  { name: 'AGDivision', label: 'AG Division', required: false },
+  { name: 'StudentNumber', label: 'Student Number', required: false }
 ];
 
 export interface UpdateStudentDto {
@@ -66,6 +69,7 @@ export interface UpdateStudentDto {
   batchId?: number;
   gsDivision?: string;
   agDivision?: string;
+  studentNumber?: number | null;
 }
 
 interface ApiStudent {
@@ -82,6 +86,7 @@ interface ApiStudent {
   batchCode: string;
   gsDivision: string;
   agDivision: string;
+  studentNumber: number | null;
 }
 
 @Injectable({
@@ -109,7 +114,8 @@ export class StudentService {
       batchId: s.batchId,
       batchCode: s.batchCode,
       gsDivision: s.gsDivision,
-      agDivision: s.agDivision
+      agDivision: s.agDivision,
+      studentNumber: s.studentNumber
     };
   }
 
@@ -125,7 +131,8 @@ export class StudentService {
       Email: dto.email,
       BatchId: dto.batchId,
       GSDivision: dto.gsDivision,
-      AGDivision: dto.agDivision
+      AGDivision: dto.agDivision,
+      StudentNumber: dto.studentNumber
     };
   }
 
@@ -142,6 +149,7 @@ export class StudentService {
     if (dto.batchId !== undefined) result.BatchId = dto.batchId;
     if (dto.gsDivision !== undefined) result.GSDivision = dto.gsDivision;
     if (dto.agDivision !== undefined) result.AGDivision = dto.agDivision;
+    if (dto.studentNumber !== undefined) result.StudentNumber = dto.studentNumber;
     return result;
   }
 
@@ -196,7 +204,7 @@ export class StudentService {
   updateStudent(id: number, dto: UpdateStudentDto): Observable<string> {
     return this.http.put(`${this.API_URL}/students/${id}`, this.toApiUpdateStudent(dto), { responseType: 'text' }).pipe(
       tap(() => {
-        this.students.update(list => 
+        this.students.update(list =>
           list.map(s => s.id === id ? { ...s, ...dto, id: s.id, batchCode: s.batchCode } : s)
         );
       }),

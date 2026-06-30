@@ -14,6 +14,7 @@ public class Student
     public int BatchId { get; set; }
     public string? GSDivision { get; set; }
     public string? AGDivision { get; set; }
+    public int? StudentNumber { get; set; }
 
     // Navigation property
     public Batch Batch { get; set; } = null!;

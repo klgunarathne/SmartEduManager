@@ -165,7 +165,6 @@ public class StudentsController : ControllerBase
             }
 
             _mapper.Map(updateStudentDto, student);
-            _studentRepository.Update(student);
             await _studentRepository.SaveChangesAsync();
 
             _logger.LogInformation($"Updated student with id {id}");

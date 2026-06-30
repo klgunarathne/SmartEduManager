@@ -50,7 +50,8 @@ export class StudentsComponent implements OnInit {
       email: '',
       batchId: 0,
       gsDivision: '',
-      agDivision: ''
+      agDivision: '',
+      studentNumber: null
     };
   }
 
@@ -71,7 +72,8 @@ export class StudentsComponent implements OnInit {
       address: student.address,
       telephone: student.telephone,
       email: student.email,
-      batchId: student.batchId
+      batchId: student.batchId,
+      studentNumber: student.studentNumber
     };
     this.modalMode.set('edit');
     this.showModal.set(true);

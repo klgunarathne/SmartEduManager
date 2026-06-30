@@ -17,6 +17,7 @@ public class StudentDto
     public string BatchCode { get; set; } = null!;
     public string GSDivision { get; set; } = null!;
     public string AGDivision { get; set; } = null!;
+    public int? StudentNumber { get; set; }
 }
 
 public class CreateStudentDto
@@ -32,6 +33,7 @@ public class CreateStudentDto
         public int BatchId { get; set; }
         public string? GSDivision { get; set; }
         public string? AGDivision { get; set; }
+        public int? StudentNumber { get; set; }
     }
 
 public class UpdateStudentDto
@@ -47,4 +49,5 @@ public class UpdateStudentDto
     public int? BatchId { get; set; }
     public string? GSDivision { get; set; }
     public string? AGDivision { get; set; }
+    public int? StudentNumber { get; set; }
 }

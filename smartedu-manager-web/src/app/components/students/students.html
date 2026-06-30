@@ -32,6 +32,7 @@
       <table class="data-table">
         <thead>
           <tr>
+            <th>#</th>
             <th>Student</th>
             <th>MIS No</th>
             <th>NIC</th>
@@ -44,6 +45,7 @@
         <tbody>
           @for (student of paginatedStudents; track student.id) {
             <tr>
+              <td>{{ student.studentNumber ?? '-' }}</td>
               <td class="student-name-cell">
                 <div class="student-info">
                   <div class="student-avatar">
@@ -73,7 +75,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="empty-state">
+              <td colspan="8" class="empty-state">
                 <i class="fas fa-user-graduate"></i>
                 <p>No students found</p>
               </td>
@@ -116,7 +118,12 @@
               <input type="text" [(ngModel)]="selectedStudent.misNo" name="misNo" required>
             </div>
             <div class="form-group">
-              <label>Batch</label>
+              <label>Student Number</label>
+              <input type="number" [(ngModel)]="selectedStudent.studentNumber" name="studentNumber" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
               <select [(ngModel)]="selectedStudent.batchId" name="batchId" required>
                 <option value="0">Select Batch</option>
                 @for (batch of batches(); track batch.batchId) {

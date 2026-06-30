@@ -19,6 +19,9 @@ public class StudentRepository : Repository<Student>, IStudentRepository
         return await _context.Students
             .Include(s => s.Batch)
             .ThenInclude(b => b.Course)
+            .OrderBy(s => s.StudentNumber == null ? 1 : 0)
+            .ThenBy(s => s.StudentNumber)
+            .ThenBy(s => s.NameWithInitials)
             .ToListAsync();
     }
 

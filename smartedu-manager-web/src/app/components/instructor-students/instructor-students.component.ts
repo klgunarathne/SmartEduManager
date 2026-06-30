@@ -5,7 +5,7 @@ import { StudentService, Student, CreateStudentDto, UpdateStudentDto, STUDENT_FI
 import { BatchService, Batch } from '../../services/batch.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialogService } from '../../services/confirm-dialog.service';
-import { concatMap, finalize, from } from 'rxjs';
+import { concatMap, finalize, from, forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-instructor-students',
@@ -70,19 +70,22 @@ import { concatMap, finalize, from } from 'rxjs';
           <div class="table-responsive">
             <table class="data-table">
               <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>MIS No</th>
-                  <th>NIC</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Batch</th>
-                  <th>Actions</th>
-                </tr>
+              <tr>
+                <th>#</th>
+                <th>Student</th>
+                <th>MIS No</th>
+                <th>NIC</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Batch</th>
+                <th>Order</th>
+                <th>Actions</th>
+              </tr>
               </thead>
               <tbody>
-                @for (student of filteredStudents(); track student.id) {
+                 @for (student of filteredStudents(); track student.id) {
                   <tr>
+                    <td>{{ student.studentNumber ?? '-' }}</td>
                     <td>
                       <div class="student-info">
                         <div class="student-avatar">
@@ -98,6 +101,16 @@ import { concatMap, finalize, from } from 'rxjs';
                     <td>{{ student.email }}</td>
                     <td>{{ student.telephone }}</td>
                     <td><span class="batch-badge">{{ student.batchCode }}</span></td>
+                    <td>
+                      <div class="reorder-buttons">
+                        <button class="action-btn reorder" (click)="moveStudentUp(student)" title="Move Up" [disabled]="filteredStudents().findIndex(s => s.id === student.id) === 0">
+                          <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <button class="action-btn reorder" (click)="moveStudentDown(student)" title="Move Down" [disabled]="filteredStudents().findIndex(s => s.id === student.id) === filteredStudents().length - 1">
+                          <i class="fas fa-chevron-down"></i>
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <div class="action-buttons">
                         <button class="action-btn edit" title="Edit" (click)="openEditModal(student)">
@@ -133,6 +146,12 @@ import { concatMap, finalize, from } from 'rxjs';
                   <label>MIS No</label>
                   <input type="text" [(ngModel)]="formData.misNo" name="misNo" required>
                 </div>
+                <div class="form-group">
+                  <label>Student Number</label>
+                  <input type="number" [(ngModel)]="formData.studentNumber" name="studentNumber" min="0">
+                </div>
+              </div>
+              <div class="form-row">
                 <div class="form-group">
                   <label>Batch</label>
                   <select [(ngModel)]="formData.batchId" name="batchId" required>
@@ -404,8 +423,9 @@ import { concatMap, finalize, from } from 'rxjs';
     .batch-badge { background: #dcfce7; color: #16a34a; }
 
     .action-buttons { display: flex; gap: 8px; }
+    .reorder-buttons { display: flex; flex-direction: column; gap: 4px; }
     .action-btn {
-      width: 36px; height: 36px; border: none; border-radius: 10px;
+      width: 32px; height: 32px; border: none; border-radius: 8px;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       transition: all 0.3s;
     }
@@ -413,6 +433,9 @@ import { concatMap, finalize, from } from 'rxjs';
     .action-btn.edit:hover { background: #fef3c7; color: #d97706; }
     .action-btn.delete { background: #f1f5f9; color: #64748b; }
     .action-btn.delete:hover { background: #fee2e2; color: #dc2626; }
+    .action-btn.reorder { background: #f1f5f9; color: #64748b; }
+    .action-btn.reorder:hover:not(:disabled) { background: #e0e7ff; color: #6366f1; }
+    .action-btn.reorder:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -532,7 +555,8 @@ export class InstructorStudentsComponent implements OnInit {
     email: '',
     batchId: 0,
     gsDivision: '',
-    agDivision: ''
+    agDivision: '',
+    studentNumber: null
   };
 
   constructor(
@@ -602,7 +626,8 @@ export class InstructorStudentsComponent implements OnInit {
       email: '',
       batchId: 0,
       gsDivision: '',
-      agDivision: ''
+      agDivision: '',
+      studentNumber: null
     };
     this.showModal.set(true);
   }
@@ -621,13 +646,53 @@ export class InstructorStudentsComponent implements OnInit {
       email: student.email,
       batchId: student.batchId,
       gsDivision: student.gsDivision,
-      agDivision: student.agDivision
+      agDivision: student.agDivision,
+      studentNumber: student.studentNumber
     };
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
+  }
+
+  moveStudentUp(student: Student): void {
+    const list = this.filteredStudents();
+    const index = list.findIndex(s => s.id === student.id);
+    if (index <= 0) return;
+    const above = list[index - 1];
+    this.swapStudentNumbers(student, above);
+  }
+
+  moveStudentDown(student: Student): void {
+    const list = this.filteredStudents();
+    const index = list.findIndex(s => s.id === student.id);
+    if (index < 0 || index >= list.length - 1) return;
+    const below = list[index + 1];
+    this.swapStudentNumbers(student, below);
+  }
+
+  private swapStudentNumbers(a: Student, b: Student): void {
+    const numA = a.studentNumber ?? 0;
+    const numB = b.studentNumber ?? 0;
+    this.students.update(list =>
+      list.map(s => {
+        if (s.id === a.id) return { ...s, studentNumber: numB };
+        if (s.id === b.id) return { ...s, studentNumber: numA };
+        return s;
+      })
+    );
+    this.filterStudents();
+    forkJoin([
+      this.studentService.updateStudent(a.id, { studentNumber: numB }),
+      this.studentService.updateStudent(b.id, { studentNumber: numA })
+    ]).subscribe({
+      next: () => this.toast.success('Student order updated'),
+      error: () => {
+        this.toast.error('Failed to update order');
+        this.loadStudents();
+      }
+    });
   }
 
   saveStudent(): void {
@@ -860,10 +925,13 @@ export class InstructorStudentsComponent implements OnInit {
     let failed = 0;
     let processed = 0;
 
+    const currentStudents = this.students();
+    const maxNumber = currentStudents.reduce((max, s) => Math.max(max, s.studentNumber ?? 0), 0);
+
     from(data)
       .pipe(
-        concatMap(row => {
-          const studentData = this.mapRowToStudent(row, mapping, batchId);
+        concatMap((row, index) => {
+          const studentData = this.mapRowToStudent(row, mapping, batchId, maxNumber + index + 1);
           return this.studentService.createStudent(studentData).pipe(
             finalize(() => {
               processed++;
@@ -896,7 +964,7 @@ export class InstructorStudentsComponent implements OnInit {
       });
   }
 
-  mapRowToStudent(row: CsvStudentRow, mapping: CsvMapping, batchId: number): CreateStudentDto {
+  mapRowToStudent(row: CsvStudentRow, mapping: CsvMapping, batchId: number, studentNumber?: number): CreateStudentDto {
     const student: CreateStudentDto = {
       misNo: '',
       nameWithInitials: '',
@@ -908,7 +976,8 @@ export class InstructorStudentsComponent implements OnInit {
       email: '',
       batchId: batchId,
       gsDivision: 'Unknown',
-      agDivision: 'Unknown'
+      agDivision: 'Unknown',
+      studentNumber: studentNumber
     };
 
     Object.entries(mapping).forEach(([csvHeader, fieldName]) => {
