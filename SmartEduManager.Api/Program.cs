@@ -114,6 +114,7 @@ builder.Services.AddScoped<IQuestionCategoryRepository, QuestionCategoryReposito
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IExamRepository, ExamRepository>();
 builder.Services.AddScoped<IExamService, ExamService>();
+builder.Services.AddScoped<ICourseSessionRepository, CourseSessionRepository>();
 
 // Configure AutoMapper
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());

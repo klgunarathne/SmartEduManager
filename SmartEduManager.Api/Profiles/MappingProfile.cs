@@ -171,9 +171,44 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.CorrectAnswer, opt => opt.Ignore())
                 .ForMember(dest => dest.TotalMarks, opt => opt.Ignore());
 
-            // ExamResult mapping
-            CreateMap<ExamAttempt, ExamResultDto>()
-                .ForMember(dest => dest.ExamTitle, opt => opt.MapFrom(src => src.Exam != null ? src.Exam.Title : string.Empty))
-                .ForMember(dest => dest.Percentage, opt => opt.MapFrom(src => src.TotalMarks > 0 ? (double)src.Score / src.TotalMarks * 100 : 0));
-        }
-    }
+             // ExamResult mapping
+             CreateMap<ExamAttempt, ExamResultDto>()
+                 .ForMember(dest => dest.ExamTitle, opt => opt.MapFrom(src => src.Exam != null ? src.Exam.Title : string.Empty))
+                 .ForMember(dest => dest.Percentage, opt => opt.MapFrom(src => src.TotalMarks > 0 ? (double)src.Score / src.TotalMarks * 100 : 0));
+
+             // Appointment (CourseSession) mapping
+             CreateMap<Appointment, CourseSessionDto>()
+                 .ForMember(dest => dest.AppointmentId, opt => opt.MapFrom(src => src.AppointmentId))
+                 .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Text))
+                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                 .ForMember(dest => dest.StartDateTime, opt => opt.MapFrom(src => src.StartDateTime))
+                 .ForMember(dest => dest.EndDateTime, opt => opt.MapFrom(src => src.EndDateTime))
+                 .ForMember(dest => dest.AllDay, opt => opt.MapFrom(src => src.AllDay))
+                 .ForMember(dest => dest.RecurrenceRule, opt => opt.MapFrom(src => src.RecurrenceRule))
+                 .ForMember(dest => dest.RecurrenceException, opt => opt.MapFrom(src => src.RecurrenceException))
+                 .ForMember(dest => dest.SessionType, opt => opt.MapFrom(src => src.SessionType))
+                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                 .ForMember(dest => dest.IsPublished, opt => opt.MapFrom(src => src.IsPublished))
+                 .ForMember(dest => dest.Color, opt => opt.MapFrom(src => src.Color))
+                 .ForMember(dest => dest.CourseName, opt => opt.MapFrom(src => src.Course != null ? src.Course.CourseName : null))
+                 .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.BatchCode : null))
+                 .ForMember(dest => dest.InstructorName, opt => opt.MapFrom(src => src.Instructor != null ? src.Instructor.FullName : null))
+                 .ForMember(dest => dest.CenterName, opt => opt.MapFrom(src => src.Center != null ? src.Center.CenterName : null))
+                 .ForMember(dest => dest.ModuleName, opt => opt.MapFrom(src => src.Module != null ? src.Module.ModuleName : null));
+
+             CreateMap<CreateCourseSessionDto, Appointment>()
+                 .ForMember(dest => dest.AppointmentId, opt => opt.Ignore())
+                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                 .ForMember(dest => dest.Items, opt => opt.Ignore());
+
+             CreateMap<UpdateCourseSessionDto, Appointment>()
+                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null))
+                 .ForMember(dest => dest.AppointmentId, opt => opt.Ignore())
+                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+
+             CreateMap<SessionItem, SessionItemDto>();
+             CreateMap<CreateSessionItemDto, SessionItem>();
+         }
+     }

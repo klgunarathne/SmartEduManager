@@ -97,6 +97,11 @@ export const routes: Routes = [
         path: 'exam-question-builder',
         loadComponent: () => import('./components/exam-question-builder/exam-question-builder.component').then(m => m.ExamQuestionBuilderComponent),
         data: { breadcrumb: 'Exam Question Builder' }
+      },
+      {
+        path: 'timetable',
+        loadComponent: () => import('./components/timetable/timetable.component').then(m => m.TimetableComponent),
+        data: { breadcrumb: 'Timetable' }
       }
     ]
   },
@@ -160,6 +165,11 @@ export const routes: Routes = [
         path: 'modules',
         loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
         data: { breadcrumb: 'Modules' }
+      },
+      {
+        path: 'schedule',
+        loadComponent: () => import('./components/timetable/timetable.component').then(m => m.TimetableComponent),
+        data: { breadcrumb: 'My Schedule' }
       },
       {
         path: 'attendance',

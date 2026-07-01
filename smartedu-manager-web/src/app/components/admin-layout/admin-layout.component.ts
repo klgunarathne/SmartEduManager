@@ -58,6 +58,14 @@ interface Breadcrumb {
                 </a>
               </li>
               <li class="nav-item">
+                <a routerLink="/admin/timetable" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-calendar-alt"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>Timetable</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
                 <a routerLink="/admin/instructors" routerLinkActive="active" class="nav-link">
                   <i class="fas fa-chalkboard-teacher"></i>
                   @if (!sidebarCollapsed()) {
@@ -169,6 +177,14 @@ interface Breadcrumb {
                   <i class="fas fa-calendar-check"></i>
                   @if (!sidebarCollapsed()) {
                     <span>Attendance</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
+                <a routerLink="/instructor/schedule" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-calendar-alt"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>My Schedule</span>
                   }
                 </a>
               </li>

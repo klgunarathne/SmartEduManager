@@ -30,10 +30,12 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
        public DbSet<Question> Questions { get; set; } = null!;
         public DbSet<Exam> Exams { get; set; } = null!;
         public DbSet<ExamQuestion> ExamQuestions { get; set; } = null!;
-        public DbSet<ExamAttempt> ExamAttempts { get; set; } = null!;
-        public DbSet<ExamAnswer> ExamAnswers { get; set; } = null!;
+         public DbSet<ExamAttempt> ExamAttempts { get; set; } = null!;
+         public DbSet<ExamAnswer> ExamAnswers { get; set; } = null!;
+         public DbSet<Appointment> Appointments { get; set; } = null!;
+         public DbSet<SessionItem> SessionItems { get; set; } = null!;
 
-     protected override void OnModelCreating(ModelBuilder builder)
+      protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
@@ -192,10 +194,55 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
               .HasForeignKey(a => a.ExamId)
               .OnDelete(DeleteBehavior.Cascade);
 
-          builder.Entity<ExamAnswer>()
-              .HasOne(a => a.ExamAttempt)
-              .WithMany(ea => ea.Answers)
-              .HasForeignKey(a => a.ExamAttemptId)
-              .OnDelete(DeleteBehavior.Cascade);
-      }
-  }
+           builder.Entity<ExamAnswer>()
+               .HasOne(a => a.ExamAttempt)
+               .WithMany(ea => ea.Answers)
+               .HasForeignKey(a => a.ExamAttemptId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+           builder.Entity<Appointment>()
+               .HasOne(a => a.Course)
+               .WithMany()
+               .HasForeignKey(a => a.CourseId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+           builder.Entity<Appointment>()
+               .HasOne(a => a.Batch)
+               .WithMany()
+               .HasForeignKey(a => a.BatchId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+           builder.Entity<Appointment>()
+               .HasOne(a => a.Instructor)
+               .WithMany()
+               .HasForeignKey(a => a.InstructorId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+           builder.Entity<Appointment>()
+               .HasOne(a => a.Center)
+               .WithMany()
+               .HasForeignKey(a => a.CenterId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+           builder.Entity<Appointment>()
+               .HasOne(a => a.Module)
+               .WithMany()
+               .HasForeignKey(a => a.ModuleId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+           builder.Entity<SessionItem>()
+               .HasOne(si => si.Appointment)
+               .WithMany(a => a.Items)
+               .HasForeignKey(si => si.AppointmentId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+           builder.Entity<Appointment>()
+               .HasIndex(a => new { a.BatchId, a.StartDateTime });
+
+           builder.Entity<Appointment>()
+               .HasIndex(a => new { a.InstructorId, a.StartDateTime });
+
+           builder.Entity<Appointment>()
+               .HasIndex(a => new { a.CenterId, a.StartDateTime });
+       }
+   }
