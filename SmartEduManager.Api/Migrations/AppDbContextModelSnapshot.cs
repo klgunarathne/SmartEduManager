@@ -243,6 +243,94 @@ namespace SmartEduManager.Api.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("SmartEduManager.Api.Models.Appointment", b =>
+                {
+                    b.Property<int>("AppointmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AppointmentId"));
+
+                    b.Property<bool>("AllDay")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("BatchId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CenterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Color")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ColorId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EndDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("InstructorId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ModuleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RecurrenceException")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecurrenceRule")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SessionType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaskName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaskNo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("AppointmentId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("ModuleId");
+
+                    b.HasIndex("BatchId", "StartDateTime");
+
+                    b.HasIndex("CenterId", "StartDateTime");
+
+                    b.HasIndex("InstructorId", "StartDateTime");
+
+                    b.ToTable("Appointments");
+                });
+
             modelBuilder.Entity("SmartEduManager.Api.Models.Assignment", b =>
                 {
                     b.Property<int>("Id")
@@ -888,6 +976,46 @@ namespace SmartEduManager.Api.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("SmartEduManager.Api.Models.SessionItem", b =>
+                {
+                    b.Property<int>("ItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ItemId"));
+
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DueDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("ItemId");
+
+                    b.HasIndex("AppointmentId");
+
+                    b.ToTable("SessionItems");
+                });
+
             modelBuilder.Entity("SmartEduManager.Api.Models.Student", b =>
                 {
                     b.Property<int>("StudentId")
@@ -995,6 +1123,44 @@ namespace SmartEduManager.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartEduManager.Api.Models.Appointment", b =>
+                {
+                    b.HasOne("SmartEduManager.Api.Models.Batch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("SmartEduManager.Api.Models.Center", "Center")
+                        .WithMany()
+                        .HasForeignKey("CenterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartEduManager.Api.Models.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartEduManager.Api.Models.Instructor", "Instructor")
+                        .WithMany()
+                        .HasForeignKey("InstructorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartEduManager.Api.Models.Modules", "Module")
+                        .WithMany()
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Batch");
+
+                    b.Navigation("Center");
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Instructor");
+
+                    b.Navigation("Module");
                 });
 
             modelBuilder.Entity("SmartEduManager.Api.Models.AssignmentMarks", b =>
@@ -1218,6 +1384,17 @@ namespace SmartEduManager.Api.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SmartEduManager.Api.Models.SessionItem", b =>
+                {
+                    b.HasOne("SmartEduManager.Api.Models.Appointment", "Appointment")
+                        .WithMany("Items")
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+                });
+
             modelBuilder.Entity("SmartEduManager.Api.Models.Student", b =>
                 {
                     b.HasOne("SmartEduManager.Api.Models.Batch", "Batch")
@@ -1227,6 +1404,11 @@ namespace SmartEduManager.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Batch");
+                });
+
+            modelBuilder.Entity("SmartEduManager.Api.Models.Appointment", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("SmartEduManager.Api.Models.Assignment", b =>

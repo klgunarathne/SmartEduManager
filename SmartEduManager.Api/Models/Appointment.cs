@@ -50,6 +50,10 @@ namespace SmartEduManager.Api.Models
 
         public int? ColorId { get; set; }
 
+        public string? TaskNo { get; set; }
+
+        public string? TaskName { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedAt { get; set; }
@@ -59,6 +63,7 @@ namespace SmartEduManager.Api.Models
 
     public class SessionItem
     {
+        [Key]
         public int ItemId { get; set; }
 
         [Required]

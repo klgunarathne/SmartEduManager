@@ -1,9 +1,12 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Repositories.Interfaces;
+using System.Security.Claims;
 
 namespace SmartEduManager.Api.Controllers;
 
@@ -15,12 +18,14 @@ public class BatchesController : ControllerBase
     private readonly IBatchRepository _repository;
     private readonly IMapper _mapper;
     private readonly ILogger<BatchesController> _logger;
+    private readonly AppDbContext _context;
 
-    public BatchesController(IBatchRepository repository, IMapper mapper, ILogger<BatchesController> logger)
+    public BatchesController(IBatchRepository repository, IMapper mapper, ILogger<BatchesController> logger, AppDbContext context)
     {
         _repository = repository;
         _mapper = mapper;
         _logger = logger;
+        _context = context;
     }
 
     [HttpGet]
@@ -28,10 +33,34 @@ public class BatchesController : ControllerBase
     {
         try
         {
-            var batches = await _repository.GetBatchesWithCourseAsync();
-            var batchesDto = _mapper.Map<IEnumerable<BatchDto>>(batches);
+            var isAdmin = User.IsInRole("Admin");
+            IEnumerable<Batch> batches;
 
-            _logger.LogInformation($"Retrieved {batches.Count()} batches");
+            if (isAdmin)
+            {
+                batches = await _repository.GetBatchesWithCourseAsync();
+            }
+            else
+            {
+                var userEmail = User.FindFirstValue(ClaimTypes.Email);
+                if (string.IsNullOrEmpty(userEmail))
+                {
+                    return Unauthorized();
+                }
+
+                var instructor = await _context.Instructors
+                    .FirstOrDefaultAsync(i => i.Email == userEmail);
+
+                if (instructor == null)
+                {
+                    return NotFound("Instructor profile not found");
+                }
+
+                batches = await _repository.GetBatchesForInstructorAsync(instructor.InstructorId);
+            }
+
+            var batchesDto = _mapper.Map<IEnumerable<BatchDto>>(batches);
+            _logger.LogInformation($"Retrieved {batchesDto.Count()} batches");
             return Ok(batchesDto);
         }
         catch (Exception ex)
@@ -167,6 +196,75 @@ public class BatchesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving active batches");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("instructor")]
+    public async Task<IActionResult> GetBatchesForInstructor()
+    {
+        try
+        {
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return Unauthorized();
+            }
+
+            var instructor = await _context.Instructors
+                .FirstOrDefaultAsync(i => i.Email == userEmail);
+
+            if (instructor == null)
+            {
+                return NotFound("Instructor profile not found");
+            }
+
+            var batches = await _repository.GetBatchesForInstructorAsync(instructor.InstructorId);
+            var batchesDto = _mapper.Map<IEnumerable<BatchDto>>(batches);
+
+            _logger.LogInformation($"Retrieved {batchesDto.Count()} batches for instructor {instructor.InstructorId}");
+            return Ok(batchesDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving instructor batches");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("current")]
+    public async Task<IActionResult> GetCurrentBatchForInstructor()
+    {
+        try
+        {
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return Unauthorized();
+            }
+
+            var instructor = await _context.Instructors
+                .FirstOrDefaultAsync(i => i.Email == userEmail);
+
+            if (instructor == null)
+            {
+                return NotFound("Instructor profile not found");
+            }
+
+            var batch = await _repository.GetCurrentBatchForInstructorAsync(instructor.InstructorId);
+
+            if (batch == null)
+            {
+                return NotFound("No active batch found for the current instructor");
+            }
+
+            var batchDto = _mapper.Map<BatchDto>(batch);
+            _logger.LogInformation($"Retrieved current batch {batch.BatchId} for instructor {instructor.InstructorId}");
+            return Ok(batchDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving current batch for instructor");
             return StatusCode(500, "Internal server error");
         }
     }

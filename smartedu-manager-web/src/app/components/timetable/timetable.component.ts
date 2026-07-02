@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, signal, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -21,7 +21,9 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import multimonthPlugin from '@fullcalendar/multimonth';
 
-import { CourseScheduleService, CourseSession, CreateSessionDto, UpdateSessionDto, SessionItem } from '../../services/course-schedule.service';
+import { CourseScheduleService, CourseSession, CreateSessionDto, UpdateSessionDto } from '../../services/course-schedule.service';
+import { BatchService, Batch } from '../../services/batch.service';
+import { ModulesService, ModuleTask } from '../../services/modules.service';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
@@ -74,40 +76,28 @@ export class TimetableComponent implements AfterViewInit {
 
   sessions = signal<CourseSession[]>([]);
   batches = signal<Array<{ batchId: number; batchCode: string; courseName: string }>>([]);
+  moduleTasks = signal<ModuleTask[]>([]);
 
   currentView = signal<string>('dayGridMonth');
   resourceGroup = signal<string>('batch');
   selectedBatchId = signal<number>(0);
 
   isLoading = signal(false);
-  showModal = signal(false);
+showModal = signal(false);
   modalMode = signal<'create' | 'edit' | 'view'>('create');
   editingSession = signal<CourseSession | null>(null);
   showDeleteConfirm = signal(false);
   deletingSessionId = signal<number>(0);
-  activeTab = signal<'details' | 'tasks'>('details');
 
   formData: CreateSessionDto = {
     text: '',
     description: '',
     batchId: 0,
     sessionType: 'Theory',
-    status: 'Scheduled',
     allDay: false,
     startDateTime: '',
-    endDateTime: '',
-    isPublished: false,
-    items: []
+    endDateTime: ''
   };
-
-  localItems: SessionItem[] = [];
-  newItemTitle = '';
-  newItemType: SessionItem['itemType'] = 'Task';
-  newItemDescription = '';
-
-  sessionTypes = ['Theory', 'Practical', 'Exam', 'Assessment', 'Orientation'];
-  statuses = ['Scheduled', 'Completed', 'Cancelled'];
-  itemTypes: SessionItem['itemType'][] = ['Task', 'Note', 'Resource', 'Assignment'];
 
   errorMessage = signal<string>('');
 
@@ -116,22 +106,43 @@ export class TimetableComponent implements AfterViewInit {
     { id: 'multiMonthYear', label: 'Year', icon: 'fa-calendar-plus' }
   ];
 
-  readonly groupOptions = [
-    { id: 'batch', label: 'Batch', icon: 'fa-users' }
-  ];
-
   constructor(
+    private batchService: BatchService,
     private scheduleService: CourseScheduleService,
+    private modulesService: ModulesService,
     private toast: ToastService
   ) {}
 
   ngAfterViewInit(): void {
+    this.loadCurrentBatch();
     this.loadBatches();
-    this.refreshCalendar();
+    this.loadModuleTasks();
+  }
+
+  private loadCurrentBatch(): void {
+    this.batchService.getCurrentBatch().subscribe({
+      next: () => {
+        this.refreshCalendar();
+      },
+      error: () => {
+        this.loadBatches();
+      }
+    });
   }
 
   private loadBatches(): void {
-    this.scheduleService.loadBatches().subscribe();
+    this.batchService.getInstructorBatches().subscribe({
+      next: () => {
+        this.batches.set(this.batchService.batches());
+        if (this.batchService.currentBatchId() > 0 && this.selectedBatchId() === 0) {
+          this.selectedBatchId.set(this.batchService.currentBatchId());
+        } else if (this.selectedBatchId() === 0 && this.batches().length > 0) {
+          this.selectedBatchId.set(this.batches()[0].batchId);
+        }
+        this.refreshCalendar();
+      },
+      error: () => {}
+    });
   }
 
   private refreshCalendar(): void {
@@ -390,25 +401,36 @@ export class TimetableComponent implements AfterViewInit {
   }
 
   openCreateModal(start?: Date, end?: Date): void {
-    const batch = this.selectedBatchId() || this.batches()[0]?.batchId || 0;
+    const currentBatchId = this.batchService.currentBatchId() || this.batches()[0]?.batchId;
+    const batch = currentBatchId || 0;
     this.formData = {
       text: '',
       description: '',
       batchId: batch,
       sessionType: 'Theory',
-      status: 'Scheduled',
       allDay: false,
       startDateTime: start ? start.toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
-      endDateTime: end ? end.toISOString().slice(0, 16) : new Date(Date.now() + 120 * 60000).toISOString().slice(0, 16),
-      isPublished: false,
-      items: []
+      endDateTime: end ? end.toISOString().slice(0, 16) : new Date(Date.now() + 120 * 60000).toISOString().slice(0, 16)
     };
-    this.localItems = [];
+    this.loadModuleTasks();
     this.modalMode.set('create');
     this.editingSession.set(null);
     this.errorMessage.set('');
-    this.activeTab.set('details');
     this.showModal.set(true);
+    if (batch > 0 && this.selectedBatchId() === 0) {
+      this.selectedBatchId.set(batch);
+    }
+  }
+
+  private loadModuleTasks(): void {
+    this.modulesService.getModules().subscribe({
+      next: (modules) => {
+        const allTasks: ModuleTask[] = [];
+        modules.forEach(m => allTasks.push(...m.tasks));
+        this.moduleTasks.set(allTasks);
+      },
+      error: () => {}
+    });
   }
 
   openViewModal(session: CourseSession): void {
@@ -417,7 +439,6 @@ export class TimetableComponent implements AfterViewInit {
       text: session.text,
       description: session.description || '',
       batchId: session.batchId,
-      moduleId: session.moduleId,
       startDateTime: session.startDateTime.slice(0, 16),
       endDateTime: session.endDateTime.slice(0, 16),
       allDay: session.allDay,
@@ -426,13 +447,10 @@ export class TimetableComponent implements AfterViewInit {
       recurrenceRule: session.recurrenceRule,
       recurrenceException: session.recurrenceException,
       color: session.color || '',
-      isPublished: session.isPublished,
-      items: session.items || []
+      isPublished: session.isPublished
     };
-    this.localItems = [...(session.items || [])];
     this.modalMode.set('view');
     this.errorMessage.set('');
-    this.activeTab.set('details');
     this.showModal.set(true);
   }
 
@@ -442,22 +460,13 @@ export class TimetableComponent implements AfterViewInit {
       text: session.text,
       description: session.description || '',
       batchId: session.batchId,
-      moduleId: session.moduleId,
       startDateTime: session.startDateTime.slice(0, 16),
       endDateTime: session.endDateTime.slice(0, 16),
       allDay: session.allDay,
-      sessionType: session.sessionType,
-      status: session.status,
-      recurrenceRule: session.recurrenceRule,
-      recurrenceException: session.recurrenceException,
-      color: session.color || '',
-      isPublished: session.isPublished,
-      items: session.items || []
+      sessionType: session.sessionType
     };
-    this.localItems = [...(session.items || [])];
     this.modalMode.set('edit');
     this.errorMessage.set('');
-    this.activeTab.set('details');
     this.showModal.set(true);
   }
 
@@ -488,39 +497,6 @@ export class TimetableComponent implements AfterViewInit {
   cancelDelete(): void {
     this.showDeleteConfirm.set(false);
     this.deletingSessionId.set(0);
-  }
-
-  switchTab(tab: 'details' | 'tasks'): void {
-    this.activeTab.set(tab);
-  }
-
-  addItem(): void {
-    if (!this.newItemTitle.trim()) return;
-
-    const item: SessionItem = {
-      itemId: Date.now(),
-      appointmentId: this.editingSession()?.appointmentId || 0,
-      title: this.newItemTitle.trim(),
-      description: this.newItemDescription.trim() || undefined,
-      itemType: this.newItemType,
-      isCompleted: false,
-      createdAt: new Date().toISOString()
-    };
-
-    this.localItems = [...this.localItems, item];
-    this.newItemTitle = '';
-    this.newItemDescription = '';
-    this.newItemType = 'Task';
-  }
-
-  removeItem(itemId: number): void {
-    this.localItems = this.localItems.filter(i => i.itemId !== itemId);
-  }
-
-  toggleItemComplete(item: SessionItem): void {
-    this.localItems = this.localItems.map(i =>
-      i.itemId === item.itemId ? { ...i, isCompleted: !i.isCompleted } : i
-    );
   }
 
   submitForm(): void {
@@ -555,7 +531,7 @@ export class TimetableComponent implements AfterViewInit {
   }
 
   private createSession(): void {
-    const dto: CreateSessionDto = { ...this.formData, items: [...this.localItems] };
+    const dto: CreateSessionDto = { ...this.formData };
     const color = dto.sessionType === 'Practical' ? '#10b981' :
                   dto.sessionType === 'Exam' ? '#ef4444' :
                   dto.sessionType === 'Assessment' ? '#f59e0b' :
@@ -574,8 +550,7 @@ export class TimetableComponent implements AfterViewInit {
     if (!session) return;
 
     const dto: UpdateSessionDto = {
-      ...this.formData,
-      items: [...this.localItems]
+      ...this.formData
     };
 
     this.scheduleService.updateSession(session.appointmentId, dto).subscribe({
@@ -590,18 +565,14 @@ export class TimetableComponent implements AfterViewInit {
   closeModal(): void {
     this.showModal.set(false);
     this.editingSession.set(null);
-    this.localItems = [];
     this.formData = {
       text: '',
       description: '',
       batchId: 0,
       sessionType: 'Theory',
-      status: 'Scheduled',
       allDay: false,
       startDateTime: '',
-      endDateTime: '',
-      isPublished: false,
-      items: []
+      endDateTime: ''
     };
   }
 
@@ -692,15 +663,5 @@ export class TimetableComponent implements AfterViewInit {
 
   toNumber(value: string): number {
     return parseInt(value, 10);
-  }
-
-  getItemTypeBadgeClass(type: SessionItem['itemType']): string {
-    const classes: Record<string, string> = {
-      'Task': 'bg-info',
-      'Note': 'bg-warning text-dark',
-      'Resource': 'bg-success',
-      'Assignment': 'bg-primary'
-    };
-    return classes[type] || 'bg-secondary';
   }
 }

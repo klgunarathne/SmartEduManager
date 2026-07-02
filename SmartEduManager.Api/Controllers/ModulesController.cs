@@ -137,6 +137,21 @@ public class ModulesController : ControllerBase
         }
     }
 
+    [HttpGet("tasks")]
+    public async Task<IActionResult> GetAllTasks()
+    {
+        try
+        {
+            var tasks = await _repository.GetAllTasksAsync();
+            return Ok(tasks.Select(t => new { id = t.Id, taskNo = t.TaskNo, taskName = t.TaskName, moduleId = t.ModuleId }));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving all module tasks");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteModule(int id)

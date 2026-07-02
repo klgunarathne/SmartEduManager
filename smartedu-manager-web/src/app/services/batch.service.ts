@@ -2,6 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface Batch {
   batchId: number;
@@ -37,14 +38,17 @@ export class BatchService {
   isLoading = signal(false);
   currentBatchId = signal<number>(0);
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   getBatches(): Observable<Batch[]> {
     this.isLoading.set(true);
     return this.http.get<Batch[]>(`${this.API_URL}/batches`).pipe(
       tap(data => {
-        this.batches.set(data);
-        this.currentBatchId.set(this.computeCurrentBatchId(data));
+        const instructorBatches = this.authService.isInstructor() ? data.filter(b => this.isInstructorBatch(b)) : data;
+        this.batches.set(instructorBatches);
+        if (instructorBatches.length > 0) {
+          this.currentBatchId.set(this.pickCurrentBatchId(instructorBatches));
+        }
         this.isLoading.set(false);
       }),
       catchError(error => {
@@ -55,7 +59,43 @@ export class BatchService {
     );
   }
 
-  private computeCurrentBatchId(batches: Batch[]): number {
+  getInstructorBatches(): Observable<Batch[]> {
+    this.isLoading.set(true);
+    return this.http.get<Batch[]>(`${this.API_URL}/batches/instructor`).pipe(
+      tap(data => {
+        this.batches.set(data);
+        if (data.length > 0) {
+          this.currentBatchId.set(this.pickCurrentBatchId(data));
+        }
+        this.isLoading.set(false);
+      }),
+      catchError(error => {
+        this.isLoading.set(false);
+        console.error('Error loading instructor batches:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getCurrentBatch(): Observable<Batch> {
+    return this.http.get<Batch>(`${this.API_URL}/batches/current`).pipe(
+      tap(batch => {
+        this.currentBatchId.set(batch.batchId);
+      }),
+      catchError(error => {
+        console.error('Error loading current batch:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  private isInstructorBatch(batch: any): boolean {
+    const instructor = this.authService.getUser();
+    if (!instructor) return true;
+    return true;
+  }
+
+  private pickCurrentBatchId(batches: Batch[]): number {
     if (!batches || batches.length === 0) return 0;
 
     const today = new Date();

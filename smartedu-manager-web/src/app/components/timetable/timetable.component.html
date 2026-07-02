@@ -44,21 +44,9 @@
         <select class="form-select" [value]="selectedBatchId()" (change)="selectedBatchId.set(toNumber($any($event.target).value)); onBatchFilterChange()">
           <option [value]="0">All Batches</option>
           @for (batch of batches(); track batch.batchId) {
-            <option [value]="batch.batchId">{{ batch.batchCode }}</option>
+            <option [value]="batch.batchId" [selected]="selectedBatchId() === batch.batchId">{{ batch.batchCode }}</option>
           }
         </select>
-      </div>
-
-      <div class="btn-group group-switcher me-2" role="group">
-        @for (group of groupOptions; track group.id) {
-          <button type="button" class="btn btn-sm"
-            [class.btn-primary]="resourceGroup() === group.id"
-            [class.btn-outline-secondary]="resourceGroup() !== group.id"
-            (click)="changeGroup(group.id)" [attr.title]="group.label">
-            <i class="fas {{ group.icon }}"></i>
-            <span class="d-none d-lg-inline ms-1">{{ group.label.split(' ').slice(-1)[0] }}</span>
-          </button>
-        }
       </div>
 
       <div class="btn-group">
@@ -116,190 +104,63 @@
             </button>
           </div>
 
-          <div class="modal-tabs">
-            <button class="tab-btn" [class.active]="activeTab() === 'details'" (click)="switchTab('details')">
-              <i class="fas fa-info-circle me-2"></i>Details
-            </button>
-            <button class="tab-btn" [class.active]="activeTab() === 'tasks'" (click)="switchTab('tasks')">
-              <i class="fas fa-tasks me-2"></i>Tasks & Items
-              @if (localItems.length > 0) {
-                <span class="badge bg-light text-dark ms-1">{{ localItems.length }}</span>
-              }
-            </button>
-          </div>
-
           <div class="modal-body">
-            @if (activeTab() === 'details') {
-              <form (ngSubmit)="submitForm()">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Title *</label>
-                    <input type="text" [(ngModel)]="formData.text" name="text" placeholder="e.g., Module 1 - Theory" [readonly]="modalMode() === 'view'">
-                    @if (errorMessage() && !formData.text) {
-                      <div class="text-danger small mt-1">{{ errorMessage() }}</div>
-                    }
-                  </div>
-                  <div class="form-group">
-                    <label>Type</label>
-                    <select [(ngModel)]="formData.sessionType" name="sessionType" [disabled]="modalMode() === 'view'">
-                      @for (type of sessionTypes; track type) {
-                        <option [value]="type">{{ type }}</option>
-                      }
-                    </select>
-                  </div>
-                </div>
-
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Batch *</label>
-                    <select [(ngModel)]="formData.batchId" name="batchId" [disabled]="modalMode() === 'view'">
-                      <option [value]="0">Select Batch</option>
-                      @for (batch of batches(); track batch.batchId) {
-                        <option [value]="batch.batchId">{{ batch.batchCode }} - {{ batch.courseName }}</option>
-                      }
-                    </select>
-                  </div>
-                </div>
-
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Start</label>
-                    <input type="datetime-local" [(ngModel)]="formData.startDateTime" name="startDateTime" [readonly]="modalMode() === 'view'">
-                  </div>
-                  <div class="form-group">
-                    <label>End</label>
-                    <input type="datetime-local" [(ngModel)]="formData.endDateTime" name="endDateTime" [readonly]="modalMode() === 'view'">
-                    @if (errorMessage() && formData.endDateTime <= formData.startDateTime) {
-                      <div class="text-danger small mt-1">{{ errorMessage() }}</div>
-                    }
-                  </div>
-                </div>
-
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Status</label>
-                    <select [(ngModel)]="formData.status" name="status" [disabled]="modalMode() === 'view'">
-                      @for (status of statuses; track status) {
-                        <option [value]="status">{{ status }}</option>
-                      }
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Color</label>
-                    <div class="color-picker">
-                      @for (color of ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#6366f1', '#ec4899', '#14b8a6']; track color) {
-                        <button type="button" class="color-swatch" [style.background]="color"
-                          [class.selected]="(formData.color || getEventColor(editingSession() || formData)) === color"
-                          (click)="formData.color = color" [disabled]="modalMode() === 'view'" [attr.title]="color">
-                        </button>
-                      }
-                    </div>
-                  </div>
-                </div>
-
+            <form (ngSubmit)="submitForm()">
+              <div class="form-row">
                 <div class="form-group">
-                  <label>Description</label>
-                  <textarea [(ngModel)]="formData.description" name="description" rows="2" placeholder="Optional notes..." [readonly]="modalMode() === 'view'"></textarea>
+                  <label>Title *</label>
+                  <select [(ngModel)]="formData.text" name="text" [disabled]="modalMode() === 'view'" required>
+                    <option [value]="''">Select Module Task</option>
+                    @for (task of moduleTasks(); track task.id) {
+                      <option [value]="task.taskNo + ' - ' + task.taskName">{{ task.taskNo }} - {{ task.taskName }}</option>
+                    }
+                  </select>
+                  @if (errorMessage() && !formData.text) {
+                    <div class="text-danger small mt-1">{{ errorMessage() }}</div>
+                  }
                 </div>
-
                 <div class="form-group">
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="isPublished" [(ngModel)]="formData.isPublished" name="isPublished" [disabled]="modalMode() === 'view'">
-                    <label class="form-check-label" for="isPublished">Published to students</label>
-                  </div>
+                  <label>Type *</label>
+                  <select [(ngModel)]="formData.sessionType" name="sessionType" [disabled]="modalMode() === 'view'">
+                    <option value="Theory">Lecture</option>
+                    <option value="Practical">Practical</option>
+                    <option value="Assignment">Assignment</option>
+                  </select>
                 </div>
-
-                @if (modalMode() !== 'view') {
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                      <i class="fas fa-save me-1"></i> {{ modalMode() === 'create' ? 'Create' : 'Update' }}
-                    </button>
-                  </div>
-                }
-              </form>
-            }
-
-            @if (activeTab() === 'tasks') {
-              <div class="tasks-panel">
-                @if (modalMode() === 'view') {
-                  <div class="tasks-list">
-                    @for (item of localItems; track item.itemId) {
-                      <div class="task-item" [class.completed]="item.isCompleted">
-                        <div class="task-check">
-                          <input type="checkbox" [checked]="item.isCompleted" (change)="toggleItemComplete(item)" [disabled]="modalMode() === 'view'">
-                        </div>
-                        <div class="task-content">
-                          <div class="task-header">
-                            <span class="task-title">{{ item.title }}</span>
-                            <span class="task-type-badge" [class]="'badge ' + getItemTypeBadgeClass(item.itemType)">{{ item.itemType }}</span>
-                          </div>
-                          @if (item.description) {
-                            <p class="task-desc">{{ item.description }}</p>
-                          }
-                        </div>
-                      </div>
-                    } @empty {
-                      <div class="empty-state small">
-                        <i class="fas fa-clipboard-list"></i>
-                        <p>No tasks or items added yet</p>
-                      </div>
-                    }
-                  </div>
-                } @else {
-                  <div class="tasks-list mb-3">
-                    @for (item of localItems; track item.itemId) {
-                      <div class="task-item" [class.completed]="item.isCompleted">
-                        <div class="task-check">
-                          <input type="checkbox" [checked]="item.isCompleted" (change)="toggleItemComplete(item)">
-                        </div>
-                        <div class="task-content">
-                          <div class="task-header">
-                            <span class="task-title">{{ item.title }}</span>
-                            <span class="task-type-badge" [class]="'badge ' + getItemTypeBadgeClass(item.itemType)">{{ item.itemType }}</span>
-                          </div>
-                          @if (item.description) {
-                            <p class="task-desc">{{ item.description }}</p>
-                          }
-                        </div>
-                        <button class="task-remove" (click)="removeItem(item.itemId)">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    } @empty {
-                      <div class="empty-state small">
-                        <i class="fas fa-clipboard-list"></i>
-                        <p>No tasks or items added yet</p>
-                      </div>
-                    }
-                  </div>
-
-                  <div class="add-task-form">
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label>Title *</label>
-                        <input type="text" [(ngModel)]="newItemTitle" name="newItemTitle" placeholder="e.g., Prepare lab equipment">
-                      </div>
-                      <div class="form-group">
-                        <label>Type</label>
-                        <select [(ngModel)]="newItemType" name="newItemType">
-                          @for (type of itemTypes; track type) {
-                            <option [value]="type">{{ type }}</option>
-                          }
-                        </select>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label>Description</label>
-                      <textarea [(ngModel)]="newItemDescription" name="newItemDescription" rows="1" placeholder="Optional details..."></textarea>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-sm" (click)="addItem()">
-                      <i class="fas fa-plus me-1"></i> Add Item
-                    </button>
-                  </div>
-                }
               </div>
-            }
+
+              <div class="form-group">
+                <label>Description</label>
+                <textarea [(ngModel)]="formData.description" name="description" rows="2" placeholder="Optional notes..." [readonly]="modalMode() === 'view'"></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group me-2" style="flex: 1;">
+                  <label>Start DateTime *</label>
+                  <input type="datetime-local" [(ngModel)]="formData.startDateTime" name="startDateTime" [readonly]="modalMode() === 'view'" style="width: 100%;" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label>End DateTime *</label>
+                  <input type="datetime-local" [(ngModel)]="formData.endDateTime" name="endDateTime" [readonly]="modalMode() === 'view'" style="width: 100%;" required>
+                </div>
+              </div>
+
+              <div class="form-group mt-2">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="allDay" [(ngModel)]="formData.allDay" name="allDay" [disabled]="modalMode() === 'view'">
+                  <label class="form-check-label" for="allDay">All Day</label>
+                </div>
+              </div>
+
+              @if (modalMode() !== 'view') {
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> {{ modalMode() === 'create' ? 'Create' : 'Update' }}
+                  </button>
+                </div>
+              }
+            </form>
           </div>
 
           @if (modalMode() === 'view') {
@@ -317,28 +178,28 @@
       </div>
     </div>
   }
-</div>
 
-@if (showDeleteConfirm()) {
-  <div class="modal-overlay" (click)="cancelDelete()">
-    <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
-      <div class="modal-content">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete</h5>
-          <button type="button" class="close-btn" (click)="cancelDelete()">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p>Are you sure you want to delete this session? This action cannot be undone.</p>
-        </div>
-        <div class="modal-footer border-0 pt-0">
-          <button class="btn btn-secondary btn-sm" (click)="cancelDelete()">Cancel</button>
-          <button class="btn btn-danger btn-sm" (click)="executeDelete()">
-            <i class="fas fa-trash me-1"></i> Delete
-          </button>
+  @if (showDeleteConfirm()) {
+    <div class="modal-overlay" (click)="cancelDelete()">
+      <div class="modal-dialog modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete</h5>
+            <button type="button" class="close-btn" (click)="cancelDelete()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete this session? This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-secondary btn-sm" (click)="cancelDelete()">Cancel</button>
+            <button class="btn btn-danger btn-sm" (click)="executeDelete()">
+              <i class="fas fa-trash me-1"></i> Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-}
+  }
+</div>

@@ -1,8 +1,11 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
+using SmartEduManager.Api.Repositories;
 using SmartEduManager.Api.Repositories.Interfaces;
 
 namespace SmartEduManager.Api.Controllers;
@@ -15,12 +18,14 @@ public class CourseSessionsController : ControllerBase
     private readonly ICourseSessionRepository _repository;
     private readonly IMapper _mapper;
     private readonly ILogger<CourseSessionsController> _logger;
+    private readonly AppDbContext _context;
 
-    public CourseSessionsController(ICourseSessionRepository repository, IMapper mapper, ILogger<CourseSessionsController> logger)
+    public CourseSessionsController(ICourseSessionRepository repository, IMapper mapper, ILogger<CourseSessionsController> logger, AppDbContext context)
     {
         _repository = repository;
         _mapper = mapper;
         _logger = logger;
+        _context = context;
     }
 
     [HttpGet]
@@ -144,10 +149,41 @@ public class CourseSessionsController : ControllerBase
             var session = _mapper.Map<Appointment>(createDto);
             session.CreatedAt = DateTime.UtcNow;
 
+            var sessionItems = new List<SessionItem>();
+
+            if (createDto.Items != null && createDto.Items.Any())
+            {
+                sessionItems.AddRange(createDto.Items.Select(item => new SessionItem
+                {
+                    Title = item.Title,
+                    Description = item.Description,
+                    ItemType = item.ItemType,
+                    IsCompleted = item.IsCompleted,
+                    DueDateTime = item.DueDateTime,
+                    CreatedAt = DateTime.UtcNow
+                }));
+            }
+
             await _repository.AddAsync(session);
             await _repository.SaveChangesAsync();
 
-            var sessionDto = _mapper.Map<CourseSessionDto>(session);
+            if (sessionItems.Any())
+            {
+                foreach (var item in sessionItems)
+                {
+                    item.AppointmentId = session.AppointmentId;
+                }
+                await _context.SessionItems.AddRangeAsync(sessionItems);
+                await _context.SaveChangesAsync();
+            }
+
+            if (createDto.AddModuleTasks && createDto.ModuleId.HasValue)
+            {
+                await AddModuleTasksToSessionAsync(session.AppointmentId, createDto.ModuleId.Value);
+                await _repository.SaveChangesAsync();
+            }
+
+            var sessionDto = _mapper.Map<CourseSessionDto>(await _repository.GetByIdAsync(session.AppointmentId));
             _logger.LogInformation($"Created session with id {session.AppointmentId}");
             return CreatedAtAction(nameof(GetSession), new { id = session.AppointmentId }, sessionDto);
         }
@@ -180,6 +216,33 @@ public class CourseSessionsController : ControllerBase
             _repository.Update(session);
             await _repository.SaveChangesAsync();
 
+            var existingItems = await _context.SessionItems.Where(i => i.AppointmentId == id).ToListAsync();
+            _context.SessionItems.RemoveRange(existingItems);
+            await _context.SaveChangesAsync();
+
+            if (updateDto.Items != null && updateDto.Items.Any())
+            {
+                var sessionItems = updateDto.Items.Select(item => new SessionItem
+                {
+                    AppointmentId = id,
+                    Title = item.Title,
+                    Description = item.Description,
+                    ItemType = item.ItemType,
+                    IsCompleted = item.IsCompleted,
+                    DueDateTime = item.DueDateTime,
+                    CreatedAt = DateTime.UtcNow
+                }).ToList();
+
+                await _context.SessionItems.AddRangeAsync(sessionItems);
+                await _context.SaveChangesAsync();
+            }
+
+            if (updateDto.AddModuleTasks && updateDto.ModuleId.HasValue)
+            {
+                await AddModuleTasksToSessionAsync(id, updateDto.ModuleId.Value);
+                await _context.SaveChangesAsync();
+            }
+
             var sessionDto = _mapper.Map<CourseSessionDto>(session);
             _logger.LogInformation($"Updated session with id {id}");
             return Ok(sessionDto);
@@ -189,6 +252,28 @@ public class CourseSessionsController : ControllerBase
             _logger.LogError(ex, $"Error updating session with id {id}");
             return StatusCode(500, "Internal server error");
         }
+    }
+
+    private async Task AddModuleTasksToSessionAsync(int appointmentId, int moduleId)
+    {
+        var tasks = await _context.ModuleTasks
+            .Where(t => t.ModuleId == moduleId)
+            .ToListAsync();
+
+        if (!tasks.Any()) return;
+
+        var moduleTasks = tasks.Select(t => new SessionItem
+        {
+            AppointmentId = appointmentId,
+            Title = $"{t.TaskNo} - {t.TaskName}",
+            Description = null,
+            ItemType = "Task",
+            IsCompleted = false,
+            DueDateTime = null,
+            CreatedAt = DateTime.UtcNow
+        }).ToList();
+
+        await _context.SessionItems.AddRangeAsync(moduleTasks);
     }
 
     [HttpDelete("{id}")]

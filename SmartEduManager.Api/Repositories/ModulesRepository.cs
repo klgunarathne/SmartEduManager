@@ -25,4 +25,9 @@ public class ModulesRepository : Repository<Models.Modules>, IModulesRepository
             .Include(m => m.Tasks)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<ModuleTask>> GetAllTasksAsync()
+    {
+        return await _context.ModuleTasks.ToListAsync();
+    }
 }

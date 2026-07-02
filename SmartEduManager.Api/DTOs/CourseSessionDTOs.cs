@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace SmartEduManager.Api.DTOs
 {
@@ -41,6 +42,8 @@ namespace SmartEduManager.Api.DTOs
         public string? ModuleName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public string? TaskNo { get; set; }
+        public string? TaskName { get; set; }
         public List<SessionItemDto> Items { get; set; } = new();
     }
 
@@ -86,6 +89,12 @@ namespace SmartEduManager.Api.DTOs
 
         public int? ModuleId { get; set; }
 
+        public bool AddModuleTasks { get; set; } = false;
+
+        public string? TaskNo { get; set; }
+
+        public string? TaskName { get; set; }
+
         public List<CreateSessionItemDto>? Items { get; set; }
     }
 
@@ -126,6 +135,12 @@ namespace SmartEduManager.Api.DTOs
         public int? CenterId { get; set; }
 
         public int? ModuleId { get; set; }
+
+        public bool AddModuleTasks { get; set; } = false;
+
+        public string? TaskNo { get; set; }
+
+        public string? TaskName { get; set; }
 
         public List<CreateSessionItemDto>? Items { get; set; }
     }

@@ -194,7 +194,9 @@ public class MappingProfile : Profile
                  .ForMember(dest => dest.BatchCode, opt => opt.MapFrom(src => src.Batch != null ? src.Batch.BatchCode : null))
                  .ForMember(dest => dest.InstructorName, opt => opt.MapFrom(src => src.Instructor != null ? src.Instructor.FullName : null))
                  .ForMember(dest => dest.CenterName, opt => opt.MapFrom(src => src.Center != null ? src.Center.CenterName : null))
-                 .ForMember(dest => dest.ModuleName, opt => opt.MapFrom(src => src.Module != null ? src.Module.ModuleName : null));
+                 .ForMember(dest => dest.ModuleName, opt => opt.MapFrom(src => src.Module != null ? src.Module.ModuleName : null))
+                  .ForMember(dest => dest.TaskNo, opt => opt.MapFrom(src => src.TaskNo))
+                  .ForMember(dest => dest.TaskName, opt => opt.MapFrom(src => src.TaskName));
 
              CreateMap<CreateCourseSessionDto, Appointment>()
                  .ForMember(dest => dest.AppointmentId, opt => opt.Ignore())
@@ -202,11 +204,11 @@ public class MappingProfile : Profile
                  .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                  .ForMember(dest => dest.Items, opt => opt.Ignore());
 
-             CreateMap<UpdateCourseSessionDto, Appointment>()
-                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null))
-                 .ForMember(dest => dest.AppointmentId, opt => opt.Ignore())
-                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+              CreateMap<UpdateCourseSessionDto, Appointment>()
+                  .ForMember(dest => dest.AppointmentId, opt => opt.Ignore())
+                  .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                  .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                  .ForMember(dest => dest.Items, opt => opt.Ignore());
 
              CreateMap<SessionItem, SessionItemDto>();
              CreateMap<CreateSessionItemDto, SessionItem>();

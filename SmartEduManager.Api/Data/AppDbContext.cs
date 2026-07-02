@@ -230,8 +230,10 @@ public DbSet<Assignment> Assignments { get; set; } = null!;
                .HasForeignKey(a => a.ModuleId)
                .OnDelete(DeleteBehavior.Restrict);
 
-           builder.Entity<SessionItem>()
-               .HasOne(si => si.Appointment)
+builder.Entity<SessionItem>()
+                .HasKey(si => si.ItemId);
+            builder.Entity<SessionItem>()
+                .HasOne(si => si.Appointment)
                .WithMany(a => a.Items)
                .HasForeignKey(si => si.AppointmentId)
                .OnDelete(DeleteBehavior.Cascade);

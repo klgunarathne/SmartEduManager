@@ -40,6 +40,8 @@ export interface CourseSession {
   moduleName?: string;
   createdAt: string;
   updatedAt?: string;
+  taskNo?: string;
+  taskName?: string;
   items: SessionItem[];
 }
 
@@ -60,6 +62,9 @@ export interface CreateSessionDto {
   instructorId?: number;
   centerId?: number;
   moduleId?: number;
+  addModuleTasks?: boolean;
+  taskNo?: string;
+  taskName?: string;
   items?: SessionItem[];
 }
 
@@ -80,6 +85,9 @@ export interface UpdateSessionDto {
   instructorId?: number;
   centerId?: number;
   moduleId?: number;
+  addModuleTasks?: boolean;
+  taskNo?: string;
+  taskName?: string;
   items?: SessionItem[];
 }
 

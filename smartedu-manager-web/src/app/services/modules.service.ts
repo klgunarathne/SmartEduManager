@@ -10,7 +10,14 @@ export interface Module {
   theoryHours: number;
   practicalHours: number;
   ncsId: number;
-  tasks: any[];
+  tasks: ModuleTask[];
+}
+
+export interface ModuleTask {
+  id: number;
+  taskNo: string;
+  taskName: string;
+  moduleId: number;
 }
 
 export interface CreateModule {
@@ -53,6 +60,10 @@ export class ModulesService {
 
   getModule(id: number): Observable<Module> {
     return this.http.get<Module>(`${this.API_URL}/modules/${id}`);
+  }
+
+  getAllTasks(): Observable<ModuleTask[]> {
+    return this.http.get<ModuleTask[]>(`${this.API_URL}/modules/tasks`);
   }
 
   createModule(module: CreateModule): Observable<Module> {
