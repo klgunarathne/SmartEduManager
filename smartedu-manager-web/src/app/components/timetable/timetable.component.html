@@ -11,44 +11,24 @@
 
   <div class="toolbar">
     <div class="toolbar-left">
-      <div class="toolbar-nav-buttons">
-        <button class="btn btn-outline-secondary btn-sm" (click)="onPrev()" title="Previous">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <button class="btn btn-outline-secondary btn-sm" (click)="onTodayClick()" title="Today">Today</button>
-        <button class="btn btn-outline-secondary btn-sm" (click)="onNext()" title="Next">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-        <span class="header-date">{{ getHeaderDateLabel() }}</span>
+      <div class="d-flex align-items-center">
         <span class="today-badge">{{ getTodayLabel() }}</span>
       </div>
     </div>
 
     <div class="toolbar-center">
-      <div class="btn-group view-switcher" role="group">
-        @for (view of views; track view.id) {
-          <button type="button" class="btn btn-sm"
-            [class.btn-primary]="currentView() === view.id"
-            [class.btn-outline-secondary]="currentView() !== view.id"
-            (click)="changeView(view.id)" [attr.title]="view.label">
-            <i class="fas {{ view.icon }}"></i>
-            <span class="d-none d-md-inline ms-1">{{ view.label }}</span>
-          </button>
-        }
+      <div class="input-group input-group-sm" style="width: 200px;">
+        <span class="input-group-text"><i class="fas fa-filter"></i></span>
+        <select class="form-select" [(ngModel)]="selectedBatchId" (change)="onBatchChange()">
+          <option [value]="0">All Batches</option>
+          @for (batch of batches(); track batch.batchId) {
+            <option [value]="batch.batchId">{{ batch.batchCode }} - {{ batch.courseName }}</option>
+          }
+        </select>
       </div>
     </div>
 
     <div class="toolbar-right">
-      <div class="input-group input-group-sm me-2" style="width: 160px;">
-        <span class="input-group-text"><i class="fas fa-filter"></i></span>
-        <select class="form-select" [value]="selectedBatchId()" (change)="selectedBatchId.set(toNumber($any($event.target).value)); onBatchFilterChange()">
-          <option [value]="0">All Batches</option>
-          @for (batch of batches(); track batch.batchId) {
-            <option [value]="batch.batchId" [selected]="selectedBatchId() === batch.batchId">{{ batch.batchCode }}</option>
-          }
-        </select>
-      </div>
-
       <div class="btn-group">
         <button class="btn btn-outline-secondary btn-sm" (click)="onPrint()" title="Print">
           <i class="fas fa-print"></i>
@@ -60,17 +40,11 @@
     </div>
   </div>
 
-  <div class="scheduler-card">
-    @if (isLoading()) {
-      <div class="loading-overlay">
-        <i class="fas fa-spinner fa-spin"></i>
-        <span>Loading schedule...</span>
-      </div>
-    }
-    <div class="calendar-wrapper">
-      <full-calendar #fullCalendar [options]="getCalendarOptions()"></full-calendar>
-    </div>
-  </div>
+  <app-custom-calendar
+    [selectedBatchId]="selectedBatchId()"
+    (eventClick)="onEventClick($event)"
+    (dateDblClick)="onDateDblClick($event)"
+  />
 
   <div class="session-legend">
     <span class="legend-item"><span class="legend-dot" style="background: #3b82f6;"></span> Theory</span>
@@ -122,9 +96,9 @@
                 <div class="form-group">
                   <label>Type *</label>
                   <select [(ngModel)]="formData.sessionType" name="sessionType" [disabled]="modalMode() === 'view'">
-                    <option value="Theory">Lecture</option>
-                    <option value="Practical">Practical</option>
-                    <option value="Assignment">Assignment</option>
+                    @for (type of sessionTypes; track type.value) {
+                      <option [value]="type.value">{{ type.label }}</option>
+                    }
                   </select>
                 </div>
               </div>
@@ -142,13 +116,6 @@
                 <div class="form-group" style="flex: 1;">
                   <label>End DateTime *</label>
                   <input type="datetime-local" [(ngModel)]="formData.endDateTime" name="endDateTime" [readonly]="modalMode() === 'view'" style="width: 100%;" required>
-                </div>
-              </div>
-
-              <div class="form-group mt-2">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="allDay" [(ngModel)]="formData.allDay" name="allDay" [disabled]="modalMode() === 'view'">
-                  <label class="form-check-label" for="allDay">All Day</label>
                 </div>
               </div>
 

@@ -1,0 +1,116 @@
+<div class="custom-calendar">
+  @if (isLoading()) {
+    <div class="loading-overlay">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading schedule...</span>
+    </div>
+  }
+
+  <div class="calendar-header">
+    <div class="header-left">
+      <div class="nav-buttons">
+        <button class="btn btn-outline-secondary btn-sm" (click)="prevPeriod()" title="Previous">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="today()" title="Today">Today</button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="nextPeriod()" title="Next">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <span class="month-year">{{ headerDateLabel() }}</span>
+    </div>
+
+    <div class="header-right">
+      <div class="btn-group view-switcher" role="group">
+        <button type="button" class="btn btn-sm"
+          [class.btn-primary]="currentView() === 'month'"
+          [class.btn-outline-secondary]="currentView() !== 'month'"
+          (click)="setView('month')" title="Month view">
+          <i class="fas fa-calendar-days"></i>
+        </button>
+        <button type="button" class="btn btn-sm"
+          [class.btn-primary]="currentView() === 'week'"
+          [class.btn-outline-secondary]="currentView() !== 'week'"
+          (click)="setView('week')" title="Week view">
+          <i class="fas fa-calendar-week"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (currentView() === 'month') {
+    <div class="calendar-weekdays">
+      @for (day of weekDays; track $index) {
+        <div class="weekday">{{ day }}</div>
+      }
+    </div>
+
+    <div class="calendar-grid">
+      @for (day of calendarDays(); track $index) {
+        <div
+          class="calendar-day"
+          [class.other-month]="!day.isCurrentMonth"
+          [class.today]="day.isToday"
+          [class.selected]="day.isSelected"
+          (click)="selectDay(day)"
+          (dblclick)="dblClickDay(day)"
+        >
+          <div class="day-number">{{ day.date.getDate() }}</div>
+          <div class="day-events">
+            @for (event of getDayEvents(day.date); track event.id) {
+              <div
+                class="calendar-event"
+                [style.background-color]="event.color"
+                [class.completed]="event.status === 'Completed'"
+                (click)="eventClick.emit(event); $event.stopPropagation()"
+              >
+                <span class="event-title">{{ event.title }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="week-header">
+      <div class="time-corner"></div>
+      @for (day of weekDayDates(); track $index) {
+        <div class="week-day-header" [class.today]="isSameDayPublic(day, todayDate())">
+          <div class="weekday-name">{{ weekDays[day.getDay() === 0 ? 6 : day.getDay() - 1] }}</div>
+          <div class="day-num">{{ day.getDate() }}</div>
+        </div>
+      }
+    </div>
+
+    <div class="timeline-container">
+      <div class="time-column">
+        @for (slot of timeSlots; track slot) {
+          <div class="time-slot">{{ slot }}:00</div>
+        }
+      </div>
+
+      <div class="week-grid">
+        @for (day of weekDayDates(); track $index) {
+          <div class="day-column" [class.today]="isSameDayPublic(day, todayDate())" (dblclick)="dateDblClick.emit(day)">
+            @for (slot of timeSlots; track slot) {
+              <div class="time-cell"></div>
+            }
+            @for (event of getWeekEvents($index); track event.id) {
+              <div
+                class="timeline-event"
+                [style.background-color]="event.color"
+                [style.top.%]="getEventPosition(event).top"
+                [style.height.%]="getEventPosition(event).height"
+                [class.completed]="event.status === 'Completed'"
+                (click)="eventClick.emit(event); $event.stopPropagation()"
+              >
+                <span class="event-title">{{ event.title }}</span>
+                <span class="event-time">{{ formatEventTime(event) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
