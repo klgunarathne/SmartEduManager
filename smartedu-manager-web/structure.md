@@ -9,6 +9,7 @@ SmartEduManager is an Angular v21+ standalone application for managing education
 - **Authentication**: JWT Token-based
 - **UI**: Custom CSS with FontAwesome icons
 - **Build**: Angular CLI with OnPush change detection
+- **Notifications**: Toast notifications
 
 ---
 
@@ -21,35 +22,47 @@ src/
 ├── app/
 │   ├── components/           # UI Components
 │   │   ├── admin-layout/     # Admin layout wrapper
+│   │   │   └── admin-layout.component.ts - Sidebar navigation for Admin
 │   │   ├── admin-dashboard/  # Admin dashboard
 │   │   ├── login/           # Login page
 │   │   ├── students/        # Student management (Admin)
-│   │   ├── instructors/     # Instructor & NCS management
+│   │   ├── instructors/     # Instructor & NCS management (Admin only)
+│   │   │   ├── instructors.ts - Instructor CRUD with checkbox multi-select for centers/courses
+│   │   │   ├── instructors.html - Tab-based interface: Instructors, NCS, Modules, Tasks
+│   │   │   └── instructors.scss - Styles with checkbox-grid styling
 │   │   ├── courses/         # Course management (Admin)
-│   │   ├── centers/         # Center & District management
-│   │   ├── user-manager/    # User account management
+│   │   ├── centers/         # Center management (Admin)
+│   │   ├── districts/       # District management (Admin)
+│   │   │   ├── districts.component.ts - Full CRUD for districts
+│   │   │   ├── districts.component.html - Table with search/pagination
+│   │   │   └── districts.component.scss - Styles
+│   │   ├── user-manager/    # User account management (Admin)
 │   │   ├── instructor-dashboard/ # Instructor dashboard
 │   │   ├── instructor-batches/   # Batch management (Instructor)
 │   │   ├── instructor-students/  # Student management (Instructor)
+│   │   ├── instructor-ncs/       # NCS/Modules/Tasks (Instructor)
+│   │   │   └── instructor-ncs.component.ts - View-only curriculum by assigned course(s)
 │   │   ├── instructor-assignments/ # Assignment tracking
 │   │   ├── instructor-continuous-assessments/ # CA management
 │   │   ├── attendance/      # Attendance tracking system
-│   │   ├── timetable/       # Course schedule/timetable
+│   │   ├── timetable/     # Course schedule/timetable
 │   │   ├── exam-question-builder/ # Exam creation
 │   │   ├── shared/          # Reusable components
+│   │   └── toast.component.ts - Toast notification UI with success/error/warning/info types
 │   │   └── continuous-assessments-reports/ # CA reports
 │   ├── services/            # Core services
-│   │   ├── auth.service.ts       # Authentication
-│   │   ├── user.service.ts       # User management
-│   │   ├── instructor.service.ts # Instructor CRUD
+│   │   ├── auth.service.ts       # Authentication, JWT token management
+│   │   ├── user.service.ts       # User CRUD operations
+│   │   ├── instructor.service.ts # Instructor CRUD (multiple centers/courses)
 │   │   ├── student.service.ts    # Student CRUD + CSV import
-│   │   ├── course.service.ts     # Course CRUD
-│   │   ├── batch.service.ts      # Batch CRUD
-│   │   ├── ncs.service.ts        # NCS versions
-│   │   ├── modules.service.ts    # Modules & tasks
-│   │   ├── center.service.ts     # Centers & districts
+│   │   ├── course.service.ts     # Course CRUD operations
+│   │   ├── batch.service.ts      # Batch CRUD operations
+│   │   ├── ncs.service.ts        # NCS versions management
+│   │   ├── modules.service.ts    # Modules & tasks management
+│   │   ├── center.service.ts     # Centers & Districts CRUD
 │   │   ├── course-schedule.service.ts # Timetable sessions
-│   │   └── toast.service.ts      # Notifications
+│   │   ├── toast.service.ts      # Toast notifications
+│   │   └── confirm-dialog.service.ts # Confirm dialogs
 │   ├── interceptors/        # HTTP interceptors
 │   │   └── auth.interceptor.ts   # JWT token injection
 │   ├── app.routes.ts        # Routing configuration
@@ -71,11 +84,12 @@ src/
   - `isAdmin()` - Check Admin role
   - `isInstructor()` - Check Instructor role
   - `checkAuthStatus()` - Validate token expiration
+  - `getToken()` - Get stored access token
 
 ### Routes Structure
 - `/login` - Public access
-- `/admin/*` - Admin only (instructors, courses, centers, users, timetable, exam-builder)
-- `/instructor/*` - Instructor only (dashboard, batches, students, ncs, modules, schedule, attendance)
+- `/admin/*` - Admin only (dashboard, districts, centers, courses, instructors, students, users, exam-question-builder)
+- `/instructor/*` - Instructor only (dashboard, ncs, batches, students, assignments, continuous-assessments, attendance, schedule)
 
 ---
 
@@ -83,30 +97,36 @@ src/
 
 ### 1. Master Data Management
 
-#### Districts (`center.service.ts`)
-- `getDistricts()` - Retrieve all districts
-- *Note: No dedicated UI component exists*
+#### Districts (`districts.component.ts`, `center.service.ts`)
+- **Full CRUD**: Create, view, update, delete districts
+- Fields: districtId, districtName
+- UI: Table with search, pagination, modal forms for add/edit
+- Toast notifications
 
 #### Centers (`centers.ts`)
 - Full CRUD operations on centers
-- District association
+- District association dropdown
 - Fields: centerName, districtId, address, contactNumber
+- Toast notifications for all CRUD operations
 
 #### Courses (`courses.ts`)
 - Full CRUD operations
-- Fields: courseName, courseCode, description, duration
+- Fields: courseName, description, duration, courseFee, centerId
 
 #### User Accounts (`user-manager.ts`)
 - Full CRUD operations
 - Role assignments (Admin, Instructor)
 - User activation/deactivation
+- Password validation with requirements
 
 ### 2. Instructor Management (`instructors.ts`)
 - Create/edit/delete instructors
-- Assign to Center and Course
-- Fields: epfNo, fullName, email, phone, nic, courseId, centerId
+- **Multiple Center Assignment**: Checkbox multi-selection (scrollable list)
+- **Multiple Course Assignment**: Checkbox multi-selection (scrollable list)
+- Fields: epfNo, fullName, email, phone, nic, centerIds[], courseIds[]
+- Toast notifications for all operations (create, update, delete, errors)
 
-### 3. NCS Management (`ncs.service.ts`, `instructors.ts`)
+### 3. NCS Management (`ncs.service.ts`, `modules.service.ts`)
 - **NCS Versions**: Create, view, update, delete NCS
 - **Modules**: Create, view, update, delete modules under NCS
 - **Tasks**: Create, view, update, delete tasks under modules
@@ -116,26 +136,28 @@ src/
 
 ## Instructor Functions
 
-### 1. NCS Management
-- Instructors see only NCS for their assigned Course/Trade
+### 1. NCS Management (`instructor-ncs.component.ts`)
+- Instructors see only NCS for their assigned Course(s)
+- **Course selector**: Dropdown to switch between multiple assigned courses
 - Tab-based interface: NCS, Modules, Tasks
-- View and use assigned curriculum
+- Read-only view of curriculum
+- Shows "No Course Assigned" message if instructor not assigned to any course
 
 ### 2. Batch Management (`instructor-batches.component.ts`)
-- **Create Batch**: batchCode, courseId, startDate, endDate
-- **View Batches**: Table view with batch details
-- **Update Batch**: Edit batch information
-- **Delete Batch**: Remove batch
+- Create training batches
+- View and manage existing batches
+- Update batch details
+- Delete batches
+- Fields: batchCode, courseId, startDate, endDate, duration
 
 ### 3. Student Management (`instructor-students.component.ts`)
-- **Register Students**:
-  - Individual: misNo, nameWithInitials, fullName, nicNo, gender, address, telephone, email
-  - Bulk CSV Import with column mapping
-- **Assign to Batches**: Dropdown selection
-- **View Students**: Search, filter by batch, reorder students
-- **Update Student**: Edit all student fields
-- **Delete Student**: Remove enrollment
-- **Reordering**: Move students up/down in list
+- Register new students individually
+- Bulk CSV Import with column mapping
+- Assign students to batches
+- View student details with search and filter
+- Update student information
+- Delete students from batches
+- Reorder students (move up/down)
 
 ### 4. Attendance (`attendance/*.ts`)
 - Daily attendance tracking
@@ -144,12 +166,10 @@ src/
 - Batch summary reports
 - Course completion tracking
 
-### 5. Timetable (`timetable.component.ts`, `custom-calendar.component.ts`)
-- **Month View**: Calendar grid with events
-- **Week View**: Time-based horizontal view (8AM-6PM)
-- **Session Types**: Theory, Practical, Exam, Assessment, Orientation
-- **CRUD Sessions**: Create, view, edit, delete
-- **Double-click dates**: Quick session creation
+### 5. Timetable (`timetable.component.ts`)
+- Month View: Calendar grid with events
+- Session Types: Theory, Practical, Exam, Assessment, Orientation
+- CRUD Sessions: Create, view, edit, delete
 
 ### 6. Assignments (`instructor-assignments.component.ts`)
 - Assignment creation and tracking
@@ -166,15 +186,18 @@ src/
 ### Core Entities
 
 ```typescript
-// User
+// User (user.service.ts)
 {
   id: string,
   firstName, lastName, email,
+  password?, address?, dateOfBirth?, imageUrl?,
   roles: string[],
-  phoneNumber?, address?, dateOfBirth?, imageUrl?
+  status: string,
+  createdAt?, updatedAt?,
+  centerId?, courseId?
 }
 
-// Student
+// Student (student.service.ts)
 {
   id, misNo, nameWithInitials, fullName, nicNo,
   email, telephone, address,
@@ -182,32 +205,47 @@ src/
   gsDivision, agDivision
 }
 
-// Batch
+// Batch (batch.service.ts)
 {
   batchId, batchCode, courseId, courseName,
   startDate, endDate, duration
 }
 
-// Course
+// Course (course.service.ts)
 {
-  courseId, courseName, courseCode,
-  description, duration
+  courseId, courseName, description, duration,
+  courseFee, centerId, centerName,
+  instructorIds, instructorNames,
+  batchIds, batchCodes,
+  hasInstructors, hasBatches
 }
 
-// Instructor
+// Instructor (instructor.service.ts)
 {
   instructorId, epfNo, fullName, email, phone, nic,
-  centerId, courseId
+  centerIds: number[], centerNames: string[],
+  courseIds: number[], courseNames: string[]
 }
 
-// NCS
+// District (center.service.ts)
+{
+  districtId, districtName
+}
+
+// Center (center.service.ts)
+{
+  centerId, centerName, districtId, districtName,
+  address, contactNumber
+}
+
+// NCS (ncs.service.ts)
 {
   id, version, name, updatedDate,
   courseId, courseName,
   modules: Module[]
 }
 
-// Module
+// Module (modules.service.ts)
 {
   id, moduleNo, moduleName,
   theoryHours, practicalHours, ncsId,
@@ -219,7 +257,7 @@ src/
   id, taskNo, taskName, moduleId
 }
 
-// CourseSession
+// CourseSession (course-schedule.service.ts)
 {
   appointmentId, text, description,
   startDateTime, endDateTime,
@@ -233,32 +271,30 @@ src/
 
 ## Features Summary
 
-| Feature | Admin | Instructor | Notes |
-|---------|-------|----------|-------|
+| Feature | Admin | Instructor | Status |
+|---------|-------|----------|--------|
 | Dashboard | ✅ | ✅ | Separate dashboards |
-| Districts | ✅ | ❌ | Service exists, no UI |
-| Centers | ✅ | ❌ | Full CRUD |
+| Districts | ✅ | ❌ | Full CRUD implemented |
+| Centers | ✅ | ❌ | Full CRUD with toast notifications |
 | Courses | ✅ | ❌ | Full CRUD |
-| Instructors | ✅ | ❌ | Manage instructors |
+| Instructors | ✅ | ❌ | Manage instructors with multi-center/course assignment via checkboxes |
 | Students | ✅ | ✅ | Admin global access, Instructor by batch |
 | Batches | ✅ | ✅ | Instructor creates/manages own batches |
-| NCS | ✅ | ✅ | Admin full access, Instructor filtered by course |
-| Modules | ✅ | ✅ | Under NCS |
-| Tasks | ✅ | ✅ | Under Modules |
+| NCS | ✅ | ✅ | Admin full access, Instructor filtered by assigned course(s) |
+| Modules | ✅ | ✅ | Under NCS with toast notifications |
+| Tasks | ✅ | ✅ | Under Modules with toast notifications |
 | Timetable | ✅ | ✅ | Session scheduling |
 | Attendance | ✅ | ✅ | Daily/monthly tracking |
 | Assignments | ✅ | ✅ | Task assignments |
 | Continuous Assessments | ✅ | ✅ | Scoring system |
+| User-Center/Course Assignment | ✅ | N/A | Assign instructor to multiple centers/courses via checkboxes |
 
 ---
 
-## Missing Features (To Implement)
+## Remaining Features (Require Backend API)
 
-1. **Districts UI** - No component for managing districts
-2. **NCS Publish Notifications** - No notification system for new NCS versions
-3. **NCS Version Switching** - Instructors cannot switch between NCS versions
-4. **Instructor-Course Filtering** - NCS not filtered by instructor's assigned course
-5. **Role-based Menu** - Same layout used for both roles
+1. **NCS Publish Notifications** - No notification system for new NCS versions
+2. **NCS Version Switching** - Backend endpoint to switch active NCS version for instructor
 
 ---
 
@@ -271,5 +307,5 @@ apiUrl: 'https://localhost:7160/api'
 
 ### Production (`environment.prod.ts`)
 ```typescript
-apiUrl: 'production-api-url'
+apiUrl: 'http://smartedumanagerapi.runasp.net/api'
 ```

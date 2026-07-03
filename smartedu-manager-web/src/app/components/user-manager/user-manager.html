@@ -203,6 +203,29 @@
               }
             </div>
           </div>
+
+          @if (selectedUser.roles.includes('Instructor')) {
+            <div class="form-row">
+              <div class="form-group">
+                <label>Center</label>
+                <select [(ngModel)]="selectedUser.centerId" name="centerId">
+                  <option [value]="null">Select Center</option>
+                  @for (center of availableCenters(); track center.centerId) {
+                    <option [value]="center.centerId">{{ center.centerName }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Course</label>
+                <select [(ngModel)]="selectedUser.courseId" name="courseId">
+                  <option [value]="null">Select Course</option>
+                  @for (course of availableCourses(); track course.courseId) {
+                    <option [value]="course.courseId">{{ course.courseName }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
           
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>

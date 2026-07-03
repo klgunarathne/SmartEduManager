@@ -1,0 +1,104 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h2>Districts</h2>
+      <p>Manage education districts</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="fas fa-plus"></i> Add District
+    </button>
+  </div>
+
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search districts..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)">
+    </div>
+    <span class="filter-info">{{ filteredDistricts.length }} districts found</span>
+  </div>
+
+  <div class="table-card">
+    @if (isLoading()) {
+      <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading districts...</span>
+      </div>
+    }
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>District Name</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (district of paginatedDistricts; track district.districtId) {
+            <tr>
+              <td class="district-name">{{ district.districtName }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-btn edit" (click)="openEditModal(district)" title="Edit">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-btn delete" (click)="deleteDistrict(district)" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="2" class="empty-state">
+                <i class="fas fa-map-marked-alt"></i>
+                <p>No districts found</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPagesCount() > 1) {
+      <div class="pagination">
+        <button class="page-btn" (click)="prevPage()" [disabled]="currentPage() === 1">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="page-info">Page {{ currentPage() }} of {{ totalPagesCount() }}</span>
+        <button class="page-btn" (click)="nextPage()" [disabled]="currentPage() === totalPagesCount()">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    }
+  </div>
+</div>
+
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ modalMode() === 'add' ? 'Add New District' : 'Edit District' }}</h3>
+        <button class="close-btn" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form (ngSubmit)="saveDistrict()">
+          <div class="form-group">
+            <label>District Name</label>
+            <input type="text" [(ngModel)]="selectedDistrict.districtName" name="districtName" required>
+          </div>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              {{ modalMode() === 'add' ? 'Create District' : 'Update District' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}

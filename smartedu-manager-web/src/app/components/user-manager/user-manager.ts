@@ -2,6 +2,8 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService, User, Role } from '../../services/user.service';
+import { CourseService, Course } from '../../services/course.service';
+import { CenterService, Center } from '../../services/center.service';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
@@ -12,7 +14,10 @@ import { ToastService } from '../../services/toast.service';
   styleUrl: './user-manager.scss'
 })
 export class UserManagerComponent implements OnInit {
+  private userService = inject(UserService);
   private toast = inject(ToastService);
+  private courseService = inject(CourseService);
+  private centerService = inject(CenterService);
 
   showModal = signal(false);
   modalMode = signal<'add' | 'edit'>('add');
@@ -23,15 +28,36 @@ export class UserManagerComponent implements OnInit {
 
   selectedUser: User = this.getEmptyUser();
   availableRoles: string[] = [];
+  availableCourses = signal<Course[]>([]);
+  availableCenters = signal<Center[]>([]);
   confirmPassword: string = '';
-
-  constructor(private userService: UserService) {}
 
   ngOnInit(): void {
     this.userService.getUsers().subscribe();
     this.userService.getRoles().subscribe({
       next: (roles) => {
         this.availableRoles = roles.map(r => r.name);
+      }
+    });
+    this.loadCourses();
+    this.loadCenters();
+  }
+
+  private loadCourses(): void {
+    this.courseService.getCourses().subscribe({
+      next: (courses) => this.availableCourses.set(courses)
+    });
+  }
+
+  private loadCenters(): void {
+    this.centerService.getCenters().subscribe({
+      next: (centers) => {
+        this.centerService.getDistricts().subscribe({
+          next: (districts) => {
+            this.availableCenters.set(centers);
+            this.centerService.districts.set(districts);
+          }
+        });
       }
     });
   }
@@ -46,7 +72,9 @@ export class UserManagerComponent implements OnInit {
       dateOfBirth: undefined,
       imageUrl: '',
       roles: [],
-      status: 'Active'
+      status: 'Active',
+      centerId: undefined,
+      courseId: undefined
     };
   }
 
@@ -69,21 +97,24 @@ export class UserManagerComponent implements OnInit {
 
   saveUser(): void {
     if (this.modalMode() === 'add') {
-      if (!this.validatePassword()) {
-        return;
+      if (this.selectedUser.roles.includes('Instructor')) {
+        if (!this.validatePassword()) {
+          return;
+        }
+        
+        if (this.selectedUser.password !== this.confirmPassword) {
+          this.toast.warning('Passwords do not match');
+          return;
+        }
       }
       
-      if (this.selectedUser.password !== this.confirmPassword) {
-        this.toast.warning('Passwords do not match');
-        return;
-      }
-      
-      this.userService.createUser(this.selectedUser).subscribe({
+      const userData = { ...this.selectedUser };
+      this.userService.createUser(userData).subscribe({
         next: () => {
           this.closeModal();
           this.toast.success('User created successfully');
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Failed to create user:', error);
           this.toast.error('Failed to create user: ' + (error.error?.message || error.message));
         }
@@ -94,7 +125,7 @@ export class UserManagerComponent implements OnInit {
           this.closeModal();
           this.toast.success('User updated successfully');
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Failed to update user:', error);
           this.toast.error('Failed to update user: ' + (error.error?.message || error.message));
         }

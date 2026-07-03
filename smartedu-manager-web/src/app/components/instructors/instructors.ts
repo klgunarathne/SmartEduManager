@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InstructorService, Instructor, CreateInstructor } from '../../services/instructor.service';
@@ -6,6 +6,8 @@ import { CourseService, Course } from '../../services/course.service';
 import { NcsService, NCS, CreateNCS } from '../../services/ncs.service';
 import { ModulesService, Module, CreateModule } from '../../services/modules.service';
 import { AuthService } from '../../services/auth.service';
+import { CenterService, Center } from '../../services/center.service';
+import { ToastService } from '../../services/toast.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -17,6 +19,8 @@ import { environment } from '../../../environments/environment';
   styleUrl: './instructors.scss'
 })
 export class InstructorsComponent implements OnInit {
+  private toast = inject(ToastService);
+
   activeTab = signal<'instructors' | 'ncs' | 'modules' | 'tasks'>('instructors');
 
   showInstructorModal = signal(false);
@@ -43,6 +47,8 @@ export class InstructorsComponent implements OnInit {
 
   tasks = signal<any[]>([]);
   selectedModuleForTasks = signal<number>(0);
+  selectedCenterIds: number[] = [];
+  selectedCourseIds: number[] = [];
 
   get isInstructor(): boolean {
     return this.authService.isInstructor();
@@ -51,6 +57,7 @@ export class InstructorsComponent implements OnInit {
   constructor(
     private instructorService: InstructorService,
     private courseService: CourseService,
+    private centerService: CenterService,
     private ncsService: NcsService,
     private modulesService: ModulesService,
     private authService: AuthService,
@@ -69,6 +76,11 @@ export class InstructorsComponent implements OnInit {
     }
     this.loadCourses();
     this.loadTasks();
+    this.loadCenters();
+  }
+
+  private loadCenters(): void {
+    this.centerService.getCenters().subscribe();
   }
 
   private loadInstructors(): void {
@@ -94,7 +106,7 @@ export class InstructorsComponent implements OnInit {
   }
 
   private getEmptyInstructor(): CreateInstructor {
-    return { epfNo: '', fullName: '', nic: '', email: '', phone: '' };
+    return { epfNo: '', fullName: '', nic: '', email: '', phone: '', centerIds: [], courseIds: [] };
   }
 
   private getEmptyNCS(): CreateNCS {
@@ -117,6 +129,8 @@ export class InstructorsComponent implements OnInit {
 
   openAddInstructorModal(): void {
     this.selectedInstructor = this.getEmptyInstructor();
+    this.selectedCenterIds = [];
+    this.selectedCourseIds = [];
     this.instructorModalMode.set('add');
     this.showInstructorModal.set(true);
   }
@@ -127,8 +141,12 @@ export class InstructorsComponent implements OnInit {
       fullName: instructor.fullName,
       nic: instructor.nic,
       email: instructor.email,
-      phone: instructor.phone
+      phone: instructor.phone,
+      centerIds: instructor.centerIds || [],
+      courseIds: instructor.courseIds || []
     };
+    this.selectedCenterIds = [...instructor.centerIds || []];
+    this.selectedCourseIds = [...instructor.courseIds || []];
     this.instructorModalMode.set('edit');
     this.showInstructorModal.set(true);
   }
@@ -136,20 +154,34 @@ export class InstructorsComponent implements OnInit {
   closeInstructorModal(): void {
     this.showInstructorModal.set(false);
     this.selectedInstructor = this.getEmptyInstructor();
+    this.selectedCenterIds = [];
+    this.selectedCourseIds = [];
   }
 
   saveInstructor(): void {
+    const instructorData = {
+      ...this.selectedInstructor,
+      centerIds: this.selectedCenterIds,
+      courseIds: this.selectedCourseIds
+    };
+
     if (this.instructorModalMode() === 'add') {
-      this.instructorService.createInstructor(this.selectedInstructor).subscribe({
-        next: () => this.closeInstructorModal(),
-        error: (error) => alert('Failed to create instructor: ' + (error.error?.message || error.message))
+      this.instructorService.createInstructor(instructorData).subscribe({
+        next: () => {
+          this.closeInstructorModal();
+          this.toast.success('Instructor created successfully');
+        },
+        error: (error) => this.toast.error('Failed to create instructor: ' + (error.error?.message || error.message))
       });
     } else {
       const instructor = this.instructorService.instructors().find(i => i.epfNo === this.selectedInstructor.epfNo);
       if (instructor) {
-        this.instructorService.updateInstructor(instructor.instructorId, this.selectedInstructor).subscribe({
-          next: () => this.closeInstructorModal(),
-          error: (error) => alert('Failed to update instructor: ' + (error.error?.message || error.message))
+        this.instructorService.updateInstructor(instructor.instructorId, instructorData).subscribe({
+          next: () => {
+            this.closeInstructorModal();
+            this.toast.success('Instructor updated successfully');
+          },
+          error: (error) => this.toast.error('Failed to update instructor: ' + (error.error?.message || error.message))
         });
       }
     }
@@ -158,8 +190,8 @@ export class InstructorsComponent implements OnInit {
   deleteInstructor(instructor: Instructor): void {
     if (confirm(`Are you sure you want to delete ${instructor.fullName}?`)) {
       this.instructorService.deleteInstructor(instructor.instructorId).subscribe({
-        next: () => {},
-        error: () => alert('Failed to delete instructor')
+        next: () => this.toast.success('Instructor deleted successfully'),
+        error: () => this.toast.error('Failed to delete instructor')
       });
     }
   }
@@ -189,15 +221,21 @@ export class InstructorsComponent implements OnInit {
   saveNCS(): void {
     if (this.ncsModalMode() === 'add') {
       this.ncsService.createNCS(this.selectedNCS).subscribe({
-        next: () => this.closeNCSModal(),
-        error: (error) => alert('Failed to create NCS: ' + (error.error?.message || error.message))
+        next: () => {
+          this.closeNCSModal();
+          this.toast.success('NCS created successfully');
+        },
+        error: (error) => this.toast.error('Failed to create NCS: ' + (error.error?.message || error.message))
       });
     } else {
       const ncs = this.ncsService.ncsList().find(n => n.name === this.selectedNCS.name && n.courseId === this.selectedNCS.courseId);
       if (ncs) {
         this.ncsService.updateNCS(ncs.id, this.selectedNCS).subscribe({
-          next: () => this.closeNCSModal(),
-          error: (error) => alert('Failed to update NCS: ' + (error.error?.message || error.message))
+          next: () => {
+            this.closeNCSModal();
+            this.toast.success('NCS updated successfully');
+          },
+          error: (error) => this.toast.error('Failed to update NCS: ' + (error.error?.message || error.message))
         });
       }
     }
@@ -206,8 +244,8 @@ export class InstructorsComponent implements OnInit {
   deleteNCS(ncs: NCS): void {
     if (confirm(`Are you sure you want to delete ${ncs.name}?`)) {
       this.ncsService.deleteNCS(ncs.id).subscribe({
-        next: () => {},
-        error: () => alert('Failed to delete NCS')
+        next: () => this.toast.success('NCS deleted successfully'),
+        error: () => this.toast.error('Failed to delete NCS')
       });
     }
   }
@@ -237,21 +275,27 @@ export class InstructorsComponent implements OnInit {
 
   saveModule(): void {
     if (this.selectedModule.ncsId === 0) {
-      alert('Please select an NCS');
+      this.toast.warning('Please select an NCS');
       return;
     }
 
     if (this.moduleModalMode() === 'add') {
       this.modulesService.createModule(this.selectedModule).subscribe({
-        next: () => this.closeModuleModal(),
-        error: (error) => alert('Failed to create module: ' + (error.error?.message || error.message))
+        next: () => {
+          this.closeModuleModal();
+          this.toast.success('Module created successfully');
+        },
+        error: (error) => this.toast.error('Failed to create module: ' + (error.error?.message || error.message))
       });
     } else {
       const module = this.modulesService.modules().find(m => m.moduleNo === this.selectedModule.moduleNo && m.ncsId === this.selectedModule.ncsId);
       if (module) {
         this.modulesService.updateModule(module.id, this.selectedModule).subscribe({
-          next: () => this.closeModuleModal(),
-          error: (error) => alert('Failed to update module: ' + (error.error?.message || error.message))
+          next: () => {
+            this.closeModuleModal();
+            this.toast.success('Module updated successfully');
+          },
+          error: (error) => this.toast.error('Failed to update module: ' + (error.error?.message || error.message))
         });
       }
     }
@@ -260,8 +304,8 @@ export class InstructorsComponent implements OnInit {
   deleteModule(module: Module): void {
     if (confirm(`Are you sure you want to delete ${module.moduleName}?`)) {
       this.modulesService.deleteModule(module.id).subscribe({
-        next: () => {},
-        error: () => alert('Failed to delete module')
+        next: () => this.toast.success('Module deleted successfully'),
+        error: () => this.toast.error('Failed to delete module')
       });
     }
   }
@@ -285,7 +329,7 @@ export class InstructorsComponent implements OnInit {
 
   saveTask(): void {
     if (!this.selectedTask.taskNo.trim() || !this.selectedTask.taskName.trim() || this.selectedTask.moduleId === 0) {
-      alert('Please fill all fields and select a module');
+      this.toast.warning('Please fill all fields and select a module');
       return;
     }
 
@@ -297,16 +341,20 @@ export class InstructorsComponent implements OnInit {
       next: () => {
         this.closeTaskModal();
         this.loadTasks();
+        this.toast.success('Task saved successfully');
       },
-      error: () => alert('Failed to save task')
+      error: () => this.toast.error('Failed to save task')
     });
   }
 
   deleteTask(task: any): void {
     if (!confirm(`Delete task "${task.taskNo} - ${task.taskName}"?`)) return;
     this.http.delete(`${environment.apiUrl}/moduletasks/${task.id}`, { responseType: 'text' }).subscribe({
-      next: () => this.loadTasks(),
-      error: () => alert('Failed to delete task')
+      next: () => {
+        this.loadTasks();
+        this.toast.success('Task deleted successfully');
+      },
+      error: () => this.toast.error('Failed to delete task')
     });
   }
 
@@ -316,6 +364,10 @@ export class InstructorsComponent implements OnInit {
 
   get courses(): Course[] {
     return this.courseService.courses();
+  }
+
+  get centers(): Center[] {
+    return this.centerService.centers();
   }
 
   get ncsList(): NCS[] {
@@ -443,5 +495,31 @@ export class InstructorsComponent implements OnInit {
   onModuleFilterChange(value: string): void {
     this.selectedModuleForTasks.set(Number(value));
     this.searchTerm.set('');
+  }
+
+  toggleCenter(centerId: number): void {
+    const index = this.selectedCenterIds.indexOf(centerId);
+    if (index === -1) {
+      this.selectedCenterIds.push(centerId);
+    } else {
+      this.selectedCenterIds.splice(index, 1);
+    }
+  }
+
+  isCenterSelected(centerId: number): boolean {
+    return this.selectedCenterIds.includes(centerId);
+  }
+
+  toggleCourse(courseId: number): void {
+    const index = this.selectedCourseIds.indexOf(courseId);
+    if (index === -1) {
+      this.selectedCourseIds.push(courseId);
+    } else {
+      this.selectedCourseIds.splice(index, 1);
+    }
+  }
+
+  isCourseSelected(courseId: number): boolean {
+    return this.selectedCourseIds.includes(courseId);
   }
 }

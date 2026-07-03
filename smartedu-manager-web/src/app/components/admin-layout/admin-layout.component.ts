@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { filter, map, mergeMap } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { ToastComponent } from '../shared/toast.component';
 
 interface Breadcrumb {
   label: string;
@@ -13,8 +14,9 @@ interface Breadcrumb {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
-  template: `
+  imports: [CommonModule, RouterModule, ToastComponent],
+template: `
+    <app-toast></app-toast>
     <div class="admin-layout" [class.sidebar-collapsed]="sidebarCollapsed()">
       <!-- Sidebar -->
       <aside class="sidebar">
@@ -42,6 +44,14 @@ interface Breadcrumb {
                 </a>
               </li>
               <li class="nav-item">
+                <a routerLink="/admin/districts" routerLinkActive="active" class="nav-link">
+                  <i class="fas fa-map-marked-alt"></i>
+                  @if (!sidebarCollapsed()) {
+                    <span>Districts</span>
+                  }
+                </a>
+              </li>
+              <li class="nav-item">
                 <a routerLink="/admin/centers" routerLinkActive="active" class="nav-link">
                   <i class="fas fa-building"></i>
                   @if (!sidebarCollapsed()) {
@@ -54,14 +64,6 @@ interface Breadcrumb {
                   <i class="fas fa-book"></i>
                   @if (!sidebarCollapsed()) {
                     <span>Courses</span>
-                  }
-                </a>
-              </li>
-              <li class="nav-item">
-                <a routerLink="/admin/timetable" routerLinkActive="active" class="nav-link">
-                  <i class="fas fa-calendar-alt"></i>
-                  @if (!sidebarCollapsed()) {
-                    <span>Timetable</span>
                   }
                 </a>
               </li>

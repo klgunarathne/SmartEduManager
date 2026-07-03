@@ -16,6 +16,8 @@ export interface User {
   status: string;
   createdAt?: Date;
   updatedAt?: Date;
+  centerId?: number;
+  courseId?: number;
 }
 
 export interface Role {

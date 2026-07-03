@@ -79,6 +79,11 @@ export const routes: Routes = [
         data: { breadcrumb: 'Centers' }
       },
       {
+        path: 'districts',
+        loadComponent: () => import('./components/districts/districts.component').then(m => m.DistrictsComponent),
+        data: { breadcrumb: 'Districts' }
+      },
+      {
         path: 'assignments',
         redirectTo: 'dashboard',
         data: { breadcrumb: 'Assignments' }
@@ -158,7 +163,7 @@ export const routes: Routes = [
       },
       {
         path: 'ncs',
-        loadComponent: () => import('./components/instructors/instructors').then(m => m.InstructorsComponent),
+        loadComponent: () => import('./components/instructor-ncs/instructor-ncs.component').then(m => m.InstructorNcsComponent),
         data: { breadcrumb: 'NCS & Modules' }
       },
       {
