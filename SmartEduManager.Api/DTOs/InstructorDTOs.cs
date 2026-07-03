@@ -8,6 +8,10 @@ public class InstructorDto
     public string NIC { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Phone { get; set; } = null!;
+    public List<int> CenterIds { get; set; } = new List<int>();
+    public List<string> CenterNames { get; set; } = new List<string>();
+    public List<int> CourseIds { get; set; } = new List<int>();
+    public List<string> CourseNames { get; set; } = new List<string>();
 }
 
 public class CreateInstructorDto
@@ -17,6 +21,8 @@ public class CreateInstructorDto
     public string NIC { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Phone { get; set; } = null!;
+    public List<int> CenterIds { get; set; } = new List<int>();
+    public List<int> CourseIds { get; set; } = new List<int>();
 }
 
 public class UpdateInstructorDto
@@ -26,4 +32,6 @@ public class UpdateInstructorDto
     public string? NIC { get; set; }
     public string? Email { get; set; }
     public string? Phone { get; set; }
+    public List<int>? CenterIds { get; set; }
+    public List<int>? CourseIds { get; set; }
 }

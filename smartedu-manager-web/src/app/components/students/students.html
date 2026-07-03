@@ -101,7 +101,7 @@
 
 <!-- Modal -->
 @if (showModal()) {
-  <div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ modalMode() === 'add' ? 'Add New Student' : 'Edit Student' }}</h3>

@@ -13,12 +13,14 @@ namespace SmartEduManager.Api.Controllers;
 public class InstructorsController : ControllerBase
 {
     private readonly IInstructorRepository _repository;
+    private readonly ICourseInstructorRepository _courseInstructorRepository;
     private readonly IMapper _mapper;
     private readonly ILogger<InstructorsController> _logger;
 
-    public InstructorsController(IInstructorRepository repository, IMapper mapper, ILogger<InstructorsController> logger)
+    public InstructorsController(IInstructorRepository repository, ICourseInstructorRepository courseInstructorRepository, IMapper mapper, ILogger<InstructorsController> logger)
     {
         _repository = repository;
+        _courseInstructorRepository = courseInstructorRepository;
         _mapper = mapper;
         _logger = logger;
     }
@@ -28,7 +30,7 @@ public class InstructorsController : ControllerBase
     {
         try
         {
-            var instructors = await _repository.GetAllAsync();
+            var instructors = await _repository.GetInstructorsWithCoursesAsync();
             var instructorsDto = _mapper.Map<IEnumerable<InstructorDto>>(instructors);
 
             _logger.LogInformation($"Retrieved {instructors.Count()} instructors");
@@ -46,7 +48,7 @@ public class InstructorsController : ControllerBase
     {
         try
         {
-            var instructor = await _repository.GetByIdAsync(id);
+            var instructor = await _repository.GetInstructorWithCoursesAsync(id);
 
             if (instructor == null)
             {
@@ -77,7 +79,17 @@ public class InstructorsController : ControllerBase
             await _repository.AddAsync(instructor);
             await _repository.SaveChangesAsync();
 
-            var instructorDto = _mapper.Map<InstructorDto>(instructor);
+            if (createInstructorDto.CourseIds != null && createInstructorDto.CourseIds.Any())
+            {
+                foreach (var courseId in createInstructorDto.CourseIds)
+                {
+                    await _courseInstructorRepository.AddAsync(new CourseInstructor { InstructorId = instructor.InstructorId, CourseId = courseId });
+                }
+                await _courseInstructorRepository.SaveChangesAsync();
+            }
+
+            var savedInstructor = await _repository.GetInstructorWithCoursesAsync(instructor.InstructorId);
+            var instructorDto = _mapper.Map<InstructorDto>(savedInstructor);
 
             _logger.LogInformation($"Created instructor with id {instructor.InstructorId}");
             return CreatedAtAction(nameof(GetInstructor), new { id = instructor.InstructorId }, instructorDto);
@@ -98,7 +110,7 @@ public class InstructorsController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var instructor = await _repository.GetByIdAsync(id);
+            var instructor = await _repository.GetInstructorWithCoursesAsync(id);
             if (instructor == null)
             {
                 _logger.LogWarning($"Instructor with id {id} not found");
@@ -109,8 +121,33 @@ public class InstructorsController : ControllerBase
             _repository.Update(instructor);
             await _repository.SaveChangesAsync();
 
+            if (updateInstructorDto.CourseIds != null)
+            {
+                var existingCourses = instructor.CourseInstructors.Select(ci => ci.CourseId).ToList();
+                var toAdd = updateInstructorDto.CourseIds.Except(existingCourses).ToList();
+                var toRemove = existingCourses.Except(updateInstructorDto.CourseIds).ToList();
+
+                foreach (var courseId in toRemove)
+                {
+                    var courseInstructor = instructor.CourseInstructors.FirstOrDefault(ci => ci.CourseId == courseId);
+                    if (courseInstructor != null)
+                    {
+                        _courseInstructorRepository.Delete(courseInstructor);
+                    }
+                }
+
+                foreach (var courseId in toAdd)
+                {
+                    await _courseInstructorRepository.AddAsync(new CourseInstructor { InstructorId = id, CourseId = courseId });
+                }
+
+                await _courseInstructorRepository.SaveChangesAsync();
+            }
+
+            var updatedInstructor = await _repository.GetInstructorWithCoursesAsync(id);
+            var instructorDto = _mapper.Map<InstructorDto>(updatedInstructor);
             _logger.LogInformation($"Updated instructor with id {id}");
-            return Ok("Instructor updated successfully");
+            return Ok(instructorDto);
         }
         catch (Exception ex)
         {

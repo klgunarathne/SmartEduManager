@@ -366,7 +366,7 @@
 
 <!-- Instructor Modal -->
 @if (showInstructorModal()) {
-  <div class="modal-overlay" (click)="closeInstructorModal()">
+  <div class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ instructorModalMode() === 'add' ? 'Add New Instructor' : 'Edit Instructor' }}</h3>
@@ -457,7 +457,7 @@
 
 <!-- NCS Modal -->
 @if (showNCSModal()) {
-  <div class="modal-overlay" (click)="closeNCSModal()">
+  <div class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ ncsModalMode() === 'add' ? 'Add New NCS' : 'Edit NCS' }}</h3>
@@ -508,7 +508,7 @@
 
 <!-- Module Modal -->
 @if (showModuleModal()) {
-  <div class="modal-overlay" (click)="closeModuleModal()">
+  <div class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ moduleModalMode() === 'add' ? 'Add New Module' : 'Edit Module' }}</h3>
@@ -565,7 +565,7 @@
 
 <!-- Task Modal -->
 @if (showTaskModal()) {
-  <div class="modal-overlay" (click)="closeTaskModal()">
+  <div class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ taskModalMode() === 'add' ? 'Add New Task' : 'Edit Task' }}</h3>

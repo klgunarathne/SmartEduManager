@@ -39,7 +39,11 @@ public class MappingProfile : Profile
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
         // Instructor mapping
-        CreateMap<Instructor, InstructorDto>();
+        CreateMap<Instructor, InstructorDto>()
+            .ForMember(dest => dest.CenterIds, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.Course.CenterId).Distinct().ToList()))
+            .ForMember(dest => dest.CenterNames, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.Course.Center.CenterName).Distinct().ToList()))
+            .ForMember(dest => dest.CourseIds, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.CourseId).ToList()))
+            .ForMember(dest => dest.CourseNames, opt => opt.MapFrom(src => src.CourseInstructors.Select(ci => ci.Course.CourseName).ToList()));
         CreateMap<CreateInstructorDto, Instructor>();
         CreateMap<UpdateInstructorDto, Instructor>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));

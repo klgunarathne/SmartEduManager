@@ -8,7 +8,7 @@
     </div>
   </div>
 } @else {
-  <div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-overlay">
     <div class="modal-card exam-editor-card" (click)="$event.stopPropagation()">
       <div class="modal-header exam-editor-header compact-editor-header">
         <div>
@@ -338,7 +338,7 @@
   </div>
 
   @if (showScheduleModal()) {
-    <div class="modal-overlay" (click)="closeScheduleModal()">
+    <div class="modal-overlay">
       <div class="modal-card schedule-modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header schedule-modal-header">
           <div>

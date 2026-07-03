@@ -67,27 +67,11 @@ template: `
                   }
                 </a>
               </li>
-              <li class="nav-item">
+<li class="nav-item">
                 <a routerLink="/admin/instructors" routerLinkActive="active" class="nav-link">
                   <i class="fas fa-chalkboard-teacher"></i>
                   @if (!sidebarCollapsed()) {
                     <span>Instructors</span>
-                  }
-                </a>
-              </li>
-              <li class="nav-item">
-                <a routerLink="/admin/students" routerLinkActive="active" class="nav-link">
-                  <i class="fas fa-user-graduate"></i>
-                  @if (!sidebarCollapsed()) {
-                    <span>Students</span>
-                  }
-                </a>
-              </li>
-              <li class="nav-item">
-                <a routerLink="/admin/student-credentials" routerLinkActive="active" class="nav-link">
-                  <i class="fas fa-key"></i>
-                  @if (!sidebarCollapsed()) {
-                    <span>Generate Credentials</span>
                   }
                 </a>
               </li>

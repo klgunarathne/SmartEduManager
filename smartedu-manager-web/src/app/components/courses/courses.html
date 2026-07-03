@@ -103,7 +103,7 @@
 
 <!-- Modal -->
 @if (showModal()) {
-  <div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-overlay">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>{{ modalMode() === 'add' ? 'Add New Course' : 'Edit Course' }}</h3>
@@ -143,6 +143,26 @@
                 <option [value]="center.centerId">{{ center.centerName }}</option>
               }
             </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Assigned Instructors</label>
+            <div class="checkbox-grid" style="max-height: 150px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px;">
+              @for (instructor of instructors(); track instructor.instructorId) {
+                <label class="checkbox-item">
+                  <input type="checkbox" 
+                         [checked]="isInstructorSelected(instructor.instructorId)"
+                         (change)="toggleInstructor(instructor.instructorId)">
+                  <span class="checkmark"></span>
+                  {{ instructor.fullName }}
+                </label>
+              }
+            </div>
+            @if (!selectedInstructorIds.length) {
+              <small style="color: #6b7280;">No instructors selected</small>
+            } @else {
+              <small style="color: #6b7280;">{{ selectedInstructorIds.length }} instructor(s) selected</small>
+            }
           </div>
           
           <div class="modal-footer">

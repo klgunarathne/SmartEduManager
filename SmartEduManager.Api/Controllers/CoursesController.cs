@@ -13,12 +13,14 @@ namespace SmartEduManager.Api.Controllers;
 public class CoursesController : ControllerBase
 {
     private readonly ICourseRepository _repository;
+    private readonly ICourseInstructorRepository _courseInstructorRepository;
     private readonly IMapper _mapper;
     private readonly ILogger<CoursesController> _logger;
 
-    public CoursesController(ICourseRepository repository, IMapper mapper, ILogger<CoursesController> logger)
+    public CoursesController(ICourseRepository repository, ICourseInstructorRepository courseInstructorRepository, IMapper mapper, ILogger<CoursesController> logger)
     {
         _repository = repository;
+        _courseInstructorRepository = courseInstructorRepository;
         _mapper = mapper;
         _logger = logger;
     }
@@ -77,7 +79,17 @@ public class CoursesController : ControllerBase
             await _repository.AddAsync(course);
             await _repository.SaveChangesAsync();
 
-            var courseDto = _mapper.Map<CourseDto>(course);
+            if (createCourseDto.InstructorIds != null && createCourseDto.InstructorIds.Any())
+            {
+                foreach (var instructorId in createCourseDto.InstructorIds)
+                {
+                    await _courseInstructorRepository.AddAsync(new CourseInstructor { CourseId = course.CourseId, InstructorId = instructorId });
+                }
+                await _courseInstructorRepository.SaveChangesAsync();
+            }
+
+            var savedCourse = await _repository.GetCourseWithAllDetailsAsync(course.CourseId);
+            var courseDto = _mapper.Map<CourseDto>(savedCourse);
 
             _logger.LogInformation($"Created course with id {course.CourseId}");
             return CreatedAtAction(nameof(GetCourse), new { id = course.CourseId }, courseDto);
@@ -98,7 +110,7 @@ public class CoursesController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var course = await _repository.GetByIdAsync(id);
+            var course = await _repository.GetCourseWithAllDetailsAsync(id);
             if (course == null)
             {
                 _logger.LogWarning($"Course with id {id} not found");
@@ -109,8 +121,33 @@ public class CoursesController : ControllerBase
             _repository.Update(course);
             await _repository.SaveChangesAsync();
 
+            if (updateCourseDto.InstructorIds != null)
+            {
+                var existingInstructors = course.CourseInstructors.Select(ci => ci.InstructorId).ToList();
+                var toAdd = updateCourseDto.InstructorIds.Except(existingInstructors).ToList();
+                var toRemove = existingInstructors.Except(updateCourseDto.InstructorIds).ToList();
+
+                foreach (var instructorId in toRemove)
+                {
+                    var courseInstructor = course.CourseInstructors.FirstOrDefault(ci => ci.InstructorId == instructorId);
+                    if (courseInstructor != null)
+                    {
+                        _courseInstructorRepository.Delete(courseInstructor);
+                    }
+                }
+
+                foreach (var instructorId in toAdd)
+                {
+                    await _courseInstructorRepository.AddAsync(new CourseInstructor { CourseId = id, InstructorId = instructorId });
+                }
+
+                await _courseInstructorRepository.SaveChangesAsync();
+            }
+
+            var updatedCourse = await _repository.GetCourseWithAllDetailsAsync(id);
+            var courseDto = _mapper.Map<CourseDto>(updatedCourse);
             _logger.LogInformation($"Updated course with id {id}");
-            return Ok("Course updated successfully");
+            return Ok(courseDto);
         }
         catch (Exception ex)
         {

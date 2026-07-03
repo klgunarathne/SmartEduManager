@@ -48,8 +48,7 @@ src/
 │   │   ├── timetable/     # Course schedule/timetable
 │   │   ├── exam-question-builder/ # Exam creation
 │   │   ├── shared/          # Reusable components
-│   │   └── toast.component.ts - Toast notification UI with success/error/warning/info types
-│   │   └── continuous-assessments-reports/ # CA reports
+│   │     └── toast.component.ts - Toast notification UI
 │   ├── services/            # Core services
 │   │   ├── auth.service.ts       # Authentication, JWT token management
 │   │   ├── user.service.ts       # User CRUD operations
@@ -112,6 +111,7 @@ src/
 #### Courses (`courses.ts`)
 - Full CRUD operations
 - Fields: courseName, description, duration, courseFee, centerId
+- Frontend validation with toast notifications
 
 #### User Accounts (`user-manager.ts`)
 - Full CRUD operations
@@ -119,12 +119,11 @@ src/
 - User activation/deactivation
 - Password validation with requirements
 
-### 2. Instructor Management (`instructors.ts`)
-- Create/edit/delete instructors
+#### Instructors (`instructors.ts`)
+- Full CRUD for instructor profiles (epfNo, fullName, email, phone, nic)
 - **Multiple Center Assignment**: Checkbox multi-selection (scrollable list)
 - **Multiple Course Assignment**: Checkbox multi-selection (scrollable list)
-- Fields: epfNo, fullName, email, phone, nic, centerIds[], courseIds[]
-- Toast notifications for all operations (create, update, delete, errors)
+- Required: Admin must create instructor records and assign courses for NCS access
 
 ### 3. NCS Management (`ncs.service.ts`, `modules.service.ts`)
 - **NCS Versions**: Create, view, update, delete NCS
@@ -138,35 +137,20 @@ src/
 
 ### 1. NCS Management (`instructor-ncs.component.ts`)
 - Instructors see only NCS for their assigned Course(s)
-- **Course selector**: Dropdown to switch between multiple assigned courses
+- Course assignment set via Instructor Management (`/admin/instructors`) with multi-select checkboxes
 - Tab-based interface: NCS, Modules, Tasks
 - Read-only view of curriculum
 - Shows "No Course Assigned" message if instructor not assigned to any course
 
 ### 2. Batch Management (`instructor-batches.component.ts`)
-- Create training batches
-- View and manage existing batches
-- Update batch details
-- Delete batches
-- Fields: batchCode, courseId, startDate, endDate, duration
 
 ### 3. Student Management (`instructor-students.component.ts`)
-- Register new students individually
-- Bulk CSV Import with column mapping
-- Assign students to batches
-- View student details with search and filter
-- Update student information
-- Delete students from batches
-- Reorder students (move up/down)
 
-### 4. Attendance (`attendance/*.ts`)
-- Daily attendance tracking
-- Monthly calendar view
-- Student summary reports
-- Batch summary reports
-- Course completion tracking
+### 4. Student Credentials (`student-credentials.component.ts`)
 
-### 5. Timetable (`timetable.component.ts`)
+### 5. Attendance (`attendance/*.ts`)
+
+### 6. Timetable (`timetable.component.ts`)
 - Month View: Calendar grid with events
 - Session Types: Theory, Practical, Exam, Assessment, Orientation
 - CRUD Sessions: Create, view, edit, delete
@@ -278,8 +262,8 @@ src/
 | Centers | ✅ | ❌ | Full CRUD with toast notifications |
 | Courses | ✅ | ❌ | Full CRUD |
 | Instructors | ✅ | ❌ | Manage instructors with multi-center/course assignment via checkboxes |
-| Students | ✅ | ✅ | Admin global access, Instructor by batch |
-| Batches | ✅ | ✅ | Instructor creates/manages own batches |
+| Students | ❌ | ✅ | Managed by Instructor through batches |
+| Batches | ✅ | ✅ | Admin can view, Instructor creates/manages own batches |
 | NCS | ✅ | ✅ | Admin full access, Instructor filtered by assigned course(s) |
 | Modules | ✅ | ✅ | Under NCS with toast notifications |
 | Tasks | ✅ | ✅ | Under Modules with toast notifications |
@@ -287,7 +271,7 @@ src/
 | Attendance | ✅ | ✅ | Daily/monthly tracking |
 | Assignments | ✅ | ✅ | Task assignments |
 | Continuous Assessments | ✅ | ✅ | Scoring system |
-| User-Center/Course Assignment | ✅ | N/A | Assign instructor to multiple centers/courses via checkboxes |
+| Student Credentials | ❌ | ✅ | Generate student login credentials via CSV download |
 
 ---
 

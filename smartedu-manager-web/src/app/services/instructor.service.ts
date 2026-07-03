@@ -68,14 +68,13 @@ export class InstructorService {
     );
   }
 
-  updateInstructor(id: number, instructor: Partial<CreateInstructor>): Observable<string> {
-    return this.http.put(`${this.API_URL}/instructors/${id}`, instructor, { responseType: 'text' }).pipe(
-      tap((msg) => {
+  updateInstructor(id: number, instructor: Partial<CreateInstructor>): Observable<Instructor> {
+    return this.http.put<Instructor>(`${this.API_URL}/instructors/${id}`, instructor).pipe(
+      tap((updatedInstructor) => {
         this.instructors.update((instructors) =>
-          instructors.map((i) => (i.instructorId === id ? { ...i, ...instructor, centerIds: instructor.centerIds || i.centerIds, courseIds: instructor.courseIds || i.courseIds } : i))
+          instructors.map((i) => (i.instructorId === id ? updatedInstructor : i))
         );
       }),
-      map(() => 'Instructor updated successfully'),
       catchError((error) => {
         console.error('Error updating instructor:', error);
         return throwError(() => error);

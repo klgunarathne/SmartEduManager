@@ -18,19 +18,21 @@ public class CourseDto
 }
 
 public class CreateCourseDto
-{
-    public string CourseName { get; set; } = null!;
-    public string Description { get; set; } = null!;
-    public int Duration { get; set; }
-    public decimal CourseFee { get; set; }
-    public int CenterId { get; set; }
-}
+ {
+     public string CourseName { get; set; } = null!;
+     public string Description { get; set; } = null!;
+     public int Duration { get; set; }
+     public decimal CourseFee { get; set; }
+     public int CenterId { get; set; }
+     public List<int>? InstructorIds { get; set; }
+ }
 
 public class UpdateCourseDto
-{
-    public string? CourseName { get; set; }
-    public string? Description { get; set; }
-    public int? Duration { get; set; }
-    public decimal? CourseFee { get; set; }
-    public int? CenterId { get; set; }
-}
+ {
+     public string? CourseName { get; set; }
+     public string? Description { get; set; }
+     public int? Duration { get; set; }
+     public decimal? CourseFee { get; set; }
+     public int? CenterId { get; set; }
+     public List<int>? InstructorIds { get; set; }
+ }

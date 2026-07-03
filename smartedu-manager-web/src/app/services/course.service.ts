@@ -27,6 +27,10 @@ export interface CreateCourse {
   centerId: number;
 }
 
+export interface UpdateCourse extends Partial<CreateCourse> {
+  instructorIds?: number[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -57,7 +61,7 @@ export class CourseService {
     return this.http.get<Course>(`${this.API_URL}/courses/${id}`);
   }
 
-  createCourse(course: CreateCourse): Observable<Course> {
+  createCourse(course: UpdateCourse): Observable<Course> {
     return this.http.post<Course>(`${this.API_URL}/courses`, course).pipe(
       tap(newCourse => {
         this.courses.update(courses => [...courses, newCourse]);
@@ -69,13 +73,14 @@ export class CourseService {
     );
   }
 
-  updateCourse(id: number, course: Partial<CreateCourse>): Observable<any> {
+  updateCourse(id: number, course: UpdateCourse): Observable<any> {
     const apiPayload: any = {};
     if (course.courseName !== undefined) apiPayload.courseName = course.courseName;
     if (course.description !== undefined) apiPayload.description = course.description;
     if (course.duration !== undefined) apiPayload.duration = course.duration;
     if (course.courseFee !== undefined) apiPayload.courseFee = course.courseFee;
     if (course.centerId !== undefined) apiPayload.centerId = course.centerId;
+    if (course.instructorIds !== undefined) apiPayload.instructorIds = course.instructorIds;
 
     return this.http.put(`${this.API_URL}/courses/${id}`, apiPayload).pipe(
       tap(() => {
