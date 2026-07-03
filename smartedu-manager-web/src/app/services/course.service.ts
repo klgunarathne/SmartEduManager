@@ -17,6 +17,14 @@ export interface Course {
   batchCodes: string[];
   hasInstructors: boolean;
   hasBatches: boolean;
+  ncs: CourseNC[];
+}
+
+export interface CourseNC {
+  id: number;
+  version: string;
+  name: string;
+  updatedDate: string;
 }
 
 export interface CreateCourse {
@@ -29,6 +37,7 @@ export interface CreateCourse {
 
 export interface UpdateCourse extends Partial<CreateCourse> {
   instructorIds?: number[];
+  ncsIds?: number[];
 }
 
 @Injectable({
@@ -81,6 +90,7 @@ export class CourseService {
     if (course.courseFee !== undefined) apiPayload.courseFee = course.courseFee;
     if (course.centerId !== undefined) apiPayload.centerId = course.centerId;
     if (course.instructorIds !== undefined) apiPayload.instructorIds = course.instructorIds;
+    if (course.ncsIds !== undefined) apiPayload.ncsIds = course.ncsIds;
 
     return this.http.put(`${this.API_URL}/courses/${id}`, apiPayload).pipe(
       tap(() => {

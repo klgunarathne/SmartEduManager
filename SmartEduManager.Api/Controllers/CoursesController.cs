@@ -14,13 +14,15 @@ public class CoursesController : ControllerBase
 {
     private readonly ICourseRepository _repository;
     private readonly ICourseInstructorRepository _courseInstructorRepository;
+    private readonly INCSRepository _ncsRepository;
     private readonly IMapper _mapper;
     private readonly ILogger<CoursesController> _logger;
 
-    public CoursesController(ICourseRepository repository, ICourseInstructorRepository courseInstructorRepository, IMapper mapper, ILogger<CoursesController> logger)
+    public CoursesController(ICourseRepository repository, ICourseInstructorRepository courseInstructorRepository, INCSRepository ncsRepository, IMapper mapper, ILogger<CoursesController> logger)
     {
         _repository = repository;
         _courseInstructorRepository = courseInstructorRepository;
+        _ncsRepository = ncsRepository;
         _mapper = mapper;
         _logger = logger;
     }
@@ -142,6 +144,23 @@ public class CoursesController : ControllerBase
                 }
 
                 await _courseInstructorRepository.SaveChangesAsync();
+            }
+
+            if (updateCourseDto.NCSIds != null)
+            {
+                var existingNCS = course.NCS.Select(n => n.Id).ToList();
+                var toAssign = updateCourseDto.NCSIds.Except(existingNCS).ToList();
+
+                foreach (var ncsId in toAssign)
+                {
+                    var ncs = await _ncsRepository.GetByIdAsync(ncsId);
+                    if (ncs != null)
+                    {
+                        ncs.CourseId = id;
+                        _ncsRepository.Update(ncs);
+                    }
+                }
+                await _ncsRepository.SaveChangesAsync();
             }
 
             var updatedCourse = await _repository.GetCourseWithAllDetailsAsync(id);

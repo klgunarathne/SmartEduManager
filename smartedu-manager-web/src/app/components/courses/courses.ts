@@ -1,10 +1,11 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CourseService, Course, CreateCourse, UpdateCourse } from '../../services/course.service';
+import { CourseService, Course, CreateCourse, UpdateCourse, CourseNC } from '../../services/course.service';
 import { InstructorService, Instructor } from '../../services/instructor.service';
 import { CenterService, Center } from '../../services/center.service';
 import { ToastService } from '../../services/toast.service';
+import { NcsService, NCS } from '../../services/ncs.service';
 
 @Component({
   selector: 'app-courses',
@@ -28,11 +29,15 @@ export class CoursesComponent implements OnInit {
   selectedInstructorIds: number[] = [];
   instructors = signal<Instructor[]>([]);
   centers = signal<Center[]>([]);
+  ncsList = signal<CourseNC[]>([]);
+  allNCS = signal<NCS[]>([]);
+  selectedNCSIds: number[] = [];
 
   constructor(
     private courseService: CourseService,
     private instructorService: InstructorService,
-    private centerService: CenterService
+    private centerService: CenterService,
+    private ncsService: NcsService
   ) {}
 
   ngOnInit(): void {
@@ -42,6 +47,9 @@ export class CoursesComponent implements OnInit {
     });
     this.centerService.getCenters().subscribe({
       next: (data) => this.centers.set(data)
+    });
+    this.ncsService.getNCS().subscribe({
+      next: (data) => this.allNCS.set(data)
     });
   }
 
@@ -59,6 +67,7 @@ export class CoursesComponent implements OnInit {
   openAddModal(): void {
     this.selectedCourse = this.getEmptyCourse();
     this.selectedInstructorIds = [];
+    this.selectedNCSIds = [];
     this.modalMode.set('add');
     this.showModal.set(true);
   }
@@ -74,6 +83,8 @@ export class CoursesComponent implements OnInit {
       instructorIds: [...course.instructorIds]
     };
     this.selectedInstructorIds = [...course.instructorIds];
+    this.ncsList.set(course.ncs || []);
+    this.selectedNCSIds = [...(course.ncs?.map(n => n.id) || [])];
     this.modalMode.set('edit');
     this.showModal.set(true);
   }
@@ -83,6 +94,8 @@ export class CoursesComponent implements OnInit {
     this.editingCourseId = null;
     this.selectedCourse = this.getEmptyCourse();
     this.selectedInstructorIds = [];
+    this.ncsList.set([]);
+    this.selectedNCSIds = [];
   }
 
   saveCourse(): void {
@@ -93,6 +106,9 @@ export class CoursesComponent implements OnInit {
     }
     
     course.instructorIds = this.selectedInstructorIds;
+    if (this.editingCourseId) {
+      (course as any).ncsIds = this.selectedNCSIds;
+    }
     
     if (this.modalMode() === 'add') {
       this.courseService.createCourse(course as CreateCourse).subscribe({
@@ -108,6 +124,12 @@ export class CoursesComponent implements OnInit {
     } else if (this.editingCourseId) {
       this.courseService.updateCourse(this.editingCourseId, course).subscribe({
         next: () => {
+          this.ncsList.set(this.allNCS().filter(n => this.selectedNCSIds.includes(n.id)).map(n => ({
+            id: n.id,
+            version: n.version,
+            name: n.name,
+            updatedDate: n.updatedDate
+          })));
           this.closeModal();
           this.toast.success('Course updated successfully');
         },
@@ -130,6 +152,19 @@ export class CoursesComponent implements OnInit {
 
   isInstructorSelected(instructorId: number): boolean {
     return this.selectedInstructorIds.includes(instructorId);
+  }
+
+  toggleNCS(ncsId: number): void {
+    const index = this.selectedNCSIds.indexOf(ncsId);
+    if (index === -1) {
+      this.selectedNCSIds.push(ncsId);
+    } else {
+      this.selectedNCSIds.splice(index, 1);
+    }
+  }
+
+  isNCSSelected(ncsId: number): boolean {
+    return this.selectedNCSIds.includes(ncsId);
   }
 
   deleteCourse(course: Course): void {

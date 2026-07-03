@@ -15,6 +15,15 @@ public class CourseDto
     public List<string> BatchCodes { get; set; } = new List<string>();
     public bool HasInstructors { get; set; }
     public bool HasBatches { get; set; }
+    public List<CourseNCDto> NCS { get; set; } = new List<CourseNCDto>();
+}
+
+public class CourseNCDto
+{
+    public int Id { get; set; }
+    public string Version { get; set; } = null!;
+    public string Name { get; set; } = null!;
+    public DateTime UpdatedDate { get; set; }
 }
 
 public class CreateCourseDto
@@ -35,4 +44,5 @@ public class UpdateCourseDto
      public decimal? CourseFee { get; set; }
      public int? CenterId { get; set; }
      public List<int>? InstructorIds { get; set; }
+     public List<int>? NCSIds { get; set; }
  }

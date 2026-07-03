@@ -111,6 +111,8 @@ src/
 #### Courses (`courses.ts`)
 - Full CRUD operations
 - Fields: courseName, description, duration, courseFee, centerId
+- **Instructor Assignment**: Checkbox multi-selection for assigning instructors to courses
+- **NCS Assignment**: Checkbox multi-selection for assigning existing NCS versions to courses (NCS records are assigned via their courseId FK)
 - Frontend validation with toast notifications
 
 #### User Accounts (`user-manager.ts`)
@@ -121,9 +123,10 @@ src/
 
 #### Instructors (`instructors.ts`)
 - Full CRUD for instructor profiles (epfNo, fullName, email, phone, nic)
-- **Multiple Center Assignment**: Checkbox multi-selection (scrollable list)
+- **Multiple Center Assignment**: Checkbox multi-selection (scrollable list) - centers derived from assigned courses
 - **Multiple Course Assignment**: Checkbox multi-selection (scrollable list)
 - Required: Admin must create instructor records and assign courses for NCS access
+- Edit dialog displays currently assigned centers and courses from API
 
 ### 3. NCS Management (`ncs.service.ts`, `modules.service.ts`)
 - **NCS Versions**: Create, view, update, delete NCS
@@ -201,7 +204,13 @@ src/
   courseFee, centerId, centerName,
   instructorIds, instructorNames,
   batchIds, batchCodes,
-  hasInstructors, hasBatches
+  hasInstructors, hasBatches,
+  ncs: CourseNC[]
+}
+
+// CourseNC
+{
+  id, version, name, updatedDate
 }
 
 // Instructor (instructor.service.ts)

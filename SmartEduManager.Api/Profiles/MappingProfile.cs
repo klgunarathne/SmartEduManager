@@ -33,7 +33,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.BatchIds, opt => opt.MapFrom(src => src.Batches.Select(b => b.BatchId).ToList()))
             .ForMember(dest => dest.BatchCodes, opt => opt.MapFrom(src => src.Batches.Select(b => b.BatchCode).ToList()))
             .ForMember(dest => dest.HasInstructors, opt => opt.MapFrom(src => src.CourseInstructors.Any()))
-            .ForMember(dest => dest.HasBatches, opt => opt.MapFrom(src => src.Batches.Any()));
+            .ForMember(dest => dest.HasBatches, opt => opt.MapFrom(src => src.Batches.Any()))
+            .ForMember(dest => dest.NCS, opt => opt.MapFrom(src => src.NCS.Select(n => new CourseNCDto { Id = n.Id, Version = n.Version, Name = n.Name, UpdatedDate = n.UpdatedDate }).ToList()));
         CreateMap<CreateCourseDto, Course>();
         CreateMap<UpdateCourseDto, Course>()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
