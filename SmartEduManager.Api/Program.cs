@@ -182,7 +182,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000",
                 "https://localhost:3001",
                 "https://localhost:7160",
-                "https://smartedu-manager-fn86wi08i-klgunarathne1988-gmailcoms-projects.vercel.app"
+                "https://smartedu-manager-fn86wi08i-klgunarathne1988-gmailcoms-projects.vercel.app",
+                "https://smartedu-manager-web.vercel.app"
             )
             .AllowAnyMethod()
             .AllowAnyHeader()

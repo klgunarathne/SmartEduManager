@@ -300,5 +300,5 @@ apiUrl: 'https://localhost:7160/api'
 
 ### Production (`environment.prod.ts`)
 ```typescript
-apiUrl: 'http://smartedumanagerapi.runasp.net/api'
+apiUrl: 'https://smartedumanagerapi.somee.com/api'
 ```
