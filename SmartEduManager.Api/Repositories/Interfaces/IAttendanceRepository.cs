@@ -9,5 +9,6 @@ public interface IAttendanceRepository : IRepository<Attendance>
     Task<IEnumerable<Attendance>> GetAttendanceByDateRangeAsync(int batchId, DateTime startDate, DateTime endDate);
     Task<Attendance?> GetAttendanceByStudentAndDateAsync(int studentId, DateTime date);
     Task<IEnumerable<object>> GetBatchAttendanceSummaryAsync(int batchId, DateTime startDate, DateTime endDate);
+    Task<IEnumerable<Attendance>> GetAttendanceByBatchAndMonthAsync(int batchId, int year, int month);
     IQueryable<Attendance> GetAll();
 }

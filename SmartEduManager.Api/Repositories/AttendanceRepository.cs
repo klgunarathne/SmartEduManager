@@ -65,6 +65,13 @@ public class AttendanceRepository : Repository<Attendance>, IAttendanceRepositor
             .ToListAsync<object>();
     }
 
+    public async Task<IEnumerable<Attendance>> GetAttendanceByBatchAndMonthAsync(int batchId, int year, int month)
+    {
+        var startDate = new DateTime(year, month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+        return await GetAttendanceByDateRangeAsync(batchId, startDate, endDate);
+    }
+
     public override IQueryable<Attendance> GetAll()
     {
         return _dbSet;

@@ -18,9 +18,9 @@ import { ExportService } from '../../services/export.service';
 export class ReportsComponent implements OnInit {
   reportType = signal<'monthly' | 'batch'>('monthly');
 
-  selectedBatchId = signal(0);
-  selectedMonth = signal(new Date().getMonth());
-  selectedYear = signal(new Date().getFullYear());
+  selectedBatchId = 0;
+  selectedMonth = new Date().getMonth();
+  selectedYear = new Date().getFullYear();
   monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   batches = signal<Batch[]>([]);
@@ -50,7 +50,7 @@ export class ReportsComponent implements OnInit {
         if (data.length > 0) {
           const today = this.getTodayDate();
           const current = data.find(b => b.startDate && b.endDate && b.startDate <= today && b.endDate >= today);
-          this.selectedBatchId.set(current ? current.batchId : data[0].batchId);
+          this.selectedBatchId = current ? current.batchId : data[0].batchId;
           this.generateMonthlyReport();
         }
       }
@@ -58,19 +58,19 @@ export class ReportsComponent implements OnInit {
   }
 
   generateMonthlyReport(): void {
-    const batchId = this.selectedBatchId();
-    const month = this.selectedMonth() + 1;
-    const year = this.selectedYear();
+    const batchId = Number(this.selectedBatchId);
+    const selectedMonth = Number(this.selectedMonth);
+    const month = selectedMonth + 1;
+    const year = Number(this.selectedYear);
     const monthStr = String(month).padStart(2, '0');
 
     this.studentService.getStudentsByBatch(batchId).subscribe({
       next: (students) => {
         this.students.set(students);
 
-        this.attendanceService.getAttendanceByBatch(batchId).subscribe({
-          next: (allRecords) => {
-            const normalized = allRecords.map(r => ({ ...r, date: this.normalizeDate(r.date) }));
-            const monthRecords = normalized.filter(r => r.date.startsWith(`${year}-${monthStr}`));
+        this.attendanceService.getMonthlyReportData(batchId, year, month).subscribe({
+          next: (monthRecords) => {
+            const normalized = monthRecords.map(r => ({ ...r, date: this.normalizeDate(r.date) }));
 
             const daysInMonth = new Date(year, month - 1, 0).getDate();
             const workingDays = this.attendanceService.settings().workingDays;
@@ -80,13 +80,13 @@ export class ReportsComponent implements OnInit {
               const date = new Date(year, month - 1, d);
               const dayOfWeek = date.getDay();
               const dayStr = `${year}-${monthStr}-${String(d).padStart(2, '0')}`;
-              if (workingDays.includes(dayOfWeek) || monthRecords.some(r => r.date === dayStr)) {
+              if (workingDays.includes(dayOfWeek) || normalized.some(r => r.date === dayStr)) {
                 days.push(dayStr);
               }
             }
 
             const rowMap = new Map<number, { studentName: string; misNo: string; fill: (boolean | null)[] }>();
-            monthRecords.forEach(r => {
+            normalized.forEach(r => {
               const idx = days.indexOf(r.date);
               if (!rowMap.has(r.studentId)) {
                 rowMap.set(r.studentId, {
@@ -121,7 +121,7 @@ export class ReportsComponent implements OnInit {
   }
 
   generateBatchReport(): void {
-    const batchId = this.selectedBatchId();
+    const batchId = this.selectedBatchId;
     const startDate = '2000-01-01';
     const endDate = '2030-12-31';
 
@@ -200,7 +200,7 @@ export class ReportsComponent implements OnInit {
     } else if (this.reportType() === 'batch') {
       if (this.batchReport().length === 0) return;
 
-      const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
+      const batch = this.batches().find(b => b.batchId === this.selectedBatchId);
       const title = batch ? `${batch.batchCode} - Batch Attendance Summary` : 'Batch Attendance Summary';
       const headers = ['SN', 'Student', 'MIS No', 'Total Days', 'Present', 'Absent', 'Percentage', 'Status'];
       const rows = this.batchReport().map((record, index) => ({
@@ -252,7 +252,7 @@ export class ReportsComponent implements OnInit {
     } else if (this.reportType() === 'batch') {
       if (this.batchReport().length === 0) return;
 
-      const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
+      const batch = this.batches().find(b => b.batchId === this.selectedBatchId);
       const title = batch ? `${batch.batchCode} - Batch Attendance Summary` : 'Batch Attendance Summary';
       const headers = ['SN', 'Student', 'MIS No', 'Total Days', 'Present', 'Absent', 'Percentage', 'Status'];
       const rows = this.batchReport().map((record, index) => ({

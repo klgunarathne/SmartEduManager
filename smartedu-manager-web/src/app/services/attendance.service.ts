@@ -162,6 +162,18 @@ export class AttendanceService {
     );
   }
 
+  getMonthlyReportData(batchId: number, year: number, month: number): Observable<Attendance[]> {
+    this.isLoading.set(true);
+    return this.http.get<Attendance[]>(`${this.API_URL}/attendance/batch/${batchId}/monthly?year=${year}&month=${month}`).pipe(
+      tap(() => this.isLoading.set(false)),
+      catchError(error => {
+        this.isLoading.set(false);
+        console.error('Error loading monthly report:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   createAttendance(dto: CreateAttendanceDto): Observable<Attendance> {
     return this.http.post<Attendance>(`${this.API_URL}/attendance`, dto).pipe(
       tap(newAttendance => {

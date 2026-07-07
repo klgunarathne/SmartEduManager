@@ -172,6 +172,22 @@ public class AttendanceController : ControllerBase
         }
     }
 
+    [HttpGet("batch/{batchId}/monthly")]
+    public async Task<IActionResult> GetMonthlyAttendanceReport(int batchId, [FromQuery] int year, [FromQuery] int month)
+    {
+        try
+        {
+            var attendance = await _repository.GetAttendanceByBatchAndMonthAsync(batchId, year, month);
+            var attendanceDto = _mapper.Map<IEnumerable<AttendanceDto>>(attendance);
+            return Ok(attendanceDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error retrieving monthly attendance report for batch {batchId}, {year}-{month}");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
     [HttpDelete("day/{date}/student/{studentId}/batch/{batchId}")]
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> DeleteAttendanceByStudent(string date, int studentId, int batchId)
