@@ -75,10 +75,20 @@
           <i class="fas fa-user-times"></i> Mark All Absent
         </button>
       </div>
-      <button class="btn btn-primary btn-sm" (click)="saveAttendance()" [disabled]="!hasChanges">
-        <i class="fas fa-save"></i> Save Attendance
+      <button class="btn btn-primary btn-sm" (click)="saveAttendance()" [disabled]="!hasChanges || isSaving()">
+        <i class="fas" [class.fa-save]="!isSaving()" [class.fa-spinner]="isSaving()" [class.fa-spin]="isSaving()"></i>
+        {{ isSaving() ? 'Saving...' : 'Save Attendance' }}
       </button>
     </div>
+
+    @if (isSaving()) {
+      <div class="save-progress">
+        <div class="save-progress-bar">
+          <div class="save-progress-fill" [style.width.%]="saveTotal() > 0 ? (saveProgress() / saveTotal() * 100) : 0"></div>
+        </div>
+        <span class="save-progress-text">Saving {{ saveProgress() }} / {{ saveTotal() }}...</span>
+      </div>
+    }
 
     <!-- Students List -->
     <div class="students-panel">
@@ -98,13 +108,13 @@
           </div>
         }
         
-        @for (student of filteredStudents(); track student.id; let i = $index) {
-          <div class="student-item">
-           <div class="student-info">
-             <span class="student-sn">{{ i + 1 }}</span>
-             <span class="student-name">{{ student.nameWithInitials }}</span>
-             <span class="mis-badge">{{ student.misNo }}</span>
-           </div>
+        @for (student of filteredStudents(); track student.id) {
+           <div class="student-item">
+            <div class="student-info">
+              <span class="student-no">{{ student.studentNumber ?? '-' }}</span>
+              <span class="student-name">{{ student.nameWithInitials }}</span>
+              <span class="mis-badge">{{ student.misNo }}</span>
+            </div>
             <div class="student-actions">
               <button 
                 type="button"

@@ -237,21 +237,26 @@
 
 .student-info {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.student-sn {
-  font-weight: 600;
-  color: #64748b;
-  min-width: 24px;
-  text-align: center;
-  margin-right: 8px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
 .student-name {
   font-weight: 600;
   color: #1e293b;
+}
+
+.student-no {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #16a34a;
+  min-width: 28px;
+  text-align: center;
 }
 
 .mis-badge {
@@ -315,6 +320,36 @@
     background: #e2e8f0;
     color: #1e293b;
   }
+}
+
+.save-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+}
+
+.save-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.save-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.save-progress-text {
+  font-size: 13px;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 .status-toggle {

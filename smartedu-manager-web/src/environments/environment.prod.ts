@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://smartedumanagerapi.somee.com/api'
+  apiUrl: 'https://www.SmartEduManagerApi.somee.com/api'
 };

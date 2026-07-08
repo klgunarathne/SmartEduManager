@@ -196,7 +196,7 @@ export class ReportsComponent implements OnInit {
       const emptyDays = grid.days.map(() => '');
       rows.push(['', 'Average', ...emptyDays, avgTotal, avgPresent, avgAbsent, avgPercent]);
 
-      this.exportService.exportPdf({ title, headers, rows, orientation: 'landscape' });
+      this.exportService.exportPdf({ title, headers, rows, orientation: 'landscape', columnStyles: { 0: { cellWidth: 12, halign: 'center' } } });
     } else if (this.reportType() === 'batch') {
       if (this.batchReport().length === 0) return;
 

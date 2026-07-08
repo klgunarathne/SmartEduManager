@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { of, Observable } from 'rxjs';
 import { AttendanceService, Attendance } from '../../services/attendance.service';
 import { BatchService, Batch } from '../../services/batch.service';
 import { StudentService, Student } from '../../services/student.service';
@@ -19,6 +20,9 @@ export class DailyAttendanceComponent implements OnInit {
   selectedBatchId = signal(0);
   selectedDate = signal(this.getTodayDate());
   searchQuery = signal('');
+  isSaving = signal(false);
+  saveProgress = signal(0);
+  saveTotal = signal(0);
   
   batches = signal<Batch[]>([]);
   students = signal<Student[]>([]);
@@ -67,7 +71,7 @@ export class DailyAttendanceComponent implements OnInit {
     if (batchId > 0) {
       this.studentService.getStudentsByBatch(batchId).subscribe({
         next: (data) => {
-          this.students.set(data);
+          this.students.set(this.sortStudentsByNumber(data));
           this.applyFilter();
           this.loadTodaysAttendance();
         }
@@ -77,6 +81,14 @@ export class DailyAttendanceComponent implements OnInit {
       this.filteredStudents.set([]);
       this.attendanceMap.set(new Map());
     }
+  }
+
+  private sortStudentsByNumber(students: Student[]): Student[] {
+    return [...students].sort((a, b) => {
+      const numA = a.studentNumber ?? Number.MAX_SAFE_INTEGER;
+      const numB = b.studentNumber ?? Number.MAX_SAFE_INTEGER;
+      return numA - numB;
+    });
   }
 
   loadTodaysAttendance(): void {
@@ -151,52 +163,68 @@ export class DailyAttendanceComponent implements OnInit {
   saveAttendance(): void {
     const batchId = this.selectedBatchId();
     const date = this.selectedDate();
+
+    const studentsToSave = this.students().filter(student => {
+      const status = this.attendanceMap().get(student.id);
+      return !!status;
+    });
+
+    if (studentsToSave.length === 0) return;
+
+    this.isSaving.set(true);
+    this.saveProgress.set(0);
+    this.saveTotal.set(studentsToSave.length);
+
     let saved = 0;
     let failed = 0;
-    
-    this.students().forEach(student => {
-      const status = this.attendanceMap().get(student.id);
-      if (status) {
-        const existingRecord = this.attendanceRecords().find(r => r.studentId === student.id);
-        if (existingRecord) {
-          this.attendanceService.updateAttendanceByStudent(date, student.id, batchId, status === 'present').subscribe({
-            next: () => saved++,
-            error: (err) => {
-              failed++;
-              console.error('Error updating attendance:', err);
-            }
-          });
-        } else {
-          this.attendanceService.markAttendance(student.id, batchId, date, status === 'present').subscribe({
-            next: () => {
-              saved++;
-              this.attendanceRecords.update(list => [...list, {
-                attendanceId: 0,
-                studentId: student.id,
-                studentName: student.nameWithInitials,
-                misNo: student.misNo,
-                batchId: batchId,
-                batchCode: '',
-                date: date,
-                isPresent: status === 'present'
-              }]);
-            },
-            error: (err) => {
-              failed++;
-              console.error('Error saving attendance:', err);
-            }
-          });
+    let completed = 0;
+    const total = studentsToSave.length;
+
+    studentsToSave.forEach(student => {
+      const status = this.attendanceMap().get(student.id)!;
+      const existingRecord = this.attendanceRecords().find(r => r.studentId === student.id);
+      const request$: Observable<string | Attendance> = existingRecord
+        ? this.attendanceService.updateAttendanceByStudent(date, student.id, batchId, status === 'present')
+        : this.attendanceService.markAttendance(student.id, batchId, date, status === 'present');
+
+      const sub = request$.subscribe({
+        next: (value) => {
+          saved++;
+          completed++;
+          this.saveProgress.set(completed);
+          if (!existingRecord) {
+            this.attendanceRecords.update(list => [...list, {
+              attendanceId: value && typeof value === 'object' && 'attendanceId' in value ? (value as Attendance).attendanceId : 0,
+              studentId: student.id,
+              studentName: student.nameWithInitials,
+              misNo: student.misNo,
+              batchId: batchId,
+              batchCode: '',
+              date: date,
+              isPresent: status === 'present'
+            }]);
+          }
+        },
+        error: () => {
+          failed++;
+          completed++;
+          this.saveProgress.set(completed);
+          console.error('Error saving attendance for student:', student.id);
         }
-      }
+      });
     });
-    
+
     setTimeout(() => {
+      this.isSaving.set(false);
+      this.saveProgress.set(0);
+      this.saveTotal.set(0);
+
       if (saved > 0 && failed === 0) {
         this.toast.success(`Attendance saved for ${saved} students`);
       } else if (saved > 0) {
         this.toast.warning(`Saved ${saved} students, ${failed} failed`);
-      } else if (failed > 0) {
-        this.toast.error(`Failed to save attendance for ${failed} students`);
+      } else {
+        this.toast.error(`Failed to save attendance for all ${failed} students`);
       }
     }, 500);
   }
@@ -240,11 +268,12 @@ export class DailyAttendanceComponent implements OnInit {
     const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
     const title = batch ? `${batch.batchCode} - Daily Attendance` : 'Daily Attendance';
 
-    const headers = ['SN', 'Student', 'MIS No', 'Status'];
+    const headers = ['SN', 'Student No', 'Student', 'MIS No', 'Status'];
     const rows = this.students().map((student, index) => {
       const status = this.getAttendanceStatus(student.id);
       return {
         SN: index + 1,
+        'Student No': student.studentNumber ?? '-',
         Student: student.nameWithInitials,
         'MIS No': student.misNo,
         Status: status === 'present' ? 'Present' : status === 'absent' ? 'Absent' : 'Not Marked'
@@ -260,11 +289,12 @@ export class DailyAttendanceComponent implements OnInit {
     const batch = this.batches().find(b => b.batchId === this.selectedBatchId());
     const title = batch ? `${batch.batchCode} - Daily Attendance` : 'Daily Attendance';
 
-    const headers = ['SN', 'Student', 'MIS No', 'Status'];
+    const headers = ['SN', 'Student No', 'Student', 'MIS No', 'Status'];
     const rows = this.students().map((student, index) => {
       const status = this.getAttendanceStatus(student.id);
       return {
         SN: index + 1,
+        'Student No': student.studentNumber ?? '-',
         Student: student.nameWithInitials,
         'MIS No': student.misNo,
         Status: status === 'present' ? 'Present' : status === 'absent' ? 'Absent' : 'Not Marked'

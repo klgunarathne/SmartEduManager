@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 
 interface BatchStudent {
   id: number;
+  studentNumber: number | null;
   name: string;
   nicNo: string;
   email: string;
@@ -97,26 +98,28 @@ interface BatchStudent {
           <div class="table-card">
             <table class="data-table">
               <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>NIC</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Status</th>
-                </tr>
+                 <tr>
+                    <th>SN</th>
+                   <th>Student</th>
+                   <th>NIC</th>
+                   <th>Email</th>
+                   <th>Phone</th>
+                   <th>Status</th>
+                 </tr>
               </thead>
               <tbody>
                 @for (student of filteredStudents; track student.id) {
-                  <tr>
-                    <td>
-                      <div class="student-cell">
-                        <div class="student-avatar">
-                          <i class="fas fa-user"></i>
-                        </div>
-                        <span>{{ student.name }}</span>
-                      </div>
-                    </td>
-                    <td>{{ student.nicNo }}</td>
+                   <tr>
+                     <td>{{ student.studentNumber ?? '-' }}</td>
+                     <td>
+                       <div class="student-cell">
+                         <div class="student-avatar">
+                           <i class="fas fa-user"></i>
+                         </div>
+                         <span>{{ student.name }}</span>
+                       </div>
+                     </td>
+                     <td>{{ student.nicNo }}</td>
                     <td>{{ student.email }}</td>
                     <td>{{ student.phone }}</td>
                     <td>
@@ -127,7 +130,7 @@ interface BatchStudent {
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="5" class="empty-state">
+                    <td colspan="6" class="empty-state">
                       <i class="fas fa-user-graduate"></i>
                       <p>No students found in this batch</p>
                     </td>
@@ -192,6 +195,7 @@ interface BatchStudent {
     .table-card { overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th, .data-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+    .data-table th:first-child, .data-table td:first-child { width: 50px; padding: 16px 8px; text-align: center; }
     .data-table th { background: #f8fafc; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; }
     .data-table tbody tr:hover { background: #f8fafc; }
     .student-cell { display: flex; align-items: center; gap: 12px; }
@@ -283,15 +287,18 @@ export class InstructorDashboardComponent implements OnInit {
 
         this.studentService.getStudentsByBatch(currentBatch.batchId).subscribe({
           next: (currentStudents) => {
-            this.allStudents = currentStudents.map(s => ({
-              id: s.id,
-              name: s.nameWithInitials,
-              nicNo: s.nicNo,
-              email: s.email,
-              phone: s.telephone,
-              batchCode: s.batchCode,
-              status: 'active' as const
-            }));
+            this.allStudents = currentStudents
+              .map(s => ({
+                id: s.id,
+                studentNumber: s.studentNumber,
+                name: s.nameWithInitials,
+                nicNo: s.nicNo,
+                email: s.email,
+                phone: s.telephone,
+                batchCode: s.batchCode,
+                status: 'active' as const
+              }))
+              .sort((a, b) => (a.studentNumber ?? Number.MAX_SAFE_INTEGER) - (b.studentNumber ?? Number.MAX_SAFE_INTEGER));
             this.filteredStudents = [...this.allStudents];
 
             this.stats.set({
@@ -323,7 +330,8 @@ export class InstructorDashboardComponent implements OnInit {
 
   filterStudents(): void {
     const term = this.searchTerm.toLowerCase();
-    this.filteredStudents = this.allStudents.filter(s => 
+    this.filteredStudents = this.allStudents.filter(s =>
+      (s.studentNumber !== null && String(s.studentNumber).includes(term)) ||
       s.name.toLowerCase().includes(term) ||
       s.nicNo.toLowerCase().includes(term) ||
       s.email.toLowerCase().includes(term)

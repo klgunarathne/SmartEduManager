@@ -5,6 +5,7 @@ export interface ExportTableContext {
   headers: string[];
   rows: any[];
   orientation?: 'portrait' | 'landscape';
+  columnStyles?: { [key: string]: any };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,7 +30,8 @@ export class ExportService {
           startY: 24,
           head: [context.headers],
           body: tableBody,
-          theme: 'grid'
+          theme: 'grid',
+          columnStyles: context.columnStyles
         });
 
         doc.save(`${context.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
