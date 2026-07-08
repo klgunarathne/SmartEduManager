@@ -1,20 +1,22 @@
 import { apiClient } from './api-client';
 import { storage } from './storage.service';
-import { LoginDto, AuthResponse, StudentUser, TokenDto, RefreshTokenDto } from '@/models/auth.models';
+import { LoginDto, AuthResponse, StudentUser, RefreshTokenDto } from '@/models/auth.models';
 import { StudentDto } from '@/models/student.models';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://localhost:7160/api';
 
 export const authService = {
   async login(dto: LoginDto): Promise<AuthResponse> {
-    const response = await apiClient.post<{ token: TokenDto; user: { id: string; firstName: string; lastName: string; email: string; roles: string[] } }>(
-      '/Auth/login',
-      dto
-    );
+    const response = await apiClient.post<{
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: string;
+      user: { id: string; firstName: string; lastName: string; email: string; roles: string[] };
+    }>('/Auth/login', dto);
 
-    const { token, user } = response;
-    await storage.setToken(token.accessToken);
-    await storage.setRefreshToken(token.refreshToken);
+    const { accessToken, refreshToken, expiresAt, user } = response;
+    await storage.setToken(accessToken);
+    await storage.setRefreshToken(refreshToken);
 
     let studentUser: StudentUser = {
       id: user.id,
@@ -45,7 +47,7 @@ export const authService = {
     }
 
     await storage.setUser(studentUser);
-    return { token, user: studentUser };
+    return { token: { accessToken, refreshToken, expiresAt }, user: studentUser };
   },
 
   async refreshToken(dto: RefreshTokenDto): Promise<TokenDto> {

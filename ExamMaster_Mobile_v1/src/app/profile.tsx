@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ChevronLeft, BookOpen, UserCheck, LogOut } from 'lucide-react-native';
+import { ChevronLeft, BookOpen, UserCheck, LogOut, AlertTriangle } from 'lucide-react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,6 +15,7 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const loadAttendance = async () => {
@@ -31,11 +32,9 @@ export default function ProfileScreen() {
     loadAttendance();
   }, [user?.studentId]);
 
-  const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: async () => { await logout(); router.replace('/login'); } },
-    ]);
+  const confirmLogout = async () => {
+    setShowLogoutModal(false);
+    await logout();
   };
 
   return (
@@ -115,11 +114,40 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <Pressable style={styles.logoutButton} onPress={handleLogout}>
+        <Pressable style={styles.logoutButton} onPress={() => setShowLogoutModal(true)}>
           <LogOut size={20} color="#fff" />
           <Text style={styles.logoutButtonText}>Logout</Text>
         </Pressable>
       </ScrollView>
+
+      {showLogoutModal && (
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowLogoutModal(false)} />
+          <View style={styles.modalCard}>
+            <View style={styles.modalIconWrap}>
+              <AlertTriangle size={26} color={Colors.light.danger} />
+            </View>
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Log out?
+            </ThemedText>
+            <ThemedText style={styles.modalMessage}>
+              Are you sure you want to log out of your account?
+            </ThemedText>
+            <View style={styles.modalActions}>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => setShowLogoutModal(false)}>
+                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalBtn, styles.modalBtnConfirm]}
+                onPress={confirmLogout}>
+                <Text style={styles.modalBtnConfirmText}>Log Out</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -259,5 +287,82 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.four,
+    zIndex: 1000,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15,23,42,0.45)',
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 20,
+    padding: Spacing.five,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.light.backgroundElement,
+    zIndex: 1,
+  },
+  modalIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.light.danger + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.three,
+  },
+  modalTitle: {
+    marginBottom: Spacing.two,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: Spacing.five,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    width: '100%',
+  },
+  modalBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnCancel: {
+    backgroundColor: Colors.light.backgroundElement,
+  },
+  modalBtnCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  modalBtnConfirm: {
+    backgroundColor: Colors.light.danger,
+  },
+  modalBtnConfirmText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
