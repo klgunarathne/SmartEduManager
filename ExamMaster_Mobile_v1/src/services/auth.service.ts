@@ -3,7 +3,7 @@ import { storage } from './storage.service';
 import { LoginDto, AuthResponse, StudentUser, RefreshTokenDto } from '@/models/auth.models';
 import { StudentDto } from '@/models/student.models';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://www.SmartEduManagerApi.somee.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://smartedumanagerapi.somee.com/api';
 
 export const authService = {
   async login(dto: LoginDto): Promise<AuthResponse> {

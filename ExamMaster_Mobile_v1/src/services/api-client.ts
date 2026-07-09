@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { getItemAsync, setItemAsync, deleteItemAsync } from './secureStore';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://www.SmartEduManagerApi.somee.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://smartedumanagerapi.somee.com/api';
 
 class ApiClient {
   private client: AxiosInstance;
