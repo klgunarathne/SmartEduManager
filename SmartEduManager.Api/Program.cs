@@ -166,31 +166,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAllOrigins",
         policy =>
         {
-            policy.WithOrigins(
-                "http://localhost:4200",
-                "https://localhost:4200",
-                "http://localhost:4201",
-                "https://localhost:4201",
-                "http://localhost:4001",
-                "https://localhost:4001",
-                "http://localhost:5000",
-                "https://localhost:5000",
-                "http://localhost:5001",
-                "https://localhost:5001",
-                "http://localhost:5173",
-                "https://localhost:5173",
-                "http://localhost:3000",
-                "https://localhost:3001",
-                "http://localhost:8081",
-                "https://localhost:8081",
-                "https://localhost:7160",
-                "https://smartedu-manager-fn86wi08i-klgunarathne1988-gmailcoms-projects.vercel.app",
-                "https://smartedu-manager-web.vercel.app"
-            )
+            // Allow any origin (covers the mobile app, which sends no fixed Origin).
+            // SetIsOriginAllowed (not AllowAnyOrigin) is used so AllowCredentials() still works.
+            policy.SetIsOriginAllowed(_ => true)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
-    });
+        });
 });
 
 builder.Services.AddScoped<ImageUploadHelper>();

@@ -18,7 +18,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.kushangunarathne.ExamMaster"
+      "package": "com.anonymous.ExamMaster"
     },
     "web": {
       "output": "static",
@@ -38,12 +38,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "e9423360-3987-433e-b17f-46bae58d2fa6"
-      }
     }
   }
 }
