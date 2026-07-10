@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://smartedumanagerapi.somee.com/api'
+  apiUrl: 'https://localhost:7160/api'
 };
