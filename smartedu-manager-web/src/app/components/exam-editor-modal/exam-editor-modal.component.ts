@@ -336,7 +336,8 @@ export class ExamEditorModalComponent implements OnChanges {
       error: err => {
         this.isSaving.set(false);
         console.error('Update exam error:', err);
-        this.toast.error(`Failed to save exam: ${err.status || 'Unknown error'}`);
+        const message = typeof err.error === 'string' ? err.error : (err.message || `Failed to save exam: ${err.status || 'Unknown error'}`);
+        this.toast.error(message);
       }
     });
   }
@@ -347,6 +348,33 @@ export class ExamEditorModalComponent implements OnChanges {
       return;
     }
     this.toast.info('Use the schedule form in the exam settings to set availability');
+  }
+
+  revertToDraft(): void {
+    if (!this.activeExamId()) {
+      return;
+    }
+
+    const exam = this.exam();
+    if (!exam || (exam.status !== 'active' && exam.status !== 'completed' && exam.status !== 'scheduled')) {
+      this.toast.error('Only published or scheduled exams can be reverted to draft');
+      return;
+    }
+
+    if (!confirm(`Revert this exam to draft? It will no longer be available to students.`)) {
+      return;
+    }
+
+    this.http.patch(`${this.API_URL}/exams/${this.activeExamId()}/revert-to-draft`, {}, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.exam.update(item => ({ ...item, status: 'draft' }));
+        this.toast.success('Exam reverted to draft');
+      },
+      error: err => {
+        console.error('Revert to draft error:', err);
+        this.toast.error(`Failed to revert exam: ${err.status || 'Unknown error'}`);
+      }
+    });
   }
 
   openScheduleModal(): void {

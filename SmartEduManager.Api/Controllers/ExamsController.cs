@@ -232,7 +232,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, [FromQuery] bool force = false)
     {
         try
         {
@@ -242,9 +242,26 @@ public class ExamsController : ControllerBase
                 return NotFound("Exam not found");
             }
 
-            if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
+            if (!force && (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed))
             {
-                return BadRequest("Cannot delete a published or completed exam");
+                return BadRequest("Cannot delete a published or completed exam. Use force delete to override.");
+            }
+
+            if (force && (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed))
+            {
+                var attemptIds = await _context.ExamAttempts
+                    .Where(a => a.ExamId == id)
+                    .Select(a => a.Id)
+                    .ToListAsync();
+
+                if (attemptIds.Any())
+                {
+                    _context.ExamAnswers.RemoveRange(_context.ExamAnswers.Where(a => attemptIds.Contains(a.ExamAttemptId)));
+                    await _context.SaveChangesAsync();
+
+                    _context.ExamAttempts.RemoveRange(_context.ExamAttempts.Where(a => a.ExamId == id));
+                    await _context.SaveChangesAsync();
+                }
             }
 
             var success = await _examService.DeleteExamAsync(id);
@@ -254,7 +271,9 @@ public class ExamsController : ControllerBase
                 return NotFound("Exam not found");
             }
 
-            return Ok("Exam deleted successfully");
+            return Ok(force && (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed) 
+                ? "Published exam and related attempts deleted successfully" 
+                : "Exam deleted successfully");
         }
         catch (Exception ex)
         {
@@ -291,6 +310,27 @@ public class ExamsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reordering questions for exam {ExamId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPatch("{id}/revert-to-draft")]
+    public async Task<IActionResult> RevertToDraft(int id)
+    {
+        try
+        {
+            var success = await _examService.RevertExamToDraftAsync(id);
+            
+            if (!success)
+            {
+                return NotFound("Exam not found");
+            }
+
+            return Ok("Exam reverted to draft successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reverting exam {ExamId} to draft", id);
             return StatusCode(500, "Internal server error");
         }
     }

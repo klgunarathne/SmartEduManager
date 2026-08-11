@@ -326,15 +326,20 @@
           <button type="button" class="btn btn-success" [disabled]="isCreateMode() || exam().questions.length === 0" (click)="publishExam()">
             <i class="fas fa-rocket"></i> Publish
           </button>
+          @if (exam().status === 'active' || exam().status === 'completed' || exam().status === 'scheduled') {
+            <button type="button" class="btn btn-warning" (click)="revertToDraft()">
+              <i class="fas fa-undo"></i> Revert to Draft
+            </button>
+          }
         </div>
         <div class="footer-action-group">
           <button type="button" class="btn btn-outline" (click)="closeModal()">Cancel</button>
-          <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="saveExam()">
+          <button type="button" class="btn btn-primary" [disabled]="isSaving() || exam().status === 'active' || exam().status === 'completed' || exam().status === 'scheduled'" (click)="saveExam()">
             <i class="fas fa-spinner fa-spin" [class.d-none]="!isSaving()"></i>
             <span>{{ isSaving() ? 'Saving...' : 'Save Exam' }}</span>
           </button>
+        </div>
       </div>
-    </div>
   </div>
 
   @if (showScheduleModal()) {

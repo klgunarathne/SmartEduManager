@@ -166,15 +166,21 @@
                   </div>
                 </div>
                 <div class="exam-card-actions">
-                  <button type="button" class="action-btn" (click)="editExamDetails(exam)" title="Edit">
+                  <button type="button" class="action-btn" [disabled]="exam.status === 'active' || exam.status === 'completed'" (click)="editExamDetails(exam)" title="Edit">
                     <i class="fas fa-edit"></i>
                   </button>
-                  <button type="button" class="action-btn" (click)="duplicateExam(exam)" title="Duplicate">
+                  <button type="button" class="action-btn" [disabled]="exam.status === 'active' || exam.status === 'completed'" (click)="duplicateExam(exam)" title="Duplicate">
                     <i class="fas fa-copy"></i>
                   </button>
-                  <button type="button" class="action-btn danger" (click)="deleteExam(exam.id)" title="Delete">
-                    <i class="fas fa-trash"></i>
-                  </button>
+                  @if (exam.status === 'active' || exam.status === 'completed') {
+                    <button type="button" class="action-btn danger" (click)="deleteExam(exam.id, true)" title="Force Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  } @else {
+                    <button type="button" class="action-btn danger" (click)="deleteExam(exam.id, false)" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  }
                 </div>
               </div>
             }

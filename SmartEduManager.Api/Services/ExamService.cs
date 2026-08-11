@@ -17,6 +17,7 @@ public interface IExamService
     Task<bool> AddQuestionToExamAsync(int examId, int questionId);
     Task<bool> RemoveQuestionFromExamAsync(int examId, int questionId);
     Task<bool> ReorderExamQuestionsAsync(int examId, List<int> questionIdsInOrder);
+    Task<bool> RevertExamToDraftAsync(int examId);
     Task<bool> ScheduleExamAsync(int id, ScheduleExamDto dto);
     Task<bool> PublishExamAsync(int id);
     Task<ExamAttemptDto?> StartExamAsync(int examId, string studentId);
@@ -170,6 +171,19 @@ public class ExamService : IExamService
             examQuestion.Order = questionIdsInOrder.IndexOf(examQuestion.QuestionId);
         }
 
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> RevertExamToDraftAsync(int examId)
+    {
+        var exam = await _context.Exams.FindAsync(examId);
+        if (exam == null)
+            return false;
+
+        exam.Status = ExamStatus.Draft;
+        exam.PublishedAt = null;
+        exam.ScheduledAt = null;
         await _context.SaveChangesAsync();
         return true;
     }

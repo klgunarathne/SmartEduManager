@@ -8,6 +8,21 @@ namespace SmartEduManager.Api.Profiles;
 
 public class MappingProfile : Profile
 {
+    private static string[]? ParseOptions(string? options)
+    {
+        if (string.IsNullOrEmpty(options))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<string[]>(options);
+        }
+        catch
+        {
+            return options.Split('|', StringSplitOptions.RemoveEmptyEntries);
+        }
+    }
+
     public MappingProfile()
     {
         // User mapping
@@ -140,7 +155,7 @@ public class MappingProfile : Profile
                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : "Uncategorized"))
                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("yyyy-MM-dd")))
-               .ForMember(dest => dest.Options, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.Options) ? null : JsonSerializer.Deserialize<string[]>(src.Options)))
+               .ForMember(dest => dest.Options, opt => opt.MapFrom(src => ParseOptions(src.Options)))
                .ForMember(dest => dest.Required, opt => opt.MapFrom(src => src.Required));
              CreateMap<CreateQuestionDto, Question>()
                  .ForMember(dest => dest.Type, opt => opt.MapFrom(src => EnumHelper.ParseQuestionType(src.Type)))

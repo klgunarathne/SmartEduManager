@@ -615,21 +615,33 @@ export class ExamQuestionBuilderComponent implements OnInit {
     });
   }
 
-  deleteExam(examId: number): void {
-    if (!confirm('Are you sure you want to delete this exam?')) {
+  deleteExam(examId: number, force: boolean = false): void {
+    const exam = this.exams().find(e => e.id === examId);
+    const isPublished = exam && (exam.status === 'active' || exam.status === 'completed');
+    
+    const message = force && isPublished
+      ? 'Force delete this published exam? All student attempts and answers will also be permanently deleted.'
+      : 'Are you sure you want to delete this exam?';
+
+    if (!confirm(message)) {
       return;
     }
 
-    this.http.delete(`${this.API_URL}/exams/${examId}`, { responseType: 'text' as any }).subscribe({
+    const url = `${this.API_URL}/exams/${examId}${force ? '?force=true' : ''}`;
+
+    this.http.delete(url, { responseType: 'text' as any }).subscribe({
       next: () => {
         this.exams.update(items => items.filter(item => item.id !== examId));
         if (this.exam().id === examId) {
           this.exam.set(this.emptyExam());
           this.selectedQuestionId.set(null);
         }
-        this.toast.success('Exam deleted');
+        this.toast.success('Exam deleted successfully');
       },
-      error: err => this.toast.error(`Failed to delete exam: ${err.status || 'Unknown error'}`)
+      error: err => {
+        const message = typeof err.error === 'string' ? err.error : (err.message || `Failed to delete exam: ${err.status || 'Unknown error'}`);
+        this.toast.error(message);
+      }
     });
   }
 
