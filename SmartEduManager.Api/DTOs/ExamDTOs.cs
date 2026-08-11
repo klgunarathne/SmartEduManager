@@ -30,6 +30,7 @@ public class CreateExamDto
     public string? Description { get; set; }
     public int? CategoryId { get; set; }
     public int Duration { get; set; } = 60;
+    public List<AddQuestionToExamDto>? Questions { get; set; }
 }
 
 public class ExamQuestionDto
@@ -44,6 +45,7 @@ public class ExamQuestionDto
 public class AddQuestionToExamDto
 {
     public int QuestionId { get; set; }
+    public int Order { get; set; }
 }
 
 public class ScheduleExamDto
@@ -51,7 +53,6 @@ public class ScheduleExamDto
     public DateTime? AvailableFrom { get; set; }
     public DateTime? AvailableTo { get; set; }
     public string? TimeZone { get; set; }
-    public string? ScheduleType { get; set; }
 }
 
 public class UpdateExamDto
@@ -60,6 +61,11 @@ public class UpdateExamDto
     public string? Description { get; set; }
     public int? CategoryId { get; set; }
     public int Duration { get; set; } = 60;
+}
+
+public class ReorderExamQuestionsDto
+{
+    public List<int> QuestionIds { get; set; } = new();
 }
 
 public class StartExamDto

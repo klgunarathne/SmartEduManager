@@ -16,6 +16,7 @@ public interface IExamService
     Task<bool> DeleteExamAsync(int id);
     Task<bool> AddQuestionToExamAsync(int examId, int questionId);
     Task<bool> RemoveQuestionFromExamAsync(int examId, int questionId);
+    Task<bool> ReorderExamQuestionsAsync(int examId, List<int> questionIdsInOrder);
     Task<bool> ScheduleExamAsync(int id, ScheduleExamDto dto);
     Task<bool> PublishExamAsync(int id);
     Task<ExamAttemptDto?> StartExamAsync(int examId, string studentId);
@@ -77,6 +78,22 @@ public class ExamService : IExamService
         await _context.Exams.AddAsync(exam);
         await _context.SaveChangesAsync();
 
+        if (createDto.Questions != null && createDto.Questions.Any())
+        {
+            var maxOrder = 0;
+            foreach (var q in createDto.Questions.OrderBy(q => q.Order))
+            {
+                var examQuestion = new ExamQuestion
+                {
+                    ExamId = exam.Id,
+                    QuestionId = q.QuestionId,
+                    Order = maxOrder++
+                };
+                await _context.ExamQuestions.AddAsync(examQuestion);
+            }
+            await _context.SaveChangesAsync();
+        }
+
         return _mapper.Map<ExamDto>(exam);
     }
 
@@ -84,6 +101,9 @@ public class ExamService : IExamService
     {
         var exam = await _context.Exams.FindAsync(id);
         if (exam == null)
+            return false;
+
+        if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
             return false;
 
         _mapper.Map(updateDto, exam);
@@ -95,6 +115,9 @@ public class ExamService : IExamService
     {
         var exam = await _context.Exams.FindAsync(id);
         if (exam == null)
+            return false;
+
+        if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
             return false;
 
         _context.Exams.Remove(exam);
@@ -110,6 +133,12 @@ public class ExamService : IExamService
         if (!examExists || !questionExists)
             return false;
 
+        var alreadyExists = await _context.ExamQuestions
+            .AnyAsync(eq => eq.ExamId == examId && eq.QuestionId == questionId);
+
+        if (alreadyExists)
+            return true;
+
         var maxOrder = await _context.ExamQuestions
             .Where(eq => eq.ExamId == examId)
             .MaxAsync(eq => (int?)eq.Order) ?? 0;
@@ -122,6 +151,25 @@ public class ExamService : IExamService
         };
 
         await _context.ExamQuestions.AddAsync(examQuestion);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ReorderExamQuestionsAsync(int examId, List<int> questionIdsInOrder)
+    {
+        var examQuestions = await _context.ExamQuestions
+            .Where(eq => eq.ExamId == examId)
+            .ToListAsync();
+
+        var questionIdSet = new HashSet<int>(questionIdsInOrder);
+        if (examQuestions.Count != questionIdsInOrder.Count || !examQuestions.All(eq => questionIdSet.Contains(eq.QuestionId)))
+            return false;
+
+        foreach (var (examQuestion, index) in examQuestions.Select((eq, i) => (eq, i)))
+        {
+            examQuestion.Order = questionIdsInOrder.IndexOf(examQuestion.QuestionId);
+        }
+
         await _context.SaveChangesAsync();
         return true;
     }
@@ -143,6 +191,9 @@ public class ExamService : IExamService
     {
         var exam = await _context.Exams.FindAsync(id);
         if (exam == null)
+            return false;
+
+        if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
             return false;
 
         exam.AvailableFrom = dto.AvailableFrom;
@@ -246,14 +297,33 @@ public class ExamService : IExamService
             if (!questionMap.TryGetValue(answer.QuestionId, out var question))
                 return null;
 
-            var correctAnswers = (question.CorrectAnswer ?? string.Empty)
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
             var selectedAnswers = (answer.SelectedAnswer ?? string.Empty)
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            var isCorrect = selectedAnswers.Length == correctAnswers.Length &&
-                selectedAnswers.All(ca => correctAnswers.Contains(ca));
+            bool isCorrect;
+            if (question.Type is QuestionType.MultipleChoice or QuestionType.Checkbox or QuestionType.Dropdown)
+            {
+                var correctAnswers = (question.CorrectAnswer ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                isCorrect = selectedAnswers.Length == correctAnswers.Length &&
+                    selectedAnswers.All(ca => correctAnswers.Contains(ca));
+            }
+            else if (question.Type is QuestionType.ShortAnswer or QuestionType.Essay)
+            {
+                var correctText = (question.CorrectAnswer ?? string.Empty).Trim();
+                var selectedText = (answer.SelectedAnswer ?? string.Empty).Trim();
+                isCorrect = !string.IsNullOrEmpty(selectedText) && 
+                            (string.IsNullOrEmpty(correctText) || 
+                             selectedText.Contains(correctText, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                var correctText = (question.CorrectAnswer ?? string.Empty).Trim();
+                var selectedText = (answer.SelectedAnswer ?? string.Empty).Trim();
+                isCorrect = !string.IsNullOrEmpty(selectedText) && 
+                            string.Equals(correctText, selectedText, StringComparison.OrdinalIgnoreCase);
+            }
 
             return new ExamAnswer
             {

@@ -18,6 +18,7 @@ public class QuestionDto
     public string? CorrectAnswer { get; set; }
     public string? Explanation { get; set; }
     public string[] Tags { get; set; } = [];
+    public bool Required { get; set; } = true;
     public string CreatedAt { get; set; } = string.Empty;
     public string UpdatedAt { get; set; } = string.Empty;
 }
@@ -33,6 +34,7 @@ public class CreateQuestionDto
     public string? CorrectAnswer { get; set; }
     public string? Explanation { get; set; }
     public string[] Tags { get; set; } = [];
+    public bool Required { get; set; } = true;
 }
 
 public class UpdateQuestionDto
@@ -46,4 +48,5 @@ public class UpdateQuestionDto
     public string? CorrectAnswer { get; set; }
     public string? Explanation { get; set; }
     public string[] Tags { get; set; } = [];
- }
+    public bool Required { get; set; } = true;
+}

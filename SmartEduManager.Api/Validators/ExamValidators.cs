@@ -43,12 +43,47 @@ public class ScheduleExamDtoValidator : AbstractValidator<ScheduleExamDto>
 {
     public ScheduleExamDtoValidator()
     {
-        RuleFor(x => x.AvailableFrom)
-            .NotEmpty().WithMessage("Start date/time is required")
-            .When(x => !string.IsNullOrEmpty(x.ScheduleType) && x.ScheduleType == "range");
-
         RuleFor(x => x.TimeZone)
-            .NotEmpty().WithMessage("Time zone is required")
-            .When(x => x.ScheduleType != "permanent");
+            .NotEmpty().WithMessage("Time zone is required");
+    }
+}
+
+public class CreateQuestionDtoValidator : AbstractValidator<CreateQuestionDto>
+{
+    public CreateQuestionDtoValidator()
+    {
+        RuleFor(x => x.Content)
+            .NotEmpty().WithMessage("Question content is required")
+            .MaximumLength(2000).WithMessage("Question content must be less than 2000 characters");
+
+        RuleFor(x => x.Marks)
+            .GreaterThanOrEqualTo(0).WithMessage("Marks must be 0 or greater")
+            .LessThanOrEqualTo(1000).WithMessage("Marks cannot exceed 1000");
+
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0).WithMessage("Category ID must be greater than 0");
+
+        RuleFor(x => x.Type)
+            .NotEmpty().WithMessage("Question type is required");
+    }
+}
+
+public class UpdateQuestionDtoValidator : AbstractValidator<UpdateQuestionDto>
+{
+    public UpdateQuestionDtoValidator()
+    {
+        RuleFor(x => x.Content)
+            .NotEmpty().WithMessage("Question content is required")
+            .MaximumLength(2000).WithMessage("Question content must be less than 2000 characters");
+
+        RuleFor(x => x.Marks)
+            .GreaterThanOrEqualTo(0).WithMessage("Marks must be 0 or greater")
+            .LessThanOrEqualTo(1000).WithMessage("Marks cannot exceed 1000");
+
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0).WithMessage("Category ID must be greater than 0");
+
+        RuleFor(x => x.Type)
+            .NotEmpty().WithMessage("Question type is required");
     }
 }

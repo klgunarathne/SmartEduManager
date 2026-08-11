@@ -204,6 +204,17 @@ public class ExamsController : ControllerBase
     {
         try
         {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
+            {
+                return BadRequest("Cannot update a published or completed exam");
+            }
+
             var success = await _examService.UpdateExamAsync(id, updateDto);
             
             if (!success)
@@ -225,6 +236,17 @@ public class ExamsController : ControllerBase
     {
         try
         {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
+            {
+                return BadRequest("Cannot delete a published or completed exam");
+            }
+
             var success = await _examService.DeleteExamAsync(id);
             
             if (!success)
@@ -237,6 +259,38 @@ public class ExamsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting exam {ExamId}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPatch("{id}/questions/reorder")]
+    public async Task<IActionResult> ReorderQuestions(int id, [FromBody] ReorderExamQuestionsDto dto)
+    {
+        try
+        {
+            var exam = await _context.Exams.FindAsync(id);
+            if (exam == null)
+            {
+                return NotFound("Exam not found");
+            }
+
+            if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
+            {
+                return BadRequest("Cannot reorder questions in a published or completed exam");
+            }
+
+            var success = await _examService.ReorderExamQuestionsAsync(id, dto.QuestionIds);
+            
+            if (!success)
+            {
+                return BadRequest("Invalid question order. Ensure all exam questions are included exactly once.");
+            }
+
+            return Ok("Questions reordered successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reordering questions for exam {ExamId}", id);
             return StatusCode(500, "Internal server error");
         }
     }

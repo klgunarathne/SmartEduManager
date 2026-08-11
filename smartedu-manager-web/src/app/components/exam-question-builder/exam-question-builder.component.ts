@@ -6,139 +6,21 @@ import { environment } from '../../../environments/environment';
 import { ToastService } from '../../services/toast.service';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ExamEditorModalComponent } from '../exam-editor-modal/exam-editor-modal.component';
-
-type QuestionType = 'multiple-choice' | 'checkbox' | 'dropdown' | 'short-answer' | 'paragraph' | 'linear-scale' | 'rating' | 'date' | 'time';
-type DifficultyLevel = 'easy' | 'medium' | 'hard';
-type ExamStatus = 'draft' | 'scheduled' | 'active' | 'completed';
-type BuilderPanel = 'question-bank' | 'exam-builder';
-
-interface Category {
-  id: number;
-  name: string;
-  color: string;
-}
-
-interface QuestionOption {
-  id: string;
-  content: string;
-  isCorrect?: boolean;
-}
-
-interface Question {
-  id: number;
-  content: string;
-  type: QuestionType;
-  difficulty: DifficultyLevel;
-  categoryId: number;
-  marks: number;
-  options?: QuestionOption[];
-  correctAnswer?: string[];
-  explanation?: string;
-  tags: string[];
-  required: boolean;
-}
-
-interface ExamQuestion {
-  id?: number;
-  questionId: number;
-  question?: Question;
-  order: number;
-}
-
-interface Exam {
-  id: number;
-  title: string;
-  description: string;
-  categoryId: number | null;
-  duration: number;
-  status: ExamStatus;
-  availableFrom: string | null;
-  availableTo: string | null;
-  timeZone: string | null;
-  questions: ExamQuestion[];
-}
-
-interface ApiQuestionDto {
-  Id?: number;
-  id?: number;
-  Content?: string | null;
-  content?: string | null;
-  Type?: string | null;
-  type?: string | null;
-  Difficulty?: string | null;
-  difficulty?: string | null;
-  CategoryId?: number;
-  categoryId?: number;
-  Marks?: number;
-  marks?: number;
-  Options?: string[] | null;
-  options?: string[] | null;
-  CorrectAnswer?: string | null;
-  correctAnswer?: string | null;
-  Explanation?: string | null;
-  explanation?: string | null;
-  Tags?: string[] | null;
-  tags?: string[] | null;
-  Required?: boolean;
-  required?: boolean;
-}
-
-interface ApiExamQuestionDto {
-  Id?: number;
-  id?: number;
-  ExamId?: number;
-  examId?: number;
-  QuestionId?: number;
-  questionId?: number;
-  Order?: number;
-  order?: number;
-  Question?: ApiQuestionDto | null;
-  question?: ApiQuestionDto | null;
-}
-
-interface ApiExamDto {
-  Id?: number;
-  id?: number;
-  Title?: string | null;
-  title?: string | null;
-  Description?: string | null;
-  description?: string | null;
-  CategoryId?: number;
-  categoryId?: number;
-  CategoryName?: string | null;
-  categoryName?: string | null;
-  QuestionCount?: number;
-  questionCount?: number;
-  Duration?: number;
-  duration?: number;
-  IsActive?: boolean;
-  isActive?: boolean;
-  CreatedAt?: string | null;
-  createdAt?: string | null;
-  TotalMarks?: number;
-  totalMarks?: number;
-  Status?: string | null;
-  status?: string | null;
-  AvailableFrom?: string | null;
-  availableFrom?: string | null;
-  AvailableTo?: string | null;
-  availableTo?: string | null;
-  TimeZone?: string | null;
-  timeZone?: string | null;
-  Questions?: ApiExamQuestionDto[] | null;
-  questions?: ApiExamQuestionDto[] | null;
-}
-
-interface ApiCategoryDto {
-  Id?: number;
-  id?: number;
-  Name?: string | null;
-  name?: string | null;
-  Color?: string | null;
-  color?: string | null;
-  QuestionCount?: number;
-  questionCount?: number;
-}
+import {
+  BuilderPanel,
+  Category,
+  Exam,
+  ExamQuestion,
+  ExamStatus,
+  Question,
+  QuestionOption,
+  QuestionType,
+  DifficultyLevel,
+  ApiCategoryDto,
+  ApiExamDto,
+  ApiExamQuestionDto,
+  ApiQuestionDto
+} from './exam.models';
 
 @Component({
   selector: 'app-exam-question-builder',
@@ -301,45 +183,51 @@ export class ExamQuestionBuilderComponent implements OnInit {
     const payload = {
       Title: exam.title,
       Description: exam.description,
-      CategoryId: exam.categoryId,
-      Duration: exam.duration
+      CategoryId: exam.categoryId ?? undefined,
+      Duration: exam.duration,
+      Questions: exam.questions.map((item, index) => ({ QuestionId: item.questionId, Order: index }))
     };
 
-    const saveNext = () => {
-      if (exam.id) {
-        this.persistExamQuestions(exam.id);
-      }
-      this.toast.success('Exam saved');
+    const saveNext = (createdOrUpdated: ApiExamDto) => {
+      const updated = this.toExam(createdOrUpdated);
+      this.exam.set(updated);
+      this.exams.update(items => {
+        const existing = items.find(i => i.id === updated.id);
+        if (existing) {
+          return items.map(i => i.id === updated.id ? updated : i);
+        }
+        return [updated, ...items];
+      });
+      this.toast.success(exam.id ? 'Exam updated' : 'Exam created');
       this.loadExams();
     };
 
     if (exam.id) {
       this.http.put(`${this.API_URL}/exams/${exam.id}`, payload, { responseType: 'text' as any }).subscribe({
-        next: saveNext,
+        next: () => saveNext({ id: exam.id, title: exam.title, description: exam.description, categoryId: exam.categoryId ?? undefined, duration: exam.duration, status: exam.status }),
         error: () => this.toast.error('Failed to save exam')
       });
       return;
     }
 
     this.http.post<ApiExamDto>(`${this.API_URL}/exams`, payload).subscribe({
-      next: result => {
-        const created = this.toExam(result);
-        this.exam.set(created);
-        this.exams.update(items => [created, ...items]);
-        this.persistExamQuestions(created.id);
-        this.toast.success('Exam created');
-        this.loadExams();
-      },
+      next: saveNext,
       error: () => this.toast.error('Failed to create exam')
     });
   }
 
   addQuestionToBank(type: QuestionType): void {
+    const categoryId = this.categories()[0]?.id || 0;
+    if (!categoryId) {
+      this.toast.error('Please create a category first');
+      return;
+    }
+
     const payload = {
       Content: '',
       Type: this.mapQuestionTypeToApi(type),
       Difficulty: this.mapDifficultyToApi('medium'),
-      CategoryId: this.categories()[0]?.id || 0,
+      CategoryId: categoryId,
       Marks: 1,
       Tags: [],
       Options: this.getDefaultOptions(type).map(option => option.content),
@@ -495,10 +383,17 @@ export class ExamQuestionBuilderComponent implements OnInit {
   }
 
   removeQuestion(questionId: number): void {
+    if (!confirm('Remove this question from the exam?')) {
+      return;
+    }
+
     if (this.exam().id) {
       this.http.delete(`${this.API_URL}/exams/${this.exam().id}/questions/${questionId}`, { responseType: 'text' as any }).subscribe({
         next: () => this.removeLocalQuestion(questionId),
-        error: () => this.removeLocalQuestion(questionId)
+        error: err => {
+          console.error('Remove question error:', err);
+          this.toast.error(`Failed to remove question: ${err.status || 'Unknown error'}`);
+        }
       });
       return;
     }
@@ -615,22 +510,17 @@ export class ExamQuestionBuilderComponent implements OnInit {
       moveItemInArray(questions, event.previousIndex, event.currentIndex);
       return { ...exam, questions };
     });
+
+    if (this.exam().id) {
+      const orderedIds = this.exam().questions.map(q => q.questionId);
+      this.http.post(`${this.API_URL}/exams/${this.exam().id}/questions/reorder`, { QuestionIds: orderedIds }, { responseType: 'text' as any }).subscribe({
+        error: err => console.error('Reorder error:', err)
+      });
+    }
   }
 
   scheduleExam(): void {
-    const exam = this.exam();
-    if (!exam.id) {
-      this.toast.error('Save the exam before scheduling');
-      return;
-    }
-
-    this.http.patch(`${this.API_URL}/exams/${exam.id}/schedule`, {}, { responseType: 'text' as any }).subscribe({
-      next: () => {
-        this.exam.update(item => ({ ...item, status: 'scheduled' }));
-        this.toast.success('Exam scheduled');
-      },
-      error: () => this.toast.error('Failed to schedule exam')
-    });
+    this.toast.info('Use the exam editor modal to set schedule and availability');
   }
 
   publishExam(): void {
@@ -754,6 +644,9 @@ export class ExamQuestionBuilderComponent implements OnInit {
       next: result => {
         const created = this.toExam(result);
         this.exams.update(items => [created, ...items]);
+        this.exam.set(created);
+        this.selectedExamId.set(created.id);
+        this.editExamDetails(created);
         this.toast.success('Exam duplicated');
       },
       error: err => this.toast.error(`Failed to duplicate exam: ${err.status || 'Unknown error'}`)
@@ -948,22 +841,6 @@ export class ExamQuestionBuilderComponent implements OnInit {
       order: examQuestion.Order ?? examQuestion.order ?? 0,
       question: questionData ? this.toQuestion(questionData) : undefined
     };
-  }
-
-  private persistExamQuestions(examId: number): void {
-    const questions = this.exam().questions;
-    if (!examId || questions.length === 0) {
-      return;
-    }
-
-    questions.forEach(question => {
-      this.http.post<ApiExamQuestionDto>(`${this.API_URL}/exams/${examId}/questions`, {
-        QuestionId: question.questionId
-      }).subscribe({
-        next: () => this.loadExams(),
-        error: err => console.error('Persist exam question error:', err)
-      });
-    });
   }
 
   private withUpdatedOption(questionId: number, optionId: string, content: string): Question {

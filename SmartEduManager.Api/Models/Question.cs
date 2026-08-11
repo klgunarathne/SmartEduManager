@@ -36,6 +36,7 @@ namespace SmartEduManager.Api.Models
         public string? CorrectAnswer { get; set; }
         public string? Explanation { get; set; }
         public string[] Tags { get; set; } = [];
+        public bool Required { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

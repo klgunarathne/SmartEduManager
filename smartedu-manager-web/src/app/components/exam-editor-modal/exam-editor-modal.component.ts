@@ -6,138 +6,21 @@ import { environment } from '../../../environments/environment';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../services/toast.service';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
-
-type QuestionType = 'multiple-choice' | 'checkbox' | 'dropdown' | 'short-answer' | 'paragraph' | 'linear-scale' | 'rating' | 'date' | 'time';
-type DifficultyLevel = 'easy' | 'medium' | 'hard';
-type ExamStatus = 'draft' | 'scheduled' | 'active' | 'completed';
-
-interface Category {
-  id: number;
-  name: string;
-  color: string;
-}
-
-interface QuestionOption {
-  id: string;
-  content: string;
-  isCorrect?: boolean;
-}
-
-interface Question {
-  id: number;
-  content: string;
-  type: QuestionType;
-  difficulty: DifficultyLevel;
-  categoryId: number;
-  marks: number;
-  options?: QuestionOption[];
-  correctAnswer?: string[];
-  explanation?: string;
-  tags: string[];
-  required: boolean;
-}
-
-interface ExamQuestion {
-  id?: number;
-  questionId: number;
-  question?: Question;
-  order: number;
-}
-
-interface Exam {
-  id: number;
-  title: string;
-  description: string;
-  categoryId: number | null;
-  duration: number;
-  status: ExamStatus;
-  availableFrom: string | null;
-  availableTo: string | null;
-  timeZone: string | null;
-  questions: ExamQuestion[];
-}
-
-interface ApiQuestionDto {
-  Id?: number;
-  id?: number;
-  Content?: string | null;
-  content?: string | null;
-  Type?: string | null;
-  type?: string | null;
-  Difficulty?: string | null;
-  difficulty?: string | null;
-  CategoryId?: number;
-  categoryId?: number;
-  Marks?: number;
-  marks?: number;
-  Options?: string[] | null;
-  options?: string[] | null;
-  CorrectAnswer?: string | null;
-  correctAnswer?: string | null;
-  Explanation?: string | null;
-  explanation?: string | null;
-  Tags?: string[] | null;
-  tags?: string[] | null;
-  Required?: boolean;
-  required?: boolean;
-}
-
-interface ApiExamQuestionDto {
-  Id?: number;
-  id?: number;
-  ExamId?: number;
-  examId?: number;
-  QuestionId?: number;
-  questionId?: number;
-  Order?: number;
-  order?: number;
-  Question?: ApiQuestionDto | null;
-  question?: ApiQuestionDto | null;
-}
-
-interface ApiExamDto {
-  Id?: number;
-  id?: number;
-  Title?: string | null;
-  title?: string | null;
-  Description?: string | null;
-  description?: string | null;
-  CategoryId?: number;
-  categoryId?: number;
-  CategoryName?: string | null;
-  categoryName?: string | null;
-  QuestionCount?: number;
-  questionCount?: number;
-  Duration?: number;
-  duration?: number;
-  IsActive?: boolean;
-  isActive?: boolean;
-  CreatedAt?: string | null;
-  createdAt?: string | null;
-  TotalMarks?: number;
-  totalMarks?: number;
-  Status?: string | null;
-  status?: string | null;
-  AvailableFrom?: string | null;
-  availableFrom?: string | null;
-  AvailableTo?: string | null;
-  availableTo?: string | null;
-  TimeZone?: string | null;
-  timeZone?: string | null;
-  Questions?: ApiExamQuestionDto[] | null;
-  questions?: ApiExamQuestionDto[] | null;
-}
-
-interface ApiCategoryDto {
-  Id?: number;
-  id?: number;
-  Name?: string | null;
-  name?: string | null;
-  Color?: string | null;
-  color?: string | null;
-  QuestionCount?: number;
-  questionCount?: number;
-}
+import {
+  BuilderPanel,
+  Category,
+  Exam,
+  ExamQuestion,
+  ExamStatus,
+  Question,
+  QuestionOption,
+  QuestionType,
+  DifficultyLevel,
+  ApiCategoryDto,
+  ApiExamDto,
+  ApiExamQuestionDto,
+  ApiQuestionDto
+} from '../exam-question-builder/exam.models';
 
 @Component({
   selector: 'app-exam-editor-modal',
@@ -624,6 +507,13 @@ export class ExamEditorModalComponent implements OnChanges {
         moveItemInArray(questions, event.previousIndex, event.currentIndex);
         return { ...exam, questions };
       });
+
+      if (this.activeExamId()) {
+        const orderedIds = this.exam().questions.map(q => q.questionId);
+        this.http.post(`${this.API_URL}/exams/${this.activeExamId()}/questions/reorder`, { QuestionIds: orderedIds }, { responseType: 'text' as any }).subscribe({
+          error: err => console.error('Reorder error:', err)
+        });
+      }
       return;
     }
 
