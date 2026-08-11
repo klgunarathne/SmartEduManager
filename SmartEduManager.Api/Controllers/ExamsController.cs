@@ -139,6 +139,7 @@ public class ExamsController : ControllerBase
 
             var savedExamQuestion = await _context.ExamQuestions
                 .Include(eq => eq.Question)
+                    .ThenInclude(q => q.Category)
                 .LastOrDefaultAsync(eq => eq.ExamId == examId && eq.QuestionId == dto.QuestionId);
 
             if (savedExamQuestion == null)
