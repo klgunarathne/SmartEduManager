@@ -1,0 +1,69 @@
+<div class="instructions-shell" *ngIf="!isLoading(); else loading">
+  <div class="instructions-card" *ngIf="exam(); let exam; else empty">
+    <header class="exam-header">
+      <span class="kicker">ExamMaster</span>
+      <h1>{{ exam.title }}</h1>
+      <p class="description">{{ exam.description || 'No description provided.' }}</p>
+    </header>
+
+    <section class="rules-section">
+      <h2>Before you begin</h2>
+      <ul>
+        <li>Make sure you have a stable internet connection.</li>
+        <li>The exam timer starts as soon as you begin and cannot be paused.</li>
+        <li>You can navigate between questions and change answers before submitting.</li>
+        <li>Once submitted, answers cannot be changed.</li>
+        <li>Do not switch tabs or leave the exam window; doing so may flag your session.</li>
+      </ul>
+    </section>
+
+    <section class="meta-section">
+      <div class="meta-item">
+        <span class="meta-label">Questions</span>
+        <strong>{{ exam.questions.length }}</strong>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Duration</span>
+        <strong>{{ exam.duration }} min</strong>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Total marks</span>
+        <strong>{{ totalMarks }}</strong>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Category</span>
+        <strong>{{ exam.categoryName }}</strong>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button class="primary-btn" type="button" (click)="startExam()">Start exam</button>
+      <button class="secondary-btn" type="button" (click)="goBack()">Back to dashboard</button>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!exam() && !isLoading() && !error()">
+    <h3>Exam not found</h3>
+    <p>The requested exam could not be loaded.</p>
+    <button class="primary-btn" type="button" (click)="goBack()">Back to dashboard</button>
+  </div>
+
+  <div class="error-state" *ngIf="error()">
+    <p>{{ error() }}</p>
+    <button class="primary-btn" type="button" (click)="goBack()">Back to dashboard</button>
+  </div>
+</div>
+
+<ng-template #loading>
+  <div class="loading-state">
+    <span class="spinner"></span>
+    <p>Loading exam details...</p>
+  </div>
+</ng-template>
+
+<ng-template #empty>
+  <div class="loading-state">
+    <span class="spinner"></span>
+    <p>Loading exam details...</p>
+  </div>
+</ng-template>

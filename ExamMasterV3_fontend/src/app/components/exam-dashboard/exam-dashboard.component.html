@@ -13,6 +13,7 @@
           <small>Student portal</small>
         </div>
       </div>
+      <button class="ghost-btn" type="button" (click)="goToHistory()">History</button>
       <button class="ghost-btn" type="button" (click)="logout()">Logout</button>
     </div>
   </header>
@@ -92,14 +93,21 @@
               }
             </div>
 
-            <button
-              class="primary-btn"
-              type="button"
-              [disabled]="!canStart(exam)"
-              (click)="startExam(exam.id)"
-            >
-              {{ startButtonText(exam) }}
-            </button>
+            <div class="exam-actions">
+              @if (hasExistingAttempt(exam)) {
+                <button class="primary-btn resume-btn" type="button" [disabled]="!canStart(exam)" (click)="resumeExam(exam.id)">
+                  {{ resumeButtonText() }}
+                </button>
+              }
+              <button
+                class="primary-btn"
+                type="button"
+                [disabled]="!canStart(exam)"
+                (click)="startExam(exam.id)"
+              >
+                {{ startButtonText(exam) }}
+              </button>
+            </div>
           </article>
         }
       </div>

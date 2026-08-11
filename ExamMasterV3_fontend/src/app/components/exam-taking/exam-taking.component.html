@@ -1,4 +1,4 @@
-<div class="exam-shell">
+<div class="exam-shell" (copy)="onCopyPaste($event)" (paste)="onCopyPaste($event)" (cut)="onCopyPaste($event)" (contextmenu)="onContextMenu($event)">
   @if (!attempt()) {
     <div class="loading-panel">
       <span class="spinner"></span>
@@ -164,9 +164,15 @@
             <span><i></i> Pending</span>
           </div>
 
-          <button class="submit-btn" type="button" [disabled]="isSubmitting() || totalQuestions === 0" (click)="confirmSubmit()">
-            {{ isSubmitting() ? 'Submitting...' : 'Submit exam' }}
-          </button>
+          <div class="side-actions">
+            <button class="outline-btn" type="button" [disabled]="totalQuestions === 0" (click)="openReview()">Review answers</button>
+          <div class="side-actions">
+            <button class="outline-btn" type="button" [disabled]="totalQuestions === 0" (click)="openReview()">Review answers</button>
+            <button class="submit-btn" type="button" [disabled]="isSubmitting() || totalQuestions === 0" (click)="confirmSubmit()">
+              {{ isSubmitting() ? 'Submitting...' : 'Submit exam' }}
+            </button>
+          </div>
+          </div>
         </div>
       </aside>
     </main>

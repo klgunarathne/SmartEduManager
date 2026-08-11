@@ -2,8 +2,11 @@ import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ExamAnswerSubmission, ExamQuestion } from '../../models/exam.models';
+import { ExamAnswerSubmission, ExamQuestion, ExamAttempt } from '../../models/exam.models';
 import { ExamService } from '../../services/exam.service';
+import { ToastService } from '../../services/toast.service';
+
+const AUTOSAVE_KEY = 'exam-master-autosave';
 
 @Component({
   selector: 'app-exam-taking',
@@ -16,16 +19,19 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
   private readonly examService = inject(ExamService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
 
-  attempt = signal<any>(null);
+  attempt = signal<ExamAttempt | null>(null);
   currentQuestionIndex = signal(0);
   answers = signal<Map<number, string>>(new Map());
   timeRemaining = signal(0);
   isSubmitting = signal(false);
   showConfirmSubmit = signal(false);
+  showReviewOption = signal(false);
   submitError = signal<string | null>(null);
 
   private timerInterval: ReturnType<typeof setInterval> | null = null;
+  private autosaveInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     const examId = Number(this.route.snapshot.paramMap.get('id'));
@@ -35,18 +41,38 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const saved = sessionStorage.getItem(AUTOSAVE_KEY);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.examId === examId && data.answers) {
+          this.answers.set(new Map(data.answers));
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     this.startExam(examId);
   }
 
   ngOnDestroy(): void {
     this.clearTimer();
+    this.clearAutosave();
   }
 
   @HostListener('window:beforeunload', ['$event'])
   handleBeforeUnload(event: BeforeUnloadEvent): void {
-    if (this.attempt() && !this.attempt().isCompleted) {
+    if (this.attempt() && !this.attempt()!.isCompleted) {
       event.preventDefault();
       event.returnValue = true;
+    }
+  }
+
+  @HostListener('window:visibilitychange')
+  handleVisibilityChange(): void {
+    if (document.hidden && this.attempt() && !this.attempt()!.isCompleted) {
+      this.toast.warning('Tab switch detected. Please stay on this exam page.');
     }
   }
 
@@ -78,7 +104,6 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
     if (!this.currentQuestion) {
       return undefined;
     }
-
     return this.answers().get(this.currentQuestion.questionId);
   }
 
@@ -93,10 +118,17 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
   startExam(examId: number): void {
     this.examService.startExam(examId).subscribe({
       next: data => {
+        const hasExistingAnswers = (data.answers ?? []).length > 0;
         this.attempt.set(data);
         this.timeRemaining.set(this.calculateRemainingTime(data));
         this.initializeExistingAnswers(data);
         this.startTimer();
+        this.startAutosave();
+
+        if (hasExistingAnswers) {
+          this.showReviewOption.set(true);
+          this.toast.info('You have an existing attempt. You can continue or restart.');
+        }
       },
       error: error => {
         console.error('Failed to start exam:', error);
@@ -106,7 +138,7 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
     });
   }
 
-  initializeExistingAnswers(data: any): void {
+  initializeExistingAnswers(data: ExamAttempt): void {
     const existingAnswers = new Map<number, string>();
 
     for (const answer of data.answers ?? []) {
@@ -116,7 +148,7 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
     this.answers.set(existingAnswers);
   }
 
-  calculateRemainingTime(data: any): number {
+  calculateRemainingTime(data: ExamAttempt): number {
     const totalSeconds = data.exam.duration * 60;
     const startedAt = new Date(data.startedAt).getTime();
 
@@ -152,6 +184,35 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
     }
   }
 
+  startAutosave(): void {
+    this.clearAutosave();
+
+    this.autosaveInterval = setInterval(() => {
+      const attempt = this.attempt();
+      if (!attempt || attempt.isCompleted) {
+        return;
+      }
+
+      const payload = {
+        examId: attempt.examId,
+        attemptId: attempt.id,
+        answers: Array.from(this.answers().entries()).map(([questionId, selectedAnswer]) => ({
+          questionId,
+          selectedAnswer
+        }))
+      };
+
+      sessionStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+    }, 5000);
+  }
+
+  clearAutosave(): void {
+    if (this.autosaveInterval) {
+      clearInterval(this.autosaveInterval);
+      this.autosaveInterval = null;
+    }
+  }
+
   formatTime(seconds: number): string {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -170,7 +231,6 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
     if (!this.currentQuestion) {
       return;
     }
-
     this.setAnswer(this.currentQuestion.questionId, answer);
   }
 
@@ -199,6 +259,20 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
 
   onTextInput(questionId: number, value: string | number): void {
     this.setAnswer(questionId, String(value));
+  }
+
+  toggleCheckbox(questionId: number, option: string): void {
+    const current = this.answers().get(questionId) || '';
+    const selected = current ? current.split(',').filter(Boolean) : [];
+    const index = selected.indexOf(option);
+
+    if (index > -1) {
+      selected.splice(index, 1);
+    } else {
+      selected.push(option);
+    }
+
+    this.setAnswer(questionId, selected.join(','));
   }
 
   nextQuestion(): void {
@@ -244,12 +318,14 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
     this.showConfirmSubmit.set(false);
     this.submitError.set(null);
     this.clearTimer();
+    this.clearAutosave();
+    sessionStorage.removeItem(AUTOSAVE_KEY);
 
     const answers = this.buildSubmissions();
 
-    this.examService.submitExam(this.attempt().id, answers).subscribe({
+    this.examService.submitExam(this.attempt()!.id, answers).subscribe({
       next: result => {
-        this.router.navigate(['/exam', this.attempt().examId, 'result', result.id]);
+        this.router.navigate(['/exam', this.attempt()!.examId, 'result', result.id]);
       },
       error: error => {
         console.error('Failed to submit exam:', error);
@@ -318,7 +394,34 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
   confirmExit(): void {
     if (window.confirm('Exit this exam? Your submitted answers cannot be recovered.')) {
       this.clearTimer();
+      this.clearAutosave();
       this.router.navigate(['/exam']);
     }
+  }
+
+  openReview(): void {
+    const attempt = this.attempt();
+    if (!attempt) {
+      return;
+    }
+
+    const exam = attempt.exam;
+    const payload = {
+      attemptId: attempt.id,
+      exam,
+      answers: Array.from(this.answers().entries())
+    };
+
+    sessionStorage.setItem('exam-master-review', JSON.stringify(payload));
+    this.router.navigate(['/exam', exam.id, 'review']);
+  }
+
+  onCopyPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    this.toast.warning('Copy and paste are disabled during the exam.');
+  }
+
+  onContextMenu(event: Event): void {
+    event.preventDefault();
   }
 }

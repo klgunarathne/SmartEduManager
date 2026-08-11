@@ -266,6 +266,18 @@
   box-shadow: none;
 }
 
+.resume-btn {
+  background: linear-gradient(135deg, #0f766e, #16a34a);
+  margin-bottom: 8px;
+}
+
+.exam-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
 .loading-panel,
 .empty-state,
 .message {

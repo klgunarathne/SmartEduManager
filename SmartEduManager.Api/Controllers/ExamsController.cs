@@ -11,7 +11,6 @@ namespace SmartEduManager.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Instructor")]
 public class ExamsController : ControllerBase
 {
     private readonly IExamService _examService;
@@ -32,6 +31,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> GetAll()
     {
         try
@@ -47,6 +47,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpGet("{id}/questions")]
+    [Authorize]
     public async Task<IActionResult> GetExamQuestions(int id)
     {
         try
@@ -89,6 +90,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> Create([FromBody] CreateExamDto createDto)
     {
         try
@@ -105,6 +107,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> Get(int id)
     {
         try
@@ -126,6 +129,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpPost("{examId}/questions")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> AddQuestionToExam(int examId, [FromBody] AddQuestionToExamDto dto)
     {
         try
@@ -158,6 +162,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpDelete("{examId}/questions/{questionId}")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> RemoveQuestionFromExam(int examId, int questionId)
     {
         try
@@ -179,6 +184,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpPatch("{id}/schedule")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> ScheduleExam(int id, [FromBody] ScheduleExamDto dto)
     {
         try
@@ -200,6 +206,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateExamDto updateDto)
     {
         try
@@ -232,6 +239,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> Delete(int id, [FromQuery] bool force = false)
     {
         try
@@ -283,6 +291,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpPatch("{id}/questions/reorder")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> ReorderQuestions(int id, [FromBody] ReorderExamQuestionsDto dto)
     {
         try
@@ -315,6 +324,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpPatch("{id}/revert-to-draft")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> RevertToDraft(int id)
     {
         try
@@ -336,6 +346,7 @@ public class ExamsController : ControllerBase
     }
 
     [HttpPatch("{id}/publish")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> PublishExam(int id)
     {
         try

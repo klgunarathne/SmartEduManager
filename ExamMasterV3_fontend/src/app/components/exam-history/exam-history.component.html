@@ -1,0 +1,51 @@
+<div class="history-shell">
+  <header class="history-header">
+    <div>
+      <span class="kicker">ExamMaster</span>
+      <h1>Your exam history</h1>
+    </div>
+    <button class="ghost-btn" type="button" (click)="backToDashboard()">Dashboard</button>
+  </header>
+
+  <section class="history-list">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <span class="spinner"></span>
+        <p>Loading history...</p>
+      </div>
+    } @else if (error()) {
+      <div class="error-state">
+        <p>{{ error() }}</p>
+        <button class="primary-btn" type="button" (click)="backToDashboard()">Back to dashboard</button>
+      </div>
+    } @else if (results().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">H</div>
+        <h3>No exams taken yet</h3>
+        <p>Your completed exams will appear here.</p>
+        <button class="primary-btn" type="button" (click)="backToDashboard()">Go to dashboard</button>
+      </div>
+    } @else {
+      <div class="results-grid">
+        @for (result of results(); track result.id) {
+          <article class="result-card">
+            <div class="result-head">
+              <h3>{{ result.examTitle }}</h3>
+              <span class="badge" [class.pass]="result.percentage >= 40" [class.fail]="result.percentage < 40">
+                {{ result.percentage.toFixed(0) }}%
+              </span>
+            </div>
+            <div class="result-meta">
+              <span>Score: {{ result.score }}/{{ result.totalMarks }}</span>
+              <span>{{ result.status }}</span>
+            </div>
+            <div class="result-date">
+              Submitted: {{ formatDate(result.submittedAt) }}
+            </div>
+            <button class="outline-btn" type="button" (click)="viewResult(result.id)">View result</button>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>

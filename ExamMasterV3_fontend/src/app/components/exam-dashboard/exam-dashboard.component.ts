@@ -161,6 +161,10 @@ export class ExamDashboardComponent implements OnInit {
   }
 
   startExam(examId: number): void {
+    this.router.navigate(['/exam', examId, 'instructions']);
+  }
+
+  resumeExam(examId: number): void {
     this.router.navigate(['/exam', examId]);
   }
 
@@ -186,6 +190,10 @@ export class ExamDashboardComponent implements OnInit {
     }
 
     return true;
+  }
+
+  hasExistingAttempt(exam: Exam): boolean {
+    return exam.questionCount > 0 && exam.isActive;
   }
 
   examStatusLabel(exam: Exam): string {
@@ -229,5 +237,13 @@ export class ExamDashboardComponent implements OnInit {
     }
 
     return 'Start exam';
+  }
+
+  resumeButtonText(): string {
+    return 'Resume exam';
+  }
+
+  goToHistory(): void {
+    this.router.navigate(['/exam', 'history']);
   }
 }

@@ -1,0 +1,102 @@
+<div class="review-shell">
+  @if (!isLoading()) {
+    @if (exam(); as exam) {
+      <div class="review-card">
+        <header class="review-header">
+          <h1>Review your answers</h1>
+          <p>{{ exam.title }}</p>
+        </header>
+
+        <div class="questions-list">
+          @for (q of questions; track q.questionId; let i = $index) {
+            <div class="question-card" [class.answered]="isAnswered(q.questionId)">
+              <div class="question-head">
+                <span class="q-number">Q{{ i + 1 }}</span>
+                <span class="q-marks">{{ q.question?.marks ?? 0 }} marks</span>
+              </div>
+
+              <p class="q-text">{{ q.question?.content }}</p>
+
+              @if (isMultipleChoice(q.question?.type)) {
+                <div class="options-list">
+                  @for (option of q.question?.options; track option; let oi = $index) {
+                    <label class="option-row" [class.selected]="selectedAnswerFor(q.questionId) === option">
+                      <input
+                        type="radio"
+                        [name]="'review-' + q.questionId"
+                        [value]="option"
+                        [checked]="selectedAnswerFor(q.questionId) === option"
+                        (change)="selectAnswer(q.questionId, option)"
+                      >
+                      <span class="option-letter">{{ ['A','B','C','D','E','F','G','H'][oi] || oi + 1 }}</span>
+                      <span class="option-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (isCheckbox(q.question?.type)) {
+                <div class="options-list">
+                  @for (option of q.question?.options; track option; let oi = $index) {
+                    <label class="option-row" [class.selected]="(selectedAnswerFor(q.questionId) || '').split(',').includes(option)">
+                      <input
+                        type="checkbox"
+                        [value]="option"
+                        [checked]="(selectedAnswerFor(q.questionId) || '').split(',').includes(option)"
+                        (change)="toggleCheckbox(q.questionId, option)"
+                      >
+                      <span class="option-letter">{{ ['A','B','C','D','E','F','G','H'][oi] || oi + 1 }}</span>
+                      <span class="option-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (isTrueFalse(q.question?.type)) {
+                <div class="options-list">
+                  @for (option of ['True', 'False']; track option) {
+                    <label class="option-row" [class.selected]="selectedAnswerFor(q.questionId) === option">
+                      <input
+                        type="radio"
+                        [name]="'review-' + q.questionId"
+                        [value]="option"
+                        [checked]="selectedAnswerFor(q.questionId) === option"
+                        (change)="selectAnswer(q.questionId, option)"
+                      >
+                      <span class="option-letter">{{ option === 'True' ? 'T' : 'F' }}</span>
+                      <span class="option-text">{{ option }}</span>
+                    </label>
+                  }
+                </div>
+              } @else {
+                <textarea
+                  class="answer-textarea"
+                  rows="4"
+                  placeholder="Type your answer here..."
+                  [ngModel]="selectedAnswerFor(q.questionId) || ''"
+                  (ngModelChange)="selectAnswer(q.questionId, $event)"
+                ></textarea>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="review-footer">
+          <div class="summary">
+            <span>{{ answeredCount }}/{{ questions.length }} answered</span>
+          </div>
+          <div class="actions">
+            <button class="secondary-btn" type="button" (click)="goBack()">Back to exam</button>
+            <button class="primary-btn" type="button" (click)="submitAndContinue()">Confirm submit</button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="empty-state">
+        <h3>No exam data found</h3>
+        <button class="primary-btn" type="button" (click)="goBack()">Back to exam</button>
+      </div>
+    }
+  } @else {
+    <div class="loading-state">
+      <span class="spinner"></span>
+      <p>Loading review...</p>
+    </div>
+  }
+</div>

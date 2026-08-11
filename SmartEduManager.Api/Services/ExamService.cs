@@ -245,12 +245,6 @@ public class ExamService : IExamService
         if (exam.Status != ExamStatus.Active && exam.Status != ExamStatus.Scheduled)
             return null;
 
-        if (exam.AvailableFrom.HasValue && exam.AvailableFrom.Value > DateTime.UtcNow)
-            return null;
-
-        if (exam.AvailableTo.HasValue && exam.AvailableTo.Value < DateTime.UtcNow)
-            return null;
-
         var existingAttempt = await _context.ExamAttempts
             .Include(a => a.Exam)
                 .ThenInclude(e => e!.Category)
