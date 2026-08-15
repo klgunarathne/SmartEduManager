@@ -93,6 +93,18 @@ export default function DashboardScreen() {
     return map[availability.status] || map.not_available;
   };
 
+  const getAttemptLabel = (exam: ExamDto): string => {
+    if (exam.maxAttempts === 0) {
+      return `Attempted ${exam.attemptsUsed} time${exam.attemptsUsed !== 1 ? 's' : ''}`;
+    }
+    const remaining = exam.maxAttempts - exam.attemptsUsed;
+    return `${remaining} attempt${remaining !== 1 ? 's' : ''} remaining`;
+  };
+
+  const isAttemptExhausted = (exam: ExamDto): boolean => {
+    return exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts;
+  };
+
   const { availableExams, scheduledExams, closedExams } = useMemo(() => {
     const result = { availableExams: 0, scheduledExams: 0, closedExams: 0 };
     exams.forEach((exam) => {
@@ -234,8 +246,10 @@ export default function DashboardScreen() {
           ) : (
             exams.map((exam) => {
               const statusInfo = getExamStatus(exam);
-              const canStart = examService.checkAvailability(exam).canStart;
-              const isAvailable = statusInfo.status === 'available';
+              const availability = examService.checkAvailability(exam);
+              const canStart = availability.canStart && !isAttemptExhausted(exam);
+              const isAvailable = statusInfo.status === 'available' && !isAttemptExhausted(exam);
+              const exhausted = isAttemptExhausted(exam);
               return (
                 <Pressable
                   key={exam.examId}
@@ -243,6 +257,7 @@ export default function DashboardScreen() {
                     styles.examCard,
                     pressed && styles.examCardPressed,
                     !isAvailable && styles.examCardDisabled,
+                    exhausted && styles.examCardExhausted,
                   ]}
                   onPress={() => {
                     if (canStart) router.push(`/exam/${exam.examId}`);
@@ -262,7 +277,7 @@ export default function DashboardScreen() {
                     <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '1A' }]}>
                       <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
                       <Text style={[styles.statusText, { color: statusInfo.color }]}>
-                        {statusInfo.label}
+                        {exhausted ? 'Attempts exhausted' : statusInfo.label}
                       </Text>
                     </View>
                   </View>
@@ -288,6 +303,12 @@ export default function DashboardScreen() {
                       <Award size={14} color={Colors.light.textSecondary} />
                       <Text style={styles.metaText}>{exam.totalMarks} pts</Text>
                     </View>
+                    <View style={styles.metaDivider} />
+                    <View style={[styles.metaItem, exhausted && styles.metaItemExhausted]}>
+                      <Text style={[styles.metaText, exhausted && styles.metaTextExhausted]}>
+                        {getAttemptLabel(exam)}
+                      </Text>
+                    </View>
                   </View>
 
                   <View style={styles.examFooter}>
@@ -297,10 +318,10 @@ export default function DashboardScreen() {
                         <ChevronRight size={16} color="#fff" />
                       </View>
                     ) : (
-                      <View style={styles.lockedFooter}>
-                        <CalendarClock size={14} color={statusInfo.color} />
-                        <Text style={[styles.lockedText, { color: statusInfo.color }]}>
-                          {statusInfo.label}
+                      <View style={[styles.lockedFooter, exhausted && styles.lockedFooterExhausted]}>
+                        <CalendarClock size={14} color={exhausted ? Colors.light.danger : statusInfo.color} />
+                        <Text style={[styles.lockedText, { color: exhausted ? Colors.light.danger : statusInfo.color }]}>
+                          {exhausted ? 'Attempts exhausted' : statusInfo.label}
                         </Text>
                       </View>
                     )}
@@ -687,6 +708,17 @@ const styles = StyleSheet.create({
   lockedText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  examCardExhausted: {
+    opacity: 0.75,
+  },
+  lockedFooterExhausted: {
+    backgroundColor: Colors.light.danger + '18',
+  },
+  metaItemExhausted: {},
+  metaTextExhausted: {
+    color: Colors.light.danger,
+    fontWeight: '700',
   },
   // Empty state
   emptyState: {

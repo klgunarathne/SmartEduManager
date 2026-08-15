@@ -6,6 +6,7 @@ using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Services;
+using System.Security.Claims;
 
 namespace SmartEduManager.Api.Controllers;
 
@@ -74,12 +75,18 @@ public class ExamsController : ControllerBase
     }
 
     [HttpGet("student")]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IActionResult> GetStudentExams()
     {
         try
         {
-            var exams = await _examService.GetStudentExamsAsync();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User not authenticated");
+            }
+
+            var exams = await _examService.GetStudentExamsAsync(userId);
             return Ok(exams);
         }
         catch (Exception ex)

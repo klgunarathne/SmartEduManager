@@ -57,11 +57,24 @@ export class ExamInstructionsComponent implements OnInit {
       return;
     }
 
+    if (exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts) {
+      this.toast.error('You have reached the maximum number of attempts for this exam.');
+      return;
+    }
+
     this.router.navigate(['/exam', exam.id]);
   }
 
   get totalMarks(): number {
     return this.exam()?.questions.reduce((sum, item) => sum + (item.question?.marks ?? 0), 0) ?? 0;
+  }
+
+  attemptLabel(exam: Exam): string {
+    if (exam.maxAttempts === 0) {
+      return `Attempt ${exam.attemptsUsed + 1}`;
+    }
+
+    return `Attempt ${exam.attemptsUsed + 1} of ${exam.maxAttempts}`;
   }
 
   goBack(): void {

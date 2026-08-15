@@ -35,6 +35,15 @@ export default function ExamTakingScreen() {
   const currentQuestion = exam?.questions?.[currentIndex];
   const answeredCount = Object.keys(answers).length;
 
+  const attemptLabel = (): string => {
+    if (!exam) return '';
+    if (exam.maxAttempts === 0) {
+      return `Attempt ${exam.attemptsUsed + 1}`;
+    }
+    const current = Math.min(exam.attemptsUsed + 1, exam.maxAttempts);
+    return `Attempt ${current} of ${exam.maxAttempts}`;
+  };
+
   const startExam = useCallback(async () => {
     try {
       const attemptData = await examService.startExam({ examId });
@@ -92,7 +101,7 @@ export default function ExamTakingScreen() {
         examAttemptId: attempt.examAttemptId,
         answers: answersArray,
       });
-      router.replace(`/exam/${examId}/result/${attempt.examAttemptId}`);
+      router.replace(`/exam/result/${attempt.examAttemptId}`);
     } catch {
       Alert.alert('Error', 'Failed to auto-submit exam. Please submit manually.');
       setIsSubmitting(false);
@@ -113,7 +122,7 @@ export default function ExamTakingScreen() {
         examAttemptId: attempt.examAttemptId,
         answers: answersArray,
       });
-      router.replace(`/exam/${examId}/result/${attempt.examAttemptId}`);
+      router.replace(`/exam/result/${attempt.examAttemptId}`);
     } catch {
       Alert.alert('Error', 'Failed to submit exam. Please try again.');
       setIsSubmitting(false);
@@ -337,6 +346,9 @@ export default function ExamTakingScreen() {
         </Pressable>
         <View style={styles.headerCenter}>
           <ThemedText type="subtitle" numberOfLines={1}>{exam.title}</ThemedText>
+          {attemptLabel() && (
+            <ThemedText style={styles.attemptLabel}>{attemptLabel()}</ThemedText>
+          )}
         </View>
         <Pressable style={styles.gridButton} onPress={() => setShowGrid(true)}>
           <Grid3x3 size={20} color={Colors.light.primary} />
@@ -543,6 +555,12 @@ const styles = StyleSheet.create({
   },
   gridButton: {
     padding: Spacing.two,
+  },
+  attemptLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.light.primary,
+    marginTop: 2,
   },
   timerBar: {
     flexDirection: 'row',

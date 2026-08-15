@@ -42,6 +42,7 @@ export interface Exam {
   description: string;
   categoryId: number | null;
   duration: number;
+  maxAttempts: number;
   status: ExamStatus;
   availableFrom: string | null;
   availableTo: string | null;
@@ -102,6 +103,8 @@ export interface ApiExamDto {
   questionCount?: number;
   Duration?: number;
   duration?: number;
+  MaxAttempts?: number;
+  maxAttempts?: number;
   IsActive?: boolean;
   isActive?: boolean;
   CreatedAt?: string | null;

@@ -131,6 +131,10 @@ export interface ApiExamDto {
   AvailableTo?: string | null;
   timeZone?: string | null;
   TimeZone?: string | null;
+  maxAttempts?: number;
+  MaxAttempts?: number;
+  attemptsUsed?: number;
+  AttemptsUsed?: number;
   questions?: ApiExamQuestionDto[] | null;
   Questions?: ApiExamQuestionDto[] | null;
 }
@@ -252,6 +256,8 @@ export interface Exam {
   availableFrom?: string | null;
   availableTo?: string | null;
   timeZone?: string | null;
+  maxAttempts: number;
+  attemptsUsed: number;
   questions: ExamQuestion[];
 }
 

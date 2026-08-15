@@ -40,7 +40,7 @@ function RootLayoutNav() {
       <Stack.Screen name="profile" />
       <Stack.Screen name="explore" />
       <Stack.Screen name="exam/[id]" />
-      <Stack.Screen name="exam/[examId]/result/[resultId]" />
+      <Stack.Screen name="exam/result/[resultId]" />
     </Stack>
   );
 }

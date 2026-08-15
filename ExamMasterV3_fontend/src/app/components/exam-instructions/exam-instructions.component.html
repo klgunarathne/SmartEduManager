@@ -34,10 +34,16 @@
         <span class="meta-label">Category</span>
         <strong>{{ exam.categoryName }}</strong>
       </div>
+      <div class="meta-item attempt-item" [class.exhausted]="exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts">
+        <span class="meta-label">Attempt</span>
+        <strong>{{ attemptLabel(exam) }}</strong>
+      </div>
     </section>
 
     <div class="actions">
-      <button class="primary-btn" type="button" (click)="startExam()">Start exam</button>
+      <button class="primary-btn" type="button" (click)="startExam()" [disabled]="exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts">
+        {{ exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts ? 'Attempts exhausted' : 'Start exam' }}
+      </button>
       <button class="secondary-btn" type="button" (click)="goBack()">Back to dashboard</button>
     </div>
   </div>

@@ -10,7 +10,7 @@ public interface IExamService
 {
     Task<ExamDto?> GetExamWithQuestionsAsync(int id);
     Task<IEnumerable<ExamDto>> GetAllExamsAsync();
-    Task<IEnumerable<ExamDto>> GetStudentExamsAsync();
+    Task<IEnumerable<ExamDto>> GetStudentExamsAsync(string studentId);
     Task<ExamDto> CreateExamAsync(CreateExamDto createDto);
     Task<bool> UpdateExamAsync(int id, UpdateExamDto updateDto);
     Task<bool> DeleteExamAsync(int id);
@@ -59,7 +59,7 @@ public class ExamService : IExamService
         return exams.Select(_mapper.Map<ExamDto>);
     }
 
-    public async Task<IEnumerable<ExamDto>> GetStudentExamsAsync()
+    public async Task<IEnumerable<ExamDto>> GetStudentExamsAsync(string studentId)
     {
         var exams = await _context.Exams
             .Include(e => e.Category)
@@ -68,7 +68,16 @@ public class ExamService : IExamService
             .Where(e => e.Status == ExamStatus.Active || e.Status == ExamStatus.Scheduled)
             .ToListAsync();
 
-        return exams.Select(_mapper.Map<ExamDto>);
+        var examDtos = new List<ExamDto>();
+        foreach (var exam in exams)
+        {
+            var dto = _mapper.Map<ExamDto>(exam);
+            dto.AttemptsUsed = await _context.ExamAttempts
+                .CountAsync(a => a.ExamId == exam.Id && a.StudentId == studentId);
+            examDtos.Add(dto);
+        }
+
+        return examDtos;
     }
 
     public async Task<ExamDto> CreateExamAsync(CreateExamDto createDto)
@@ -116,9 +125,6 @@ public class ExamService : IExamService
     {
         var exam = await _context.Exams.FindAsync(id);
         if (exam == null)
-            return false;
-
-        if (exam.Status == ExamStatus.Active || exam.Status == ExamStatus.Completed)
             return false;
 
         _context.Exams.Remove(exam);
@@ -244,6 +250,17 @@ public class ExamService : IExamService
 
         if (exam.Status != ExamStatus.Active && exam.Status != ExamStatus.Scheduled)
             return null;
+
+        if (exam.MaxAttempts > 0)
+        {
+            var completedAttempts = await _context.ExamAttempts
+                .CountAsync(a => a.ExamId == examId && a.StudentId == studentId && a.IsCompleted);
+
+            if (completedAttempts >= exam.MaxAttempts)
+            {
+                return null;
+            }
+        }
 
         var existingAttempt = await _context.ExamAttempts
             .Include(a => a.Exam)

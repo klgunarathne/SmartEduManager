@@ -21,6 +21,8 @@ public class ExamDto
     public DateTime? AvailableFrom { get; set; }
     public DateTime? AvailableTo { get; set; }
     public string? TimeZone { get; set; }
+    public int MaxAttempts { get; set; }
+    public int AttemptsUsed { get; set; }
     public ICollection<ExamQuestionDto>? Questions { get; set; }
 }
 
@@ -30,6 +32,7 @@ public class CreateExamDto
     public string? Description { get; set; }
     public int? CategoryId { get; set; }
     public int Duration { get; set; } = 60;
+    public int MaxAttempts { get; set; } = 0;
     public List<AddQuestionToExamDto>? Questions { get; set; }
 }
 
@@ -61,6 +64,7 @@ public class UpdateExamDto
     public string? Description { get; set; }
     public int? CategoryId { get; set; }
     public int Duration { get; set; } = 60;
+    public int MaxAttempts { get; set; }
 }
 
 public class ReorderExamQuestionsDto

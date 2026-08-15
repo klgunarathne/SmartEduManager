@@ -189,11 +189,24 @@ export class ExamDashboardComponent implements OnInit {
       }
     }
 
+    if (exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts) {
+      return false;
+    }
+
     return true;
   }
 
   hasExistingAttempt(exam: Exam): boolean {
     return exam.questionCount > 0 && exam.isActive;
+  }
+
+  attemptsLabel(exam: Exam): string {
+    if (exam.maxAttempts === 0) {
+      return `Attempted ${exam.attemptsUsed} time${exam.attemptsUsed !== 1 ? 's' : ''}`;
+    }
+
+    const remaining = exam.maxAttempts - exam.attemptsUsed;
+    return `${remaining} attempt${remaining !== 1 ? 's' : ''} remaining`;
   }
 
   examStatusLabel(exam: Exam): string {
@@ -234,6 +247,10 @@ export class ExamDashboardComponent implements OnInit {
 
     if (exam.availableFrom && new Date(exam.availableFrom).getTime() > Date.now()) {
       return 'Opens soon';
+    }
+
+    if (exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts) {
+      return 'Attempts exhausted';
     }
 
     return 'Start exam';

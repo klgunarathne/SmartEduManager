@@ -10,7 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 
 export default function ExamResultScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ examId: string; resultId: string }>();
+  const params = useLocalSearchParams<{ resultId: string }>();
   const resultId = params.resultId;
 
   const [result, setResult] = useState<ExamResultDto | null>(null);

@@ -620,7 +620,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
     const isPublished = exam && (exam.status === 'active' || exam.status === 'completed');
     
     const message = force && isPublished
-      ? 'Force delete this published exam? All student attempts and answers will also be permanently deleted.'
+      ? 'Force delete this published exam? The exam and all student answers will also be permanently deleted.'
       : 'Are you sure you want to delete this exam?';
 
     if (!confirm(message)) {
@@ -783,6 +783,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
       description: '',
       categoryId: null,
       duration: 60,
+      maxAttempts: 0,
       status: 'draft',
       availableFrom: null,
       availableTo: null,
@@ -837,6 +838,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
       description: exam.Description ?? exam.description ?? '',
       categoryId: exam.CategoryId ?? exam.categoryId ?? null,
       duration: exam.Duration ?? exam.duration ?? 60,
+      maxAttempts: exam.MaxAttempts ?? exam.maxAttempts ?? 0,
       status: this.mapStatusFromApi(exam.Status ?? exam.status ?? 'Draft'),
       availableFrom: exam.AvailableFrom ?? exam.availableFrom ?? null,
       availableTo: exam.AvailableTo ?? exam.availableTo ?? null,

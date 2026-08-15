@@ -104,6 +104,8 @@ export class ExamService {
       availableFrom: exam.availableFrom ?? exam.AvailableFrom ?? null,
       availableTo: exam.availableTo ?? exam.AvailableTo ?? null,
       timeZone: exam.timeZone ?? exam.TimeZone ?? null,
+      maxAttempts: this.getNumber(exam.maxAttempts ?? exam.MaxAttempts, 0),
+      attemptsUsed: this.getNumber(exam.attemptsUsed ?? exam.AttemptsUsed, 0),
       questions
     };
   }
@@ -159,6 +161,8 @@ export class ExamService {
         duration: 60,
         isActive: false,
         status: 'active',
+        maxAttempts: 0,
+        attemptsUsed: 0,
         questions: []
       },
       answers: (attempt.answers ?? attempt.Answers ?? []).map(answer => ({

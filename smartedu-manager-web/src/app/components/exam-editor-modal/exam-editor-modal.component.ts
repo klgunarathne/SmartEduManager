@@ -654,6 +654,7 @@ export class ExamEditorModalComponent implements OnChanges {
       description: '',
       categoryId: null,
       duration: 60,
+      maxAttempts: 0,
       status: 'draft',
       availableFrom: null,
       availableTo: null,
@@ -708,6 +709,7 @@ export class ExamEditorModalComponent implements OnChanges {
       description: exam.Description ?? exam.description ?? '',
       categoryId: exam.CategoryId ?? exam.categoryId ?? null,
       duration: exam.Duration ?? exam.duration ?? 60,
+      maxAttempts: exam.MaxAttempts ?? exam.maxAttempts ?? 0,
       status: this.mapStatusFromApi(exam.Status ?? exam.status ?? 'Draft'),
       availableFrom: exam.AvailableFrom ?? exam.availableFrom ?? null,
       availableTo: exam.AvailableTo ?? exam.availableTo ?? null,
@@ -731,7 +733,8 @@ export class ExamEditorModalComponent implements OnChanges {
       Title: exam.title,
       Description: exam.description,
       CategoryId: exam.categoryId,
-      Duration: exam.duration
+      Duration: exam.duration,
+      MaxAttempts: exam.maxAttempts
     };
   }
 

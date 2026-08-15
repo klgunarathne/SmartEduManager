@@ -1,4 +1,4 @@
-<div class="exam-shell" (copy)="onCopyPaste($event)" (paste)="onCopyPaste($event)" (cut)="onCopyPaste($event)" (contextmenu)="onContextMenu($event)">
+<div class="exam-shell">
   @if (!attempt()) {
     <div class="loading-panel">
       <span class="spinner"></span>
@@ -16,6 +16,9 @@
           <h1>{{ examTitle }}</h1>
           @if (examDescription) {
             <p>{{ examDescription }}</p>
+          }
+          @if (attemptLabel) {
+            <p class="attempt-label">{{ attemptLabel }}</p>
           }
         </div>
       </div>
@@ -165,13 +168,9 @@
           </div>
 
           <div class="side-actions">
-            <button class="outline-btn" type="button" [disabled]="totalQuestions === 0" (click)="openReview()">Review answers</button>
-          <div class="side-actions">
-            <button class="outline-btn" type="button" [disabled]="totalQuestions === 0" (click)="openReview()">Review answers</button>
             <button class="submit-btn" type="button" [disabled]="isSubmitting() || totalQuestions === 0" (click)="confirmSubmit()">
               {{ isSubmitting() ? 'Submitting...' : 'Submit exam' }}
             </button>
-          </div>
           </div>
         </div>
       </aside>
@@ -203,7 +202,6 @@
           </div>
 
           <div class="modal-actions">
-            <button class="secondary-btn" type="button" (click)="showConfirmSubmit.set(false)" [disabled]="isSubmitting()">Review answers</button>
             <button class="primary-btn" type="button" (click)="submitExam()" [disabled]="isSubmitting()">
               {{ isSubmitting() ? 'Submitting...' : 'Confirm submit' }}
             </button>

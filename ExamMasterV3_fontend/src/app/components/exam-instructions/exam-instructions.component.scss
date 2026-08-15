@@ -91,6 +91,15 @@
   font-size: 1.05rem;
 }
 
+.attempt-item.exhausted {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: #fef2f2;
+}
+
+.attempt-item.exhausted strong {
+  color: #991b1b;
+}
+
 .actions {
   display: flex;
   gap: 12px;

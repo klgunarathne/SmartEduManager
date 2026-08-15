@@ -79,6 +79,9 @@
               <span>{{ exam.questionCount }} questions</span>
               <span>{{ exam.duration }} min</span>
               <span>{{ exam.totalMarks }} marks</span>
+              <span class="attempts-meta" [class.limited]="exam.maxAttempts > 0" [class.exhausted]="exam.maxAttempts > 0 && exam.attemptsUsed >= exam.maxAttempts">
+                {{ attemptsLabel(exam) }}
+              </span>
             </div>
 
             <div class="time-window">

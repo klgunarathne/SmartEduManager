@@ -59,6 +59,18 @@ public class ExamAttemptsController : ControllerBase
 
             if (result == null)
             {
+                var exam = await _context.Exams.FirstOrDefaultAsync(e => e.Id == dto.ExamId);
+                if (exam != null && exam.MaxAttempts > 0)
+                {
+                    var completedAttempts = await _context.ExamAttempts
+                        .CountAsync(a => a.ExamId == dto.ExamId && a.StudentId == userId && a.IsCompleted);
+
+                    if (completedAttempts >= exam.MaxAttempts)
+                    {
+                        return BadRequest("You have reached the maximum number of attempts for this exam");
+                    }
+                }
+
                 return BadRequest("Exam is not available or has not started yet");
             }
 

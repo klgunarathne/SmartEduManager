@@ -32,5 +32,6 @@ namespace SmartEduManager.Api.Models
         public QuestionCategory? Category { get; set; }
         
         public ICollection<ExamQuestion> ExamQuestions { get; set; } = [];
+        public int MaxAttempts { get; set; } = 0;
     }
 }

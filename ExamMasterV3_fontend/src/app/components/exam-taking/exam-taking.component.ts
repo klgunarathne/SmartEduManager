@@ -27,7 +27,6 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
   timeRemaining = signal(0);
   isSubmitting = signal(false);
   showConfirmSubmit = signal(false);
-  showReviewOption = signal(false);
   submitError = signal<string | null>(null);
 
   private timerInterval: ReturnType<typeof setInterval> | null = null;
@@ -115,6 +114,19 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
     return this.attempt()?.exam?.description ?? '';
   }
 
+  get attemptLabel(): string {
+    const exam = this.attempt()?.exam;
+    if (!exam) {
+      return '';
+    }
+
+    if (exam.maxAttempts === 0) {
+      return `Attempt ${exam.attemptsUsed + 1}`;
+    }
+
+    return `Attempt ${Math.min(exam.attemptsUsed + 1, exam.maxAttempts)} of ${exam.maxAttempts}`;
+  }
+
   startExam(examId: number): void {
     this.examService.startExam(examId).subscribe({
       next: data => {
@@ -124,11 +136,6 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
         this.initializeExistingAnswers(data);
         this.startTimer();
         this.startAutosave();
-
-        if (hasExistingAnswers) {
-          this.showReviewOption.set(true);
-          this.toast.info('You have an existing attempt. You can continue or restart.');
-        }
       },
       error: error => {
         console.error('Failed to start exam:', error);
@@ -325,7 +332,7 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
 
     this.examService.submitExam(this.attempt()!.id, answers).subscribe({
       next: result => {
-        this.router.navigate(['/exam', this.attempt()!.examId, 'result', result.id]);
+        this.router.navigate(['/exam', 'result', result.id]);
       },
       error: error => {
         console.error('Failed to submit exam:', error);
@@ -397,31 +404,5 @@ export class ExamTakingComponent implements OnInit, OnDestroy {
       this.clearAutosave();
       this.router.navigate(['/exam']);
     }
-  }
-
-  openReview(): void {
-    const attempt = this.attempt();
-    if (!attempt) {
-      return;
-    }
-
-    const exam = attempt.exam;
-    const payload = {
-      attemptId: attempt.id,
-      exam,
-      answers: Array.from(this.answers().entries())
-    };
-
-    sessionStorage.setItem('exam-master-review', JSON.stringify(payload));
-    this.router.navigate(['/exam', exam.id, 'review']);
-  }
-
-  onCopyPaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    this.toast.warning('Copy and paste are disabled during the exam.');
-  }
-
-  onContextMenu(event: Event): void {
-    event.preventDefault();
   }
 }

@@ -62,6 +62,17 @@
                 (ngModelChange)="updateExamField('duration', $event)"
               />
             </div>
+            <div class="filter-group">
+              <label>Max Attempts</label>
+              <input
+                type="number"
+                class="form-control compact-control"
+                min="0"
+                [ngModel]="exam().maxAttempts"
+                (ngModelChange)="updateExamField('maxAttempts', $event)"
+              />
+              <small>0 = unlimited</small>
+            </div>
             <div class="filter-group wide">
               <label>Description</label>
               <textarea

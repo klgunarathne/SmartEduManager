@@ -43,6 +43,8 @@ export interface ExamDto {
   availableFrom?: string;
   availableTo?: string;
   timeZone?: string;
+  maxAttempts: number;
+  attemptsUsed: number;
   questions?: QuestionDto[];
 }
 

@@ -604,6 +604,9 @@ namespace SmartEduManager.Api.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 
+                    b.Property<int>("MaxAttempts")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("datetime2");
 
