@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../services/toast.service';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { firstValueFrom, EMPTY, catchError } from 'rxjs';
 import { ExamEditorModalComponent } from '../exam-editor-modal/exam-editor-modal.component';
 import {
   BuilderPanel,
@@ -21,6 +22,18 @@ import {
   ApiExamQuestionDto,
   ApiQuestionDto
 } from './exam.models';
+
+import * as XLSX from 'xlsx';
+
+export interface CsvQuestionRow {
+  questionText: string;
+  option1: string;
+  option2: string;
+  option3: string;
+  option4: string;
+  correctAnswer: string;
+  moduleNo: string;
+}
 
 @Component({
   selector: 'app-exam-question-builder',
@@ -53,6 +66,11 @@ export class ExamQuestionBuilderComponent implements OnInit {
 
   showCategoryModal = signal(false);
   selectedCategory = signal<Category>({ id: 0, name: '', color: '#6366f1' });
+
+  showCsvImportModal = signal(false);
+  csvPreviewData = signal<CsvQuestionRow[]>([]);
+  csvImportStatus = signal<'idle' | 'parsing' | 'importing' | 'done' | 'error'>('idle');
+  csvCreatedCategories = signal<Map<string, number>>(new Map());
 
   categories = signal<Category[]>([]);
   banks = signal<Question[]>([]);
@@ -776,6 +794,149 @@ export class ExamQuestionBuilderComponent implements OnInit {
     return type === 'multiple-choice' || type === 'checkbox' || type === 'dropdown';
   }
 
+  getModuleNo(question: Question): string {
+    const moduleTag = question.tags.find(tag => /^M\d+$/i.test(tag));
+    return moduleTag || '';
+  }
+
+  async handleCsvUpload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.csvImportStatus.set('parsing');
+    try {
+      const data = await this.parseCsvFile(file);
+      const mapped = data.map((row: any) => ({
+        questionText: (row['Question_Text'] ?? row['Question Text'] ?? '').toString().trim(),
+        option1: (row['Option_1'] ?? row['Option1'] ?? '').toString().trim(),
+        option2: (row['Option_2'] ?? row['Option2'] ?? '').toString().trim(),
+        option3: (row['Option_3'] ?? row['Option3'] ?? '').toString().trim(),
+        option4: (row['Option_4'] ?? row['Option4'] ?? '').toString().trim(),
+        correctAnswer: (row['Correct_Answer'] ?? row['Correct Answer'] ?? '').toString().trim(),
+        moduleNo: (row['ModuleNo'] ?? row['Module_No'] ?? row['Module'] ?? '').toString().trim()
+      })).filter((q: CsvQuestionRow) => q.questionText && q.correctAnswer);
+
+      this.csvPreviewData.set(mapped);
+      this.csvImportStatus.set('idle');
+    } catch (err) {
+      console.error(err);
+      this.toast.error('Failed to parse CSV');
+      this.csvImportStatus.set('error');
+    }
+  }
+
+  private parseCsvFile(file: File): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target!.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(sheet);
+          resolve(json);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async confirmCsvImport(): Promise<void> {
+    const rows = this.csvPreviewData();
+    if (rows.length === 0) {
+      this.toast.error('No questions to import');
+      return;
+    }
+
+    this.csvImportStatus.set('importing');
+    const createdCategories = new Map<string, number>();
+
+    for (const row of rows) {
+      if (!row.moduleNo) continue;
+
+      if (!createdCategories.has(row.moduleNo)) {
+        const categoryId = await this.getOrCreateCategory(row.moduleNo);
+        if (categoryId) {
+          createdCategories.set(row.moduleNo, categoryId);
+        }
+      }
+    }
+
+    this.csvCreatedCategories.set(createdCategories);
+
+    const payloads = rows.map(row => this.mapCsvToApiPayload(row, createdCategories.get(row.moduleNo) || 0));
+
+    let success = 0;
+    for (const payload of payloads) {
+      if (!payload.CategoryId) continue;
+      try {
+        const result = await firstValueFrom(
+          this.http.post<ApiQuestionDto>(`${this.API_URL}/questions`, payload).pipe(
+            catchError(() => EMPTY)
+          )
+        );
+        if (result) {
+          const question = this.toQuestion(result);
+          this.banks.update(items => [...items, question]);
+          success++;
+        }
+      } catch { /* ignore */ }
+    }
+
+    this.toast.success(`Imported ${success} of ${payloads.length} questions`);
+    this.csvImportStatus.set('done');
+    this.showCsvImportModal.set(false);
+    this.csvPreviewData.set([]);
+    this.csvCreatedCategories.set(new Map());
+  }
+
+  private async getOrCreateCategory(moduleNo: string): Promise<number | null> {
+    const existing = this.categories().find(c => c.name.toLowerCase() === moduleNo.toLowerCase());
+    if (existing) {
+      return existing.id;
+    }
+
+    return new Promise((resolve) => {
+      this.http.post<ApiCategoryDto>(`${this.API_URL}/question-categories`, {
+        Name: moduleNo,
+        Color: '#6366f1'
+      }).pipe(
+        catchError(() => EMPTY)
+      ).subscribe({
+        next: (result) => {
+          const category: Category = {
+            id: result.Id ?? result.id ?? Date.now(),
+            name: result.Name ?? result.name ?? moduleNo,
+            color: result.Color ?? result.color ?? '#6366f1'
+          };
+          this.categories.update(items => [...items, category]);
+          resolve(category.id);
+        },
+        error: () => resolve(null)
+      });
+    });
+  }
+
+  private mapCsvToApiPayload(row: CsvQuestionRow, categoryId: number | null): any {
+    const tags = row.moduleNo ? [row.moduleNo] : [];
+    return {
+      Content: row.questionText,
+      Type: 'MultipleChoice',
+      Difficulty: 'Medium',
+      CategoryId: categoryId || undefined,
+      Marks: 1,
+      Options: [row.option1, row.option2, row.option3, row.option4],
+      CorrectAnswer: row.correctAnswer,
+      Explanation: '',
+      Tags: tags,
+      Required: true
+    };
+  }
+
   private emptyExam(): Exam {
     return {
       id: 0,
@@ -825,7 +986,8 @@ export class ExamQuestionBuilderComponent implements OnInit {
       correctAnswer,
       explanation: question.Explanation ?? question.explanation ?? '',
       tags: question.Tags ?? question.tags ?? [],
-      required: question.Required ?? question.required ?? true
+      required: question.Required ?? question.required ?? true,
+      moduleNo: question.ModuleNo ?? question.moduleNo ?? (question.Tags ?? question.tags ?? []).find(t => /^M\d+$/i.test(t)) ?? ''
     };
   }
 
@@ -979,7 +1141,8 @@ export class ExamQuestionBuilderComponent implements OnInit {
       options: [],
       correctAnswer: [],
       tags: [],
-      required: true
+      required: true,
+      moduleNo: ''
     };
   }
 }

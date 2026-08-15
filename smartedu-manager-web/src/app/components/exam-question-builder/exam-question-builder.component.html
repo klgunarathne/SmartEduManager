@@ -8,6 +8,9 @@
       <button type="button" class="btn btn-outline" (click)="openCategoryManager()">
         <i class="fas fa-tags"></i> Manage Categories
       </button>
+      <button type="button" class="btn btn-outline" (click)="showCsvImportModal.set(true)">
+        <i class="fas fa-file-upload"></i> Import CSV
+      </button>
       <button type="button" class="btn btn-primary" (click)="openNewExamModal()">
         <i class="fas fa-plus"></i> New Exam
       </button>
@@ -71,21 +74,22 @@
             <th>Category</th>
             <th style="width: 90px;">Marks</th>
             <th style="width: 110px;">Difficulty</th>
+            <th style="width: 100px;">Module</th>
             <th>Correct Answer</th>
             <th style="width: 220px;">Actions</th>
           </tr>
         </thead>
         <tbody>
           @if (isLoadingQuestionBank()) {
-            <tr>
-              <td colspan="7" class="no-data">
-                <i class="fas fa-spinner fa-spin"></i> Loading questions...
-              </td>
-            </tr>
-          } @else if (filteredBankQuestions().length === 0) {
-            <tr>
-              <td colspan="7" class="no-data">No questions found. Add a question type above to start building your bank.</td>
-            </tr>
+              <tr>
+                <td colspan="8" class="no-data">
+                  <i class="fas fa-spinner fa-spin"></i> Loading questions...
+                </td>
+              </tr>
+            } @else if (filteredBankQuestions().length === 0) {
+              <tr>
+                <td colspan="8" class="no-data">No questions found. Add a question type above to start building your bank.</td>
+              </tr>
           } @else {
             @for (question of filteredBankQuestions(); track question.id) {
               <tr [class.selected]="selectedBankQuestionId() === question.id">
@@ -106,6 +110,11 @@
                 <td>{{ question.marks }}</td>
                 <td>
                   <span class="difficulty-badge">{{ question.difficulty }}</span>
+                </td>
+                <td>
+                  <span class="tag-list">
+                    {{ getModuleNo(question) || '-' }}
+                  </span>
                 </td>
                 <td>
                   <span class="tag-list">
@@ -307,6 +316,74 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" (click)="closeQuestionEditor()">Cancel</button>
           <button type="button" class="btn btn-primary" (click)="saveQuestion()">Save Question</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showCsvImportModal(); as open) {
+    <div class="modal-overlay">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Import Questions from CSV</h3>
+            <p>Upload a CSV file with columns: Question_Text, Option_1-4, Correct_Answer, ModuleNo</p>
+          </div>
+          <button type="button" class="close-btn" (click)="showCsvImportModal.set(false)">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          @if (csvImportStatus() === 'idle' && csvPreviewData().length === 0) {
+            <div class="form-grid">
+              <div class="filter-group wide">
+                <label>CSV File</label>
+                <input type="file" class="form-control" accept=".csv" (change)="handleCsvUpload($event)" />
+              </div>
+            </div>
+          }
+
+          @if (csvPreviewData().length > 0 && csvImportStatus() !== 'importing') {
+            <p class="text-muted">{{ csvPreviewData().length }} questions parsed. Categories will be created from ModuleNo ({{ csvPreviewData().map(r => r.moduleNo).filter((v, i, a) => a.indexOf(v) === i).join(', ') }})</p>
+            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Question</th>
+                    <th>Correct</th>
+                    <th>Module</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of csvPreviewData(); track $index) {
+                    <tr>
+                      <td>{{ $index + 1 }}</td>
+                      <td>{{ row.questionText | slice:0:80 }}{{ row.questionText.length > 80 ? '...' : '' }}</td>
+                      <td>{{ row.correctAnswer }}</td>
+                      <td>{{ row.moduleNo }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          @if (csvImportStatus() === 'importing') {
+            <div class="loading-state">
+              <i class="fas fa-spinner fa-spin"></i> Importing {{ csvPreviewData().length }} questions...
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" (click)="showCsvImportModal.set(false)">Cancel</button>
+          @if (csvPreviewData().length > 0 && csvImportStatus() !== 'importing') {
+            <button type="button" class="btn btn-primary" (click)="confirmCsvImport()">
+              Import {{ csvPreviewData().length }} Questions
+            </button>
+          }
         </div>
       </div>
     </div>

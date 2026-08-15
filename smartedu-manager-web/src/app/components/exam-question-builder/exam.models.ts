@@ -27,6 +27,7 @@ export interface Question {
   explanation?: string;
   tags: string[];
   required: boolean;
+  moduleNo?: string;
 }
 
 export interface ExamQuestion {
@@ -71,6 +72,8 @@ export interface ApiQuestionDto {
   explanation?: string | null;
   Tags?: string[] | null;
   tags?: string[] | null;
+  ModuleNo?: string | null;
+  moduleNo?: string | null;
   Required?: boolean;
   required?: boolean;
 }
