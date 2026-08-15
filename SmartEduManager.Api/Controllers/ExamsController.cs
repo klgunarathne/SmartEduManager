@@ -139,33 +139,25 @@ public class ExamsController : ControllerBase
     [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> AddQuestionToExam(int examId, [FromBody] AddQuestionToExamDto dto)
     {
-        try
+        var success = await _examService.AddQuestionToExamAsync(examId, dto.QuestionId);
+        
+        if (!success)
         {
-            var success = await _examService.AddQuestionToExamAsync(examId, dto.QuestionId);
-            
-            if (!success)
-            {
-                return NotFound("Exam or question not found");
-            }
+            return NotFound("Exam or question not found");
+        }
 
             var savedExamQuestion = await _context.ExamQuestions
                 .Include(eq => eq.Question)
                     .ThenInclude(q => q.Category)
-                .LastOrDefaultAsync(eq => eq.ExamId == examId && eq.QuestionId == dto.QuestionId);
+                .FirstOrDefaultAsync(eq => eq.ExamId == examId && eq.QuestionId == dto.QuestionId);
 
-            if (savedExamQuestion == null)
-            {
-                return NotFound("Question not found in exam");
-            }
-
-            var examQuestionDto = _mapper.Map<ExamQuestionDto>(savedExamQuestion);
-            return Ok(examQuestionDto);
-        }
-        catch (Exception ex)
+        if (savedExamQuestion == null)
         {
-            _logger.LogError(ex, "Error adding question to exam {ExamId}", examId);
-            return StatusCode(500, "Internal server error");
+            return NotFound("Question not found in exam");
         }
+
+        var examQuestionDto = _mapper.Map<ExamQuestionDto>(savedExamQuestion);
+        return Ok(examQuestionDto);
     }
 
     [HttpDelete("{examId}/questions/{questionId}")]

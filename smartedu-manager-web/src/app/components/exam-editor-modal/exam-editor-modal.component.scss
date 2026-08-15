@@ -147,12 +147,10 @@
   padding: 16px 22px;
 }
 
-.exam-editor-details,
-.exam-questions-panel,
-.exam-settings-panel {
+.exam-editor-details {
   border: 1px solid #e2e8f0;
   border-radius: 14px;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
   padding: 14px;
 }
 
@@ -161,8 +159,80 @@
   background: #ffffff;
 }
 
-.exam-editor-details {
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
+.collapsible-details {
+  transition: all 0.2s;
+}
+
+.details-summary-row {
+  cursor: pointer;
+}
+
+.details-summary-fields {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.compact-inline {
+  flex: 1 1 180px;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+
+.compact-inline label {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.expand-details-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+
+  i {
+    transition: transform 0.2s;
+    font-size: 12px;
+  }
+
+  &.expanded i {
+    transform: rotate(180deg);
+  }
+
+  &:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+  }
+}
+
+.details-expanded-fields {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .section-title-row {
@@ -402,42 +472,8 @@
   background: white;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th,
-  td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #eef2f7;
-    text-align: left;
-    vertical-align: middle;
-  }
-
-  th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: #f8fafc;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-
-  tbody tr {
-    transition: background 0.2s;
-
-    &:hover,
-    &.selected {
-      background: #eef2ff;
-    }
-  }
-}
-
-.question-table-scroll-wrapper .data-table {
-  min-width: 820px;
+.exam-table-wrapper {
+  max-height: min(64vh, 660px);
 }
 
 .exam-settings-panel {
@@ -450,9 +486,49 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: min(62vh, 620px);
+  max-height: min(72vh, 740px);
   overflow-y: auto;
   padding-right: 4px;
+}
+
+.sidebar-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  i {
+    font-size: 11px;
+  }
+
+  &.active {
+    background: white;
+    color: #6366f1;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  }
+
+  &:hover:not(.active) {
+    color: #6366f1;
+  }
 }
 
 .bank-list-panel,
@@ -474,7 +550,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 330px;
+  max-height: 340px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -1105,4 +1181,42 @@
 
 .schedule-modal-footer {
   padding: 14px 22px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #eef2f7;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  tbody tr {
+    transition: background 0.2s;
+
+    &:hover,
+    &.selected {
+      background: #eef2ff;
+    }
+  }
+}
+
+.question-table-scroll-wrapper .data-table {
+  min-width: 820px;
 }

@@ -47,6 +47,9 @@ export class ExamEditorModalComponent implements OnChanges {
   scheduleTimeZone = signal('Asia/Colombo');
   scheduleMode = signal<'range' | 'permanent'>('range');
 
+  isDetailsExpanded = signal(false);
+  rightTab = signal<'bank' | 'settings'>('bank');
+
   categories = signal<Category[]>([]);
   banks = signal<Question[]>([]);
   exam = signal<Exam>(this.emptyExam());
@@ -130,7 +133,8 @@ export class ExamEditorModalComponent implements OnChanges {
       },
       error: err => {
         console.error('Load exam error:', err);
-        this.toast.error(`Failed to load exam: ${err.status || 'Unknown error'}`);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to load exam: ${message}`);
       },
       complete: () => this.isLoading.set(false)
     });
@@ -221,7 +225,8 @@ export class ExamEditorModalComponent implements OnChanges {
       },
       error: err => {
         console.error('Duplicate question error:', err);
-        this.toast.error(`Failed to duplicate question: ${err.status || 'Unknown error'}`);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to duplicate question: ${message}`);
       }
     });
   }
@@ -253,7 +258,8 @@ export class ExamEditorModalComponent implements OnChanges {
       },
       error: err => {
         console.error('Add question to exam error:', err);
-        this.toast.error(`Failed to add question: ${err.status || 'Unknown error'}`);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to add question: ${message}`);
       },
       complete: () => this.persistingQuestionIds.update(ids => {
         const next = new Set(ids);
@@ -313,7 +319,8 @@ export class ExamEditorModalComponent implements OnChanges {
       error: err => {
         this.isSaving.set(false);
         console.error('Create exam error:', err);
-        this.toast.error(`Failed to create exam: ${err.status || 'Unknown error'}`);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to create exam: ${message}`);
       }
     });
   }
@@ -372,7 +379,8 @@ export class ExamEditorModalComponent implements OnChanges {
       },
       error: err => {
         console.error('Revert to draft error:', err);
-        this.toast.error(`Failed to revert exam: ${err.status || 'Unknown error'}`);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to revert exam: ${message}`);
       }
     });
   }
