@@ -9,6 +9,7 @@ public class QuestionDto
 {
     public int Id { get; set; }
     public string Content { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public string Type { get; set; } = "multiple-choice";
     public string Difficulty { get; set; } = "medium";
     public int CategoryId { get; set; }
@@ -26,6 +27,7 @@ public class QuestionDto
 public class CreateQuestionDto
 {
     public string Content { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public string Type { get; set; } = "multiple-choice";
     public string Difficulty { get; set; } = "medium";
     public int CategoryId { get; set; }
@@ -40,6 +42,7 @@ public class CreateQuestionDto
 public class UpdateQuestionDto
 {
     public string Content { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public string Type { get; set; } = "multiple-choice";
     public string Difficulty { get; set; } = "medium";
     public int CategoryId { get; set; }

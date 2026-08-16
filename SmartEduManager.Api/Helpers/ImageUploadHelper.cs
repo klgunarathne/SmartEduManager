@@ -53,7 +53,7 @@ public class ImageUploadHelper
             throw new InvalidOperationException("Invalid image file signature");
         }
 
-        var uploadsRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"));
+        var uploadsRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "SmartEduManager_Uploads"));
         var uploadPath = Path.GetFullPath(Path.Combine(uploadsRoot, normalizedSubFolder));
 
         if (!IsPathInsideRoot(uploadPath, uploadsRoot))
@@ -93,7 +93,7 @@ public class ImageUploadHelper
             return false;
         }
 
-        var uploadsRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"));
+        var uploadsRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "SmartEduManager_Uploads"));
         var absolutePath = Path.GetFullPath(Path.Combine(uploadsRoot, relativePath));
 
         if (!IsPathInsideRoot(absolutePath, uploadsRoot) || !File.Exists(absolutePath))

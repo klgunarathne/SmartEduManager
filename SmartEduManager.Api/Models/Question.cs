@@ -24,14 +24,15 @@ namespace SmartEduManager.Api.Models
         Medium,
         Hard
     }
-
     public class Question
     {
         public int Id { get; set; }
         public string Content { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
         public QuestionType Type { get; set; }
         public DifficultyLevel Difficulty { get; set; }
-        public int Marks { get; set; }
+        public int Marks { get; set; }
+
         public string? Options { get; set; }
         public string? CorrectAnswer { get; set; }
         public string? Explanation { get; set; }

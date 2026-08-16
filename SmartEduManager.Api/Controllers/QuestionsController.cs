@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartEduManager.Api.Data;
 using SmartEduManager.Api.DTOs;
+using SmartEduManager.Api.Helpers;
 using SmartEduManager.Api.Models;
 using SmartEduManager.Api.Repositories.Interfaces;
+using System.Security.Claims;
 
 namespace SmartEduManager.Api.Controllers;
 
@@ -18,17 +20,20 @@ public class QuestionsController : ControllerBase
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<QuestionsController> _logger;
+    private readonly ImageUploadHelper _imageUploadHelper;
 
     public QuestionsController(
         IQuestionRepository repository,
         AppDbContext context,
         IMapper mapper,
-        ILogger<QuestionsController> logger)
+        ILogger<QuestionsController> logger,
+        ImageUploadHelper imageUploadHelper)
     {
         _repository = repository;
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _imageUploadHelper = imageUploadHelper;
     }
 
     [HttpGet]
@@ -151,6 +156,79 @@ public class QuestionsController : ControllerBase
         {
             _logger.LogError(ex, $"Error deleting question with id {id}");
             return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpPost("upload-image/{id}")]
+    [Authorize(Roles = "Admin,Instructor")]
+    public async Task<IActionResult> UploadImage(int id, IFormFile file)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No file uploaded");
+            }
+
+            var question = await _repository.GetByIdAsync(id);
+            if (question == null)
+            {
+                return NotFound("Question not found");
+            }
+
+            if (!string.IsNullOrEmpty(question.ImageUrl))
+            {
+                _imageUploadHelper.DeleteImage(question.ImageUrl);
+            }
+
+            var imagePath = await _imageUploadHelper.UploadImageAsync(file, "questions");
+            question.ImageUrl = imagePath;
+            question.UpdatedAt = DateTime.UtcNow;
+            _repository.Update(question);
+            await _repository.SaveChangesAsync();
+
+            var questionDto = _mapper.Map<QuestionDto>(question);
+            return Ok(questionDto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid image upload for question {QuestionId}", id);
+            return BadRequest("Invalid image upload request");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading image for question {QuestionId}", id);
+            return StatusCode(500, "Error uploading image");
+        }
+    }
+
+    [HttpDelete("{id}/image")]
+    [Authorize(Roles = "Admin,Instructor")]
+    public async Task<IActionResult> DeleteImage(int id)
+    {
+        try
+        {
+            var question = await _repository.GetByIdAsync(id);
+            if (question == null)
+            {
+                return NotFound("Question not found");
+            }
+
+            if (!string.IsNullOrEmpty(question.ImageUrl))
+            {
+                _imageUploadHelper.DeleteImage(question.ImageUrl);
+                question.ImageUrl = null;
+                question.UpdatedAt = DateTime.UtcNow;
+                _repository.Update(question);
+                await _repository.SaveChangesAsync();
+            }
+
+            return Ok("Image deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting image for question {QuestionId}", id);
+            return StatusCode(500, "Error deleting image");
         }
     }
 }

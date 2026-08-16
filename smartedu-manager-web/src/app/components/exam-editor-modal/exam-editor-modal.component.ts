@@ -585,6 +585,17 @@ export class ExamEditorModalComponent implements OnChanges {
     return `status-badge ${status}`;
   }
 
+  getQuestionImageUrl(question: { imageUrl?: string }): string {
+    if (!question.imageUrl) {
+      return '';
+    }
+    if (question.imageUrl.startsWith('http')) {
+      return question.imageUrl;
+    }
+    const baseUrl = this.API_URL.replace(/\/api$/, '');
+    return `${baseUrl}${question.imageUrl}`;
+  }
+
   getCategoryById(categoryId: number): Category | undefined {
     return this.categories().find(category => category.id === categoryId);
   }
@@ -607,6 +618,60 @@ export class ExamEditorModalComponent implements OnChanges {
 
   isOptionsQuestion(type: QuestionType): boolean {
     return type === 'multiple-choice' || type === 'checkbox' || type === 'dropdown';
+  }
+
+  onExamQuestionImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const question = this.selectedExamQuestion();
+    if (!file || !question) {
+      return;
+    }
+
+    this.http.post<ApiQuestionDto>(`${this.API_URL}/questions/upload-image/${question.id}`, this.toFormData(file)).subscribe({
+      next: result => {
+        const updated = this.toQuestion(result);
+        this.banks.update(items => items.map(item => item.id === updated.id ? updated : item));
+        this.exam.update(exam => ({
+          ...exam,
+          questions: exam.questions.map(item => item.questionId === updated.id ? { ...item, question: updated } : item)
+        }));
+        this.selectedQuestionId.set(updated.id);
+        this.toast.success('Image uploaded');
+      },
+      error: err => {
+        console.error('Upload image error:', err);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to upload image: ${message}`);
+      }
+    });
+    input.value = '';
+  }
+
+  private toFormData(file: File): FormData {
+    const formData = new FormData();
+    formData.append('file', file);
+    return formData;
+  }
+
+  removeQuestionImage(questionId: number): void {
+    this.http.delete(`${this.API_URL}/questions/${questionId}/image`, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        const updated = this.toQuestion({ Id: questionId, ImageUrl: '' } as ApiQuestionDto);
+        this.banks.update(items => items.map(item => item.id === questionId ? updated : item));
+        this.exam.update(exam => ({
+          ...exam,
+          questions: exam.questions.map(item => item.questionId === questionId ? { ...item, question: updated } : item)
+        }));
+        this.selectedQuestionId.set(questionId);
+        this.toast.success('Image removed');
+      },
+      error: err => {
+        console.error('Remove image error:', err);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to remove image: ${message}`);
+      }
+    });
   }
 
   private persistQuestions(questions: ExamQuestion[], exam: Exam): void {
@@ -696,6 +761,7 @@ export class ExamEditorModalComponent implements OnChanges {
     return {
       id: question.Id ?? question.id ?? 0,
       content: question.Content ?? question.content ?? '',
+      imageUrl: question.ImageUrl ?? question.imageUrl ?? '',
       type: this.mapQuestionTypeFromApi(question.Type ?? question.type ?? 'MultipleChoice'),
       difficulty: this.mapDifficultyFromApi(question.Difficulty ?? question.difficulty ?? 'Medium'),
       categoryId: question.CategoryId ?? question.categoryId ?? 0,

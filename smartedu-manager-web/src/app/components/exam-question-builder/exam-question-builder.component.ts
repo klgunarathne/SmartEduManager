@@ -242,9 +242,9 @@ export class ExamQuestionBuilderComponent implements OnInit {
     }
 
     const payload = {
-      Content: '',
+      Content: '(draft)',
       Type: this.mapQuestionTypeToApi(type),
-      Difficulty: this.mapDifficultyToApi('medium'),
+      Difficulty: 'medium',
       CategoryId: categoryId,
       Marks: 1,
       Tags: [],
@@ -259,11 +259,12 @@ export class ExamQuestionBuilderComponent implements OnInit {
         const question = this.toQuestion(result);
         this.banks.update(items => [...items, question]);
         this.openQuestionEditor(question.id);
-        this.toast.success('Question added to bank');
+        this.toast.success('Question created');
       },
       error: err => {
-        console.error('Add question error:', err);
-        this.toast.error(`Failed to add question: ${err.status || 'Unknown error'}`);
+        console.error('Create question error:', err);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to create question: ${message}`);
       }
     });
   }
@@ -314,6 +315,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
 
     this.http.put(`${this.API_URL}/questions/${question.id}`, {
       Content: question.content,
+      ImageUrl: question.imageUrl || null,
       Type: this.mapQuestionTypeToApi(question.type),
       Difficulty: this.mapDifficultyToApi(question.difficulty),
       CategoryId: question.categoryId,
@@ -494,6 +496,66 @@ export class ExamQuestionBuilderComponent implements OnInit {
     const options = (question.options || []).filter(option => option.id !== optionId);
     const correctAnswer = (question.correctAnswer || []).filter(id => id !== optionId);
     this.updateQuestion({ ...question, options, correctAnswer });
+  }
+
+  uploadQuestionImage(questionId: number, file: File): void {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.http.post<ApiQuestionDto>(`${this.API_URL}/questions/upload-image/${questionId}`, formData).subscribe({
+      next: result => {
+        const updated = this.toQuestion(result);
+        this.updateQuestion(updated);
+        this.toast.success('Image uploaded');
+      },
+      error: err => {
+        console.error('Upload image error:', err);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to upload image: ${message}`);
+      }
+    });
+  }
+
+  removeQuestionImage(questionId: number): void {
+    const question = this.banks().find(item => item.id === questionId) || this.selectedQuestion();
+    if (!question) {
+      return;
+    }
+
+    this.http.delete(`${this.API_URL}/questions/${questionId}/image`, { responseType: 'text' as any }).subscribe({
+      next: () => {
+        this.updateQuestion({ ...question, imageUrl: '' });
+        this.toast.success('Image removed');
+      },
+      error: err => {
+        console.error('Remove image error:', err);
+        const message = typeof err.error === 'string' ? err.error : (err.error?.message || err.message || 'Unknown error');
+        this.toast.error(`Failed to remove image: ${message}`);
+      }
+    });
+  }
+
+  getQuestionImageUrl(question: Question): string {
+    if (!question.imageUrl) {
+      return '';
+    }
+    if (question.imageUrl.startsWith('http')) {
+      return question.imageUrl;
+    }
+    const baseUrl = this.API_URL.replace(/\/api$/, '');
+    return `${baseUrl}${question.imageUrl}`;
+  }
+
+  onQuestionImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const question = this.editQuestion();
+    if (!file || !question) {
+      return;
+    }
+
+    this.uploadQuestionImage(question.id, file);
+    input.value = '';
   }
 
   setCorrectAnswerExam(questionId: number, optionId: string): void {
@@ -978,6 +1040,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
     return {
       id: question.Id ?? question.id ?? 0,
       content: question.Content ?? question.content ?? '',
+      imageUrl: question.ImageUrl ?? question.imageUrl ?? undefined,
       type: this.mapQuestionTypeFromApi(question.Type ?? question.type ?? 'MultipleChoice'),
       difficulty: this.mapDifficultyFromApi(question.Difficulty ?? question.difficulty ?? 'Medium'),
       categoryId: question.CategoryId ?? question.categoryId ?? 0,
@@ -1134,6 +1197,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
     return {
       id: 0,
       content: '',
+      imageUrl: '',
       type: 'multiple-choice',
       difficulty: 'medium',
       categoryId: 0,

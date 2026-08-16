@@ -1158,3 +1158,34 @@
     margin-right: 8px;
   }
 }
+
+.image-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+
+  img {
+    max-width: 240px;
+    max-height: 180px;
+    border-radius: 8px;
+    object-fit: contain;
+    border: 1px solid #eef2f7;
+  }
+
+  .btn-danger {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+.question-image-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #eef2f7;
+}

@@ -18,6 +18,7 @@ export interface QuestionOption {
 export interface Question {
   id: number;
   content: string;
+  imageUrl?: string;
   type: QuestionType;
   difficulty: DifficultyLevel;
   categoryId: number;
@@ -74,6 +75,8 @@ export interface ApiQuestionDto {
   tags?: string[] | null;
   ModuleNo?: string | null;
   moduleNo?: string | null;
+  ImageUrl?: string | null;
+  imageUrl?: string | null;
   Required?: boolean;
   required?: boolean;
 }

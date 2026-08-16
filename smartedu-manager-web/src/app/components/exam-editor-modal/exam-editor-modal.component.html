@@ -117,6 +117,7 @@
                 <thead>
                   <tr>
                     <th style="width: 40px;">#</th>
+                    <th style="width: 44px;">Img</th>
                     <th>Question</th>
                     <th style="width: 145px;">Type</th>
                     <th style="width: 80px;">Marks</th>
@@ -126,12 +127,19 @@
                 <tbody #paperList="cdkDropList" cdkDropList [cdkDropListData]="exam().questions" [cdkDropListConnectedTo]="[bankList]" (cdkDropListDropped)="drop($event)">
                   @if (exam().questions.length === 0) {
                     <tr>
-                      <td colspan="5" class="no-data">No questions added yet. Drag questions from the bank or double-click to add.</td>
+                      <td colspan="6" class="no-data">No questions added yet. Drag questions from the bank or double-click to add.</td>
                     </tr>
                   } @else {
                     @for (examQuestion of exam().questions; track examQuestion.questionId; let index = $index) {
                       <tr cdkDrag [class.selected]="selectedQuestionId() === examQuestion.questionId" (click)="selectedQuestionId.set(examQuestion.questionId)">
                         <td>{{ index + 1 }}</td>
+                        <td>
+                          @if (examQuestion.question?.imageUrl) {
+                            <img class="question-image-thumb" [src]="getQuestionImageUrl(examQuestion.question!)" alt="" (click)="$event.stopPropagation()" title="View image" />
+                          } @else {
+                            <span class="text-muted">-</span>
+                          }
+                        </td>
                         <td>
                           <a class="link-btn" (click)="selectedQuestionId.set(examQuestion.questionId)">
                             {{ examQuestion.question?.content || 'Question not loaded' }}
@@ -291,6 +299,20 @@
                           <option value="hard">Hard</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div class="filter-group">
+                      <label>Image</label>
+                      @if (question.imageUrl) {
+                        <div class="image-preview">
+                          <img [src]="getQuestionImageUrl(question)" alt="Question image" />
+                          <button type="button" class="btn btn-danger btn-sm" (click)="removeQuestionImage(question.id)">
+                            <i class="fas fa-trash"></i> Remove
+                          </button>
+                        </div>
+                      } @else {
+                        <input type="file" class="form-control compact-control" accept="image/*" (change)="onExamQuestionImageSelected($event)" />
+                      }
                     </div>
 
                     <div class="filter-group">

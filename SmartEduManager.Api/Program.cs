@@ -199,6 +199,17 @@ else
 // Enable static file serving
 app.UseStaticFiles();
 
+var externalUploadsRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "SmartEduManager_Uploads"));
+Directory.CreateDirectory(externalUploadsRoot);
+if (Directory.Exists(externalUploadsRoot))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(externalUploadsRoot),
+        RequestPath = "/uploads"
+    });
+}
+
 // Configure Serilog request logging
 app.UseSerilogRequestLogging();
 
