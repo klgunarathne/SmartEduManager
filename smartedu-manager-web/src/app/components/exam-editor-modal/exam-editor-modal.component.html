@@ -135,7 +135,7 @@
                         <td>{{ index + 1 }}</td>
                         <td>
                           @if (examQuestion.question?.imageUrl) {
-                            <img class="question-image-thumb" [src]="getQuestionImageUrl(examQuestion.question!)" alt="" (click)="$event.stopPropagation()" title="View image" />
+                            <img class="question-image-thumb" [src]="getQuestionImageUrl(examQuestion.question!)" alt="" (click)="$event.stopPropagation()" title="View image" (error)="onImageError($event)" />
                           } @else {
                             <span class="text-muted">-</span>
                           }
@@ -305,7 +305,7 @@
                       <label>Image</label>
                       @if (question.imageUrl) {
                         <div class="image-preview">
-                          <img [src]="getQuestionImageUrl(question)" alt="Question image" />
+                          <img [src]="getQuestionImageUrl(question)" alt="Question image" (error)="onImageError($event)" />
                           <button type="button" class="btn btn-danger btn-sm" (click)="removeQuestionImage(question.id)">
                             <i class="fas fa-trash"></i> Remove
                           </button>

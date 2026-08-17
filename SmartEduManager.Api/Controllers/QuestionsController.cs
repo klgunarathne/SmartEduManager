@@ -88,11 +88,12 @@ public class QuestionsController : ControllerBase
 
             var question = _mapper.Map<Question>(createDto);
             question.Tags = createDto.Tags ?? [];
+            question.ImageUrl = createDto.ImageUrl;
             await _repository.AddAsync(question);
             await _repository.SaveChangesAsync();
 
             var questionDto = _mapper.Map<QuestionDto>(question);
-            _logger.LogInformation($"Created question with id {question.Id}");
+            _logger.LogInformation("Created question with id {QuestionId} ImageUrl={ImageUrl}", question.Id, question.ImageUrl);
             return CreatedAtAction(nameof(Get), new { id = question.Id }, questionDto);
         }
         catch (Exception ex)
@@ -119,6 +120,7 @@ public class QuestionsController : ControllerBase
 
             _mapper.Map(updateDto, question);
             question.Tags = updateDto.Tags ?? [];
+            question.ImageUrl = updateDto.ImageUrl;
             question.UpdatedAt = DateTime.UtcNow;
             _repository.Update(question);
             await _repository.SaveChangesAsync();
@@ -170,7 +172,7 @@ public class QuestionsController : ControllerBase
                 return BadRequest("No file uploaded");
             }
 
-            var question = await _repository.GetByIdAsync(id);
+            var question = await _context.Questions.FirstOrDefaultAsync(q => q.Id == id);
             if (question == null)
             {
                 return NotFound("Question not found");
@@ -184,10 +186,12 @@ public class QuestionsController : ControllerBase
             var imagePath = await _imageUploadHelper.UploadImageAsync(file, "questions");
             question.ImageUrl = imagePath;
             question.UpdatedAt = DateTime.UtcNow;
-            _repository.Update(question);
-            await _repository.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-            var questionDto = _mapper.Map<QuestionDto>(question);
+            _logger.LogInformation("Updated question {QuestionId} ImageUrl to {ImagePath}", id, imagePath);
+
+            var reloaded = await _context.Questions.FirstOrDefaultAsync(q => q.Id == id);
+            var questionDto = _mapper.Map<QuestionDto>(reloaded ?? question);
             return Ok(questionDto);
         }
         catch (InvalidOperationException ex)
@@ -223,7 +227,9 @@ public class QuestionsController : ControllerBase
                 await _repository.SaveChangesAsync();
             }
 
-            return Ok("Image deleted successfully");
+            var reloaded = await _repository.GetByIdAsync(id);
+            var questionDto = _mapper.Map<QuestionDto>(reloaded ?? question);
+            return Ok(questionDto);
         }
         catch (Exception ex)
         {

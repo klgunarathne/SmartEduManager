@@ -211,6 +211,7 @@ export class ExamEditorModalComponent implements OnChanges {
       Difficulty: this.mapDifficultyToApi(question.difficulty),
       CategoryId: question.categoryId,
       Marks: question.marks,
+      ImageUrl: question.imageUrl || null,
       Tags: question.tags,
       Options: (question.options || []).map(option => option.content),
       CorrectAnswer: this.correctAnswerToText(question),
@@ -592,8 +593,18 @@ export class ExamEditorModalComponent implements OnChanges {
     if (question.imageUrl.startsWith('http')) {
       return question.imageUrl;
     }
-    const baseUrl = this.API_URL.replace(/\/api$/, '');
-    return `${baseUrl}${question.imageUrl}`;
+    const baseUrl = this.API_URL.replace(/\/api$/, '').replace(/\/+$/, '');
+    const cleanPath = question.imageUrl.replace(/^\/+/, '');
+    return `${baseUrl}/${cleanPath}`;
+  }
+
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
+    const fallback = img.parentElement?.querySelector('.text-muted');
+    if (fallback) {
+      fallback.textContent = 'img missing';
+    }
   }
 
   getCategoryById(categoryId: number): Category | undefined {

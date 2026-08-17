@@ -277,6 +277,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
 
     this.editQuestion.set({
       ...question,
+      imageUrl: question.imageUrl ?? '',
       options: [...(question.options || [])],
       correctAnswer: [...(question.correctAnswer || [])],
       tags: [...question.tags]
@@ -506,6 +507,9 @@ export class ExamQuestionBuilderComponent implements OnInit {
       next: result => {
         const updated = this.toQuestion(result);
         this.updateQuestion(updated);
+        if (this.selectedBankQuestionId() === questionId) {
+          this.editQuestion.update(q => q && q.id === questionId ? updated : q);
+        }
         this.toast.success('Image uploaded');
       },
       error: err => {
@@ -524,7 +528,11 @@ export class ExamQuestionBuilderComponent implements OnInit {
 
     this.http.delete(`${this.API_URL}/questions/${questionId}/image`, { responseType: 'text' as any }).subscribe({
       next: () => {
-        this.updateQuestion({ ...question, imageUrl: '' });
+        const updated = { ...question, imageUrl: '' };
+        this.updateQuestion(updated);
+        if (this.selectedBankQuestionId() === questionId) {
+          this.editQuestion.update(q => q && q.id === questionId ? updated : q);
+        }
         this.toast.success('Image removed');
       },
       error: err => {
@@ -542,8 +550,18 @@ export class ExamQuestionBuilderComponent implements OnInit {
     if (question.imageUrl.startsWith('http')) {
       return question.imageUrl;
     }
-    const baseUrl = this.API_URL.replace(/\/api$/, '');
-    return `${baseUrl}${question.imageUrl}`;
+    const baseUrl = this.API_URL.replace(/\/api$/, '').replace(/\/+$/, '');
+    const cleanPath = question.imageUrl.replace(/^\/+/, '');
+    return `${baseUrl}/uploads/questions/${cleanPath}`;
+  }
+
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
+    const fallback = img.parentElement?.querySelector('.text-muted');
+    if (fallback) {
+      fallback.textContent = 'img missing';
+    }
   }
 
   onQuestionImageSelected(event: Event): void {
@@ -698,7 +716,7 @@ export class ExamQuestionBuilderComponent implements OnInit {
   deleteExam(examId: number, force: boolean = false): void {
     const exam = this.exams().find(e => e.id === examId);
     const isPublished = exam && (exam.status === 'active' || exam.status === 'completed');
-    
+
     const message = force && isPublished
       ? 'Force delete this published exam? The exam and all student answers will also be permanently deleted.'
       : 'Are you sure you want to delete this exam?';

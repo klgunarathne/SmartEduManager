@@ -149,14 +149,14 @@ public class MappingProfile : Profile
              .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
           // Question mapping
-           CreateMap<Question, QuestionDto>()
-               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString().ToLower()))
-               .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty.ToString().ToLower()))
-               .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : "Uncategorized"))
-               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
-               .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("yyyy-MM-dd")))
-               .ForMember(dest => dest.Options, opt => opt.MapFrom(src => ParseOptions(src.Options)))
-               .ForMember(dest => dest.Required, opt => opt.MapFrom(src => src.Required));
+            CreateMap<Question, QuestionDto>()
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString().ToLower()))
+                .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty.ToString().ToLower()))
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : "Uncategorized"))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("yyyy-MM-dd")))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("yyyy-MM-dd")))
+                .ForMember(dest => dest.Options, opt => opt.MapFrom(src => ParseOptions(src.Options)))
+                .ForMember(dest => dest.Required, opt => opt.MapFrom(src => src.Required));
              CreateMap<CreateQuestionDto, Question>()
                  .ForMember(dest => dest.Type, opt => opt.MapFrom(src => EnumHelper.ParseQuestionType(src.Type)))
                  .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => EnumHelper.ParseDifficultyLevel(src.Difficulty)))

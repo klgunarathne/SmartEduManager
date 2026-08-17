@@ -12,6 +12,15 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
   </PropertyGroup>
 
+ <!-- IMPORTANT:
+         Prevent dotnet watch from monitoring uploaded files -->
+    <PropertyGroup>
+        <DefaultItemExcludes>
+            $(DefaultItemExcludes);
+            **/wwwroot/uploads/**;
+        </DefaultItemExcludes>
+    </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
